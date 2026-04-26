@@ -1,12 +1,17 @@
-FROM mcr.microsoft.com/devcontainers/javascript-node:22-bookworm AS base
+FROM node:22-bookworm-slim AS base
 
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Minimal OS deps (Prisma + HTTPS)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && rm -rf /var/lib/apt/lists/*
+
 # ---------- deps ----------
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 # ---------- dev (for docker-compose local dev) ----------
 FROM deps AS dev
@@ -26,7 +31,7 @@ RUN npm run build
 FROM base AS runner
 ENV NODE_ENV=production
 
-RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+RUN groupadd -r nodejs && useradd -r -g nodejs nextjs
 
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
