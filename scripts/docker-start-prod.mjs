@@ -15,9 +15,28 @@ function run(cmd, args, opts = {}) {
   });
 }
 
+function readDbHostPort() {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    const host = u.hostname;
+    const port = Number(u.port || "5432");
+    if (!host || !port) return null;
+    return { host, port };
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
-  console.log("Waiting for DB...");
-  await run("node", ["scripts/wait-for-tcp.mjs", "db", "5432", "60"]);
+  const db = readDbHostPort();
+  if (db) {
+    console.log(`Waiting for DB at ${db.host}:${db.port}...`);
+    await run("node", ["scripts/wait-for-tcp.mjs", db.host, String(db.port), "60"]);
+  } else {
+    console.log("DATABASE_URL not set or invalid. Skipping DB wait.");
+  }
 
   console.log("Running Prisma migrate deploy...");
   await run("npx", ["prisma", "migrate", "deploy"]);
@@ -28,7 +47,12 @@ async function main() {
   }
 
   console.log("Starting Next.js server...");
-  await run("node", ["server.js"]);
+  const env = {
+    ...process.env,
+    HOSTNAME: process.env.HOSTNAME ?? "0.0.0.0",
+    PORT: process.env.PORT ?? "3000",
+  };
+  await run("node", ["server.js"], { env });
 }
 
 main().catch((err) => {
