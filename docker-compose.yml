@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fluxplan
+      POSTGRES_PASSWORD: fluxplan
+      POSTGRES_DB: fluxplan
+    ports:
+      - "5432:5432"
+    volumes:
+      - fluxplan_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fluxplan -d fluxplan"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      target: dev
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_APP_NAME: FluxPlan
+      STUDY_MODE_ENABLED: "true"
+      DATABASE_URL: postgresql://fluxplan:fluxplan@db:5432/fluxplan?schema=public
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["node","scripts/docker-start-dev.mjs"]
+
+volumes:
+  fluxplan_db:
+
