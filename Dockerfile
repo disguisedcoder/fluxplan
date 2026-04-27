@@ -39,6 +39,8 @@ COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
 
 ENV HOME=/home/nextjs
 ENV NPM_CONFIG_CACHE=/home/nextjs/.npm

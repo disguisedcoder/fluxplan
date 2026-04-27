@@ -39,11 +39,11 @@ async function main() {
   }
 
   console.log("Running Prisma migrate deploy...");
-  await run("npx", ["prisma", "migrate", "deploy"]);
+  await run("node", ["node_modules/prisma/build/index.js", "migrate", "deploy"]);
 
   if (process.env.SEED_ON_START === "true") {
     console.log("Seeding enabled: running Prisma seed...");
-    await run("npx", ["prisma", "db", "seed"]);
+    await run("node", ["node_modules/prisma/build/index.js", "db", "seed"]);
   }
 
   console.log("Starting Next.js server...");
