@@ -55,7 +55,11 @@ async function main() {
     // Railway commonly provides PORT=8080; default to that in prod.
     PORT: process.env.PORT ?? "8080",
   };
-  await run("node", ["server.js"], { env });
+  await run(
+    "node",
+    ["node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", env.PORT],
+    { env },
+  );
 }
 
 main().catch((err) => {
