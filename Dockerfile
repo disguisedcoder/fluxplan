@@ -40,6 +40,11 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/scripts ./scripts
 
+ENV HOME=/home/nextjs
+ENV NPM_CONFIG_CACHE=/home/nextjs/.npm
+RUN mkdir -p /home/nextjs/.npm \
+  && chown -R nextjs:nodejs /home/nextjs
+
 USER nextjs
 EXPOSE 3000
 CMD ["node","scripts/docker-start-prod.mjs"]
