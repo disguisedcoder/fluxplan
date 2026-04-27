@@ -48,6 +48,7 @@ RUN mkdir -p /home/nextjs/.npm \
   && chown -R nextjs:nodejs /home/nextjs
 
 USER nextjs
-EXPOSE 3000
+# Railway usually routes to PORT=8080; we also support 3000 locally.
+EXPOSE 8080
 CMD ["node","scripts/docker-start-prod.mjs"]
 

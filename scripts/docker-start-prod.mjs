@@ -49,8 +49,11 @@ async function main() {
   console.log("Starting Next.js server...");
   const env = {
     ...process.env,
+    // Ensure we bind on all interfaces for Railway's proxy.
     HOSTNAME: process.env.HOSTNAME ?? "0.0.0.0",
-    PORT: process.env.PORT ?? "3000",
+    HOST: process.env.HOST ?? "0.0.0.0",
+    // Railway commonly provides PORT=8080; default to that in prod.
+    PORT: process.env.PORT ?? "8080",
   };
   await run("node", ["server.js"], { env });
 }
