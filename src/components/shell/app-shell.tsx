@@ -4,11 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  BookOpen,
   CalendarDays,
   CheckSquare,
   Cog,
   Home,
   ListChecks,
+  Menu,
+  PanelLeft,
   PlusCircle,
   Settings2,
   Sparkles,
@@ -19,40 +22,53 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { useGlobalNavigationShortcuts } from "@/lib/hooks/use-shortcuts";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
-  primary?: boolean;
 };
 
 const PRIMARY_NAV: NavItem[] = [
   { href: "/start", label: "Start", icon: Home },
+  { href: "/willkommen", label: "Willkommen", icon: BookOpen },
   { href: "/heute", label: "Heute", icon: Sun },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
-  { href: "/erstellen", label: "Erstellen", icon: PlusCircle, primary: true },
+  { href: "/erstellen", label: "Erstellen", icon: PlusCircle },
   { href: "/anpassungen", label: "Anpassungen", icon: Sparkles },
   { href: "/einstellungen", label: "Einstellungen", icon: Cog },
 ];
 
 const MOBILE_NAV: NavItem[] = [
+  { href: "/willkommen", label: "Info", icon: BookOpen },
+  { href: "/start", label: "Start", icon: Home },
   { href: "/heute", label: "Heute", icon: Sun },
   { href: "/aufgaben", label: "Aufgaben", icon: ListChecks },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
-  { href: "/erstellen", label: "Erstellen", icon: PlusCircle, primary: true },
+  { href: "/erstellen", label: "Erstellen", icon: PlusCircle },
   { href: "/anpassungen", label: "Anpassungen", icon: Settings2 },
 ];
 
 type Me = {
   user: { pseudonym: string } | null;
   session: { sessionCode: string } | null;
+  isAdmin?: boolean;
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [me, setMe] = useState<Me | null>(null);
+  const [compactSidebar, setCompactSidebar] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("fp_sidebar_compact") === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useLogViewChange(pathname);
   useGlobalNavigationShortcuts();
@@ -72,45 +88,98 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  function toggleCompact() {
+    setCompactSidebar((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("fp_sidebar_compact", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
+
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 md:grid-cols-[260px_1fr]">
-        <BrandSidebar pathname={pathname} me={me} />
-        <main className="min-w-0 px-4 pb-24 pt-6 md:px-10 md:pb-10 md:pt-10">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+      <div
+        className={cn(
+          "mx-auto grid w-full max-w-none grid-cols-1",
+          compactSidebar ? "md:grid-cols-[76px_1fr]" : "md:grid-cols-[260px_1fr]",
+        )}
+      >
+        <BrandSidebar
+          pathname={pathname}
+          me={me}
+          compact={compactSidebar}
+          onToggleCompact={toggleCompact}
+        />
+        <main className="min-w-0 px-4 pb-24 pt-6 md:px-12 md:pb-10 md:pt-10 2xl:px-16">
+          <div className="mx-auto w-full max-w-none">
+            {children}
+          </div>
         </main>
       </div>
+      <MobileAppMenu />
       <MobileBottomNav pathname={pathname} />
     </div>
   );
 }
 
-function BrandSidebar({ pathname, me }: { pathname: string; me: Me | null }) {
+function BrandSidebar({
+  pathname,
+  me,
+  compact,
+  onToggleCompact,
+}: {
+  pathname: string;
+  me: Me | null;
+  compact: boolean;
+  onToggleCompact: () => void;
+}) {
   return (
     <aside className="hidden md:flex md:min-h-dvh md:flex-col md:border-r md:border-border/60 md:bg-sidebar/80 md:backdrop-blur">
-      <div className="flex items-center gap-2 px-6 pb-2 pt-7">
+      <div className={cn("flex items-center gap-2 pb-2 pt-7", compact ? "px-4" : "px-6")}>
         <div className="grid h-7 w-7 place-items-center rounded-md bg-primary/10 text-primary">
           <PlusCircle className="h-4 w-4" />
         </div>
-        <div className="text-base font-semibold tracking-tight">FluxPlan</div>
-        <ThemeToggle className="ml-auto" />
+        {compact ? null : <div className="text-base font-semibold tracking-tight">FluxPlan</div>}
+        <div className="ml-auto flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onToggleCompact}
+            aria-label={compact ? "Sidebar ausklappen" : "Sidebar einklappen"}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </Button>
+          <ThemeToggle />
+        </div>
       </div>
 
-      <nav className="mt-6 flex-1 px-4">
+      <nav className={cn("mt-6 flex-1", compact ? "px-2" : "px-4")}>
         <ul className="space-y-1">
           {PRIMARY_NAV.map((item) => (
-            <SidebarItem key={item.href} item={item} pathname={pathname} />
+            <SidebarItem key={item.href} item={item} pathname={pathname} compact={compact} />
           ))}
         </ul>
       </nav>
 
-      <UserBadge me={me} />
+      <UserBadge me={me} compact={compact} />
     </aside>
   );
 }
 
-function SidebarItem({ item, pathname }: { item: NavItem; pathname: string }) {
+function SidebarItem({
+  item,
+  pathname,
+  compact,
+}: {
+  item: NavItem;
+  pathname: string;
+  compact: boolean;
+}) {
   const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+  const Icon = item.icon;
   return (
     <li>
       <Link
@@ -121,6 +190,7 @@ function SidebarItem({ item, pathname }: { item: NavItem; pathname: string }) {
             ? "font-semibold text-foreground"
             : "text-muted-foreground hover:text-foreground",
         )}
+        title={compact ? item.label : undefined}
       >
         <span
           aria-hidden
@@ -129,31 +199,69 @@ function SidebarItem({ item, pathname }: { item: NavItem; pathname: string }) {
             active ? "bg-primary" : "bg-transparent group-hover:bg-border",
           )}
         />
-        <span className="ml-2">{item.label}</span>
+        <Icon className={cn("ml-2 h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
+        {compact ? null : <span className="min-w-0 truncate">{item.label}</span>}
       </Link>
     </li>
   );
 }
 
-function UserBadge({ me }: { me: Me | null }) {
+function UserBadge({ me, compact }: { me: Me | null; compact: boolean }) {
   const initials = me?.user?.pseudonym?.slice(0, 2).toUpperCase() ?? "?";
   return (
     <Link
       href="/einstellungen"
-      className="m-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3 transition-colors hover:bg-accent/30"
+      className={cn(
+        "m-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3 transition-colors hover:bg-accent/30",
+        compact && "justify-center px-0",
+      )}
+      title={compact ? (me?.user?.pseudonym ?? "Pseudonym setzen") : undefined}
     >
       <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
         {initials}
       </div>
-      <div className="min-w-0 leading-tight">
-        <div className="truncate text-sm font-medium">
-          {me?.user?.pseudonym ?? "Pseudonym setzen"}
+      {compact ? null : (
+        <div className="min-w-0 leading-tight">
+          <div className="truncate text-sm font-medium">
+            {me?.user?.pseudonym ?? "Pseudonym setzen"}
+          </div>
+          <div className="truncate text-xs text-muted-foreground">
+            {me?.user ? "Adaptive Planung aktiv" : "Session starten"}
+          </div>
         </div>
-        <div className="truncate text-xs text-muted-foreground">
-          {me?.user ? "Adaptive Planung aktiv" : "Session starten"}
-        </div>
-      </div>
+      )}
     </Link>
+  );
+}
+
+function MobileAppMenu() {
+  return (
+    <div className="fixed left-3 top-3 z-40 md:hidden">
+      <Dialog>
+        <DialogTrigger render={<Button variant="outline" size="icon-sm" />}>
+          <Menu className="h-4 w-4" />
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Menü</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Link href="/willkommen" className="rounded-lg border border-border/60 bg-card px-3 py-2 text-sm">
+              Willkommen
+            </Link>
+            <Link href="/start" className="rounded-lg border border-border/60 bg-card px-3 py-2 text-sm">
+              Start (Standardansicht)
+            </Link>
+            <Link href="/einstellungen" className="rounded-lg border border-border/60 bg-card px-3 py-2 text-sm">
+              Einstellungen
+            </Link>
+          </div>
+          <div className="pt-2">
+            <ThemeToggle />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -163,7 +271,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
       aria-label="Hauptnavigation"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-background/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur md:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-7">
         {MOBILE_NAV.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -176,7 +284,7 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                <Icon className={cn("h-5 w-5", item.primary && active && "text-primary")} />
+                <Icon className="h-5 w-5" />
                 <span className="truncate">{item.label}</span>
               </Link>
             </li>

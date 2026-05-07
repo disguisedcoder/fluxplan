@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { SessionLogoutButton } from "@/components/study/session-logout-button";
 
 type MeResponse = {
   user: { id: string; pseudonym: string; studyModeEnabled: boolean } | null;
   session: { id: string; sessionCode: string; startedAt: string; variant?: string | null } | null;
+  isAdmin?: boolean;
 };
 
 export function StudySessionBanner() {
@@ -40,7 +42,18 @@ export function StudySessionBanner() {
             )}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {me?.user ? (
+            <SessionLogoutButton
+              variant="secondary"
+              onDone={() => {
+                fetch("/api/me", { cache: "no-store" })
+                  .then((r) => r.json())
+                  .then((data) => setMe(data))
+                  .catch(() => setMe({ user: null, session: null }));
+              }}
+            />
+          ) : null}
           <Badge variant="outline">Logging: lokal in PostgreSQL</Badge>
           <Badge variant="secondary">Keine externen Tracker</Badge>
         </div>

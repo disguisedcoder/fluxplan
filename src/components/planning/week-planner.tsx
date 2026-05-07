@@ -7,6 +7,7 @@ import { AlertTriangle, Calendar as CalIcon, ChevronLeft, ChevronRight } from "l
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 import {
   categoryBadgeClass,
   categoryToneFor,
@@ -16,19 +17,23 @@ import type { Task } from "@/components/tasks/types";
 import { addDays, startOfLocalDay } from "./date";
 
 const HOUR_HEIGHT = 56; // px per hour
-const HOUR_START = 8;
-const HOUR_END = 19; // exclusive
+// Voller Tag (00:00–24:00) als scrollbare Achse.
+const HOUR_START = 0;
+const HOUR_END = 24; // exclusive
 
 export function WeekPlanner() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tasks", { cache: "no-store" });
+      // Kalender braucht i. d. R. nur offene Aufgaben (schneller als alles inkl. Done/Archiv).
+      const res = await fetch("/api/tasks?status=open", { cache: "no-store" });
       if (res.status === 401) {
         setTasks([]);
         return;
@@ -52,6 +57,7 @@ export function WeekPlanner() {
 
   const tasksByDay = useMemo(() => buildTasksByDay(tasks, days), [tasks, days]);
   const conflicts = useMemo(() => detectConflicts(tasksByDay), [tasksByDay]);
+  const conflictGroups = useMemo(() => buildConflictGroups(tasksByDay), [tasksByDay]);
   const unplanned = useMemo(() => tasks.filter((t) => !t.dueDate && t.status !== "done"), [tasks]);
 
   async function planTaskAt(taskId: string, when: Date) {
@@ -73,6 +79,25 @@ export function WeekPlanner() {
     }
   }
 
+  async function clearPlannedTime(taskId: string) {
+    setBusyId(taskId);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ dueDate: null }),
+      });
+      if (!res.ok) {
+        toast.error("Konnte Zeitblock nicht entfernen.");
+        return;
+      }
+      toast.success("Als Aufgabe ohne Zeitblock gespeichert.");
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row">
@@ -84,12 +109,18 @@ export function WeekPlanner() {
           />
           <Card className="fp-card overflow-hidden">
             <CardContent className="p-0">
-              <WeekGrid
-                days={days}
-                tasksByDay={tasksByDay}
-                conflictIds={conflicts}
-                loading={loading}
-              />
+              <div className="max-h-[72vh] overflow-auto">
+                <WeekGrid
+                  days={days}
+                  tasksByDay={tasksByDay}
+                  conflictIds={conflicts}
+                  loading={loading}
+                  onEditTask={(t) => {
+                    setEditTask(t);
+                    setEditOpen(true);
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -103,10 +134,32 @@ export function WeekPlanner() {
             busyId={busyId}
             onPlanToday={(taskId) => planTaskAt(taskId, defaultPlanTime(new Date()))}
           />
-          {conflicts.size > 0 ? <ConflictCard count={conflicts.size} /> : null}
+          {conflicts.size > 0 ? (
+            <ConflictDetailsCard
+              groups={conflictGroups}
+              busyId={busyId}
+              onPlanAt={planTaskAt}
+              onClearTime={clearPlannedTime}
+            />
+          ) : null}
           <FreeSlotsCard tasksByDay={tasksByDay} weekStart={weekStart} />
         </aside>
       </div>
+
+      {editTask ? (
+        <TaskFormDialog
+          key={editTask.id}
+          mode="edit"
+          initial={editTask}
+          triggerLabel="Bearbeiten"
+          hideTrigger
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSaved={() => {
+            load().catch(() => {});
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -180,11 +233,13 @@ function WeekGrid({
   tasksByDay,
   conflictIds,
   loading,
+  onEditTask,
 }: {
   days: Date[];
   tasksByDay: Map<string, ScheduledTask[]>;
   conflictIds: Set<string>;
   loading: boolean;
+  onEditTask: (task: Task) => void;
 }) {
   if (loading) {
     return (
@@ -193,7 +248,7 @@ function WeekGrid({
   }
   return (
     <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))]">
-      <div />
+      <div className="sticky top-0 z-10 border-b border-border/60 bg-card" />
       {days.map((d) => (
         <DayHeaderCell key={d.toISOString()} d={d} />
       ))}
@@ -214,7 +269,13 @@ function WeekGrid({
         const key = isoKey(d);
         const items = tasksByDay.get(key) ?? [];
         return (
-          <DayColumn key={key} day={d} items={items} conflictIds={conflictIds} />
+          <DayColumn
+            key={key}
+            day={d}
+            items={items}
+            conflictIds={conflictIds}
+            onEditTask={onEditTask}
+          />
         );
       })}
     </div>
@@ -226,7 +287,7 @@ function DayHeaderCell({ d }: { d: Date }) {
   return (
     <div
       className={cn(
-        "border-b border-border/60 px-2 py-2 text-center text-xs",
+        "sticky top-0 z-10 border-b border-border/60 bg-card px-2 py-2 text-center text-xs",
         isToday && "bg-primary/5",
       )}
     >
@@ -244,12 +305,15 @@ function DayColumn({
   day,
   items,
   conflictIds,
+  onEditTask,
 }: {
   day: Date;
   items: ScheduledTask[];
   conflictIds: Set<string>;
+  onEditTask: (task: Task) => void;
 }) {
   const isToday = isSameDay(day, new Date());
+  const laidOut = useMemo(() => layoutOverlaps(items), [items]);
   return (
     <div
       className={cn(
@@ -266,8 +330,13 @@ function DayColumn({
         />
       ))}
 
-      {items.map((it) => (
-        <EventChip key={it.task.id} item={it} conflict={conflictIds.has(it.task.id)} />
+      {laidOut.map((it) => (
+        <EventChip
+          key={it.task.id}
+          item={it}
+          conflict={conflictIds.has(it.task.id)}
+          onEdit={() => onEditTask(it.task)}
+        />
       ))}
     </div>
   );
@@ -279,8 +348,18 @@ type ScheduledTask = {
   durationMinutes: number;
 };
 
-function EventChip({ item, conflict }: { item: ScheduledTask; conflict: boolean }) {
-  const { task, startMinutes, durationMinutes } = item;
+type LaidOutTask = ScheduledTask & { col: number; cols: number };
+
+function EventChip({
+  item,
+  conflict,
+  onEdit,
+}: {
+  item: LaidOutTask;
+  conflict: boolean;
+  onEdit: () => void;
+}) {
+  const { task, startMinutes, durationMinutes, col, cols } = item;
   const startHour = startMinutes / 60;
   const top = (startHour - HOUR_START) * HOUR_HEIGHT;
   const height = Math.max(28, (durationMinutes / 60) * HOUR_HEIGHT);
@@ -288,21 +367,31 @@ function EventChip({ item, conflict }: { item: ScheduledTask; conflict: boolean 
   const tone = categoryToneFor(category);
   const baseClass = categoryBadgeClass(tone);
 
+  const leftPct = (col / cols) * 100;
+  const widthPct = 100 / cols;
+
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        "absolute left-1 right-1 overflow-hidden rounded-md border px-2 py-1 text-[11px] leading-tight shadow-sm",
+        "absolute overflow-hidden rounded-md border px-2 py-1 text-[11px] leading-tight shadow-sm transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         baseClass,
         conflict && "ring-1 ring-amber-400 ring-offset-1 ring-offset-background",
       )}
-      style={{ top, height }}
+      style={{
+        top,
+        height,
+        left: `calc(${leftPct}% + 0.25rem)`,
+        width: `calc(${widthPct}% - 0.5rem)`,
+      }}
       title={`${task.title} – ${formatHM(startMinutes)}`}
+      onClick={onEdit}
     >
       <div className="truncate font-medium">{task.title}</div>
       <div className="opacity-80">
         {formatHM(startMinutes)}{conflict ? " · überlappt" : ""}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -353,14 +442,17 @@ function UnplannedList({
                       </span>
                     ) : null}
                   </div>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    disabled={busyId === t.id}
-                    onClick={() => onPlanToday(t.id)}
-                  >
-                    Heute
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <TaskFormDialog mode="edit" initial={t} triggerLabel="Heute" onSaved={() => {}} />
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      disabled={busyId === t.id}
+                      onClick={() => onPlanToday(t.id)}
+                    >
+                      Planen
+                    </Button>
+                  </div>
                 </li>
               );
             })}
@@ -374,18 +466,101 @@ function UnplannedList({
   );
 }
 
-function ConflictCard({ count }: { count: number }) {
+type ConflictGroup = {
+  dayKey: string;
+  day: Date;
+  dayLabel: string;
+  items: Array<
+    ScheduledTask & {
+      alternatives: { start: number; end: number }[];
+    }
+  >;
+};
+
+function ConflictDetailsCard({
+  groups,
+  busyId,
+  onPlanAt,
+  onClearTime,
+}: {
+  groups: ConflictGroup[];
+  busyId: string | null;
+  onPlanAt: (taskId: string, when: Date) => Promise<void>;
+  onClearTime: (taskId: string) => Promise<void>;
+}) {
+  const flat = groups.flatMap((g) => g.items);
+  const count = flat.length;
   return (
-    <Card className="fp-card border-amber-200/60 bg-amber-50/40">
-      <CardContent className="space-y-2 p-5">
+    <Card className="fp-card border-rose-200/60 bg-rose-50/30">
+      <CardContent className="space-y-3 p-5">
         <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
           <AlertTriangle className="h-4 w-4" />
-          Konflikte erkannt
+          Konflikt erkannt
         </div>
         <p className="text-sm text-amber-900/80">
-          {count} überlappende Zeitfenster wurden markiert (orangener Rahmen). FluxPlan
-          räumt nicht automatisch auf – du entscheidest, was bleibt oder verschoben wird.
+          {count} Zeitblock{count === 1 ? "" : "s"} überlapp{count === 1 ? "t" : "en"} sich. Du kannst Alternativen wählen oder „Nur Aufgabe“ speichern.
         </p>
+
+        <div className="space-y-3">
+          {groups.slice(0, 3).map((g) => (
+            <div key={g.dayKey} className="rounded-xl border border-border/60 bg-card/60 p-3">
+              <div className="text-xs font-medium text-muted-foreground">{g.dayLabel}</div>
+              <ul className="mt-2 space-y-2">
+                {g.items.slice(0, 3).map((it) => (
+                  <li key={it.task.id} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-foreground">{it.task.title}</div>
+                        <div className="text-xs text-muted-foreground tabular-nums">
+                          {formatHM(it.startMinutes)} – {formatHM(it.startMinutes + it.durationMinutes)}
+                        </div>
+                      </div>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        disabled={busyId === it.task.id}
+                        onClick={() => {
+                          const ok = window.confirm(
+                            "Zeitblock entfernen?\n\nDie Aufgabe bleibt erhalten, aber ohne festes Zeitfenster.",
+                          );
+                          if (!ok) return;
+                          onClearTime(it.task.id);
+                        }}
+                      >
+                        Nur Aufgabe
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {it.alternatives.slice(0, 2).map((alt) => (
+                        <Button
+                          key={alt.start}
+                          size="xs"
+                          variant="secondary"
+                          disabled={busyId === it.task.id}
+                          onClick={() => {
+                            const ok = window.confirm(
+                              `Alternative übernehmen?\n\nNeuer Start: ${formatHM(alt.start)}\nFluxPlan verschiebt nichts automatisch – das ist deine Bestätigung.`,
+                            );
+                            if (!ok) return;
+                            onPlanAt(it.task.id, minutesToDate(g.day, alt.start));
+                          }}
+                        >
+                          Alternativ {formatHM(alt.start)}
+                        </Button>
+                      ))}
+                      {it.alternatives.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          Keine freien Alternativen in dieser Ansicht.
+                        </span>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -482,6 +657,123 @@ function detectConflicts(map: Map<string, ScheduledTask[]>): Set<string> {
   return conflicts;
 }
 
+function layoutOverlaps(items: ScheduledTask[]): LaidOutTask[] {
+  if (items.length <= 1) return items.map((it) => ({ ...it, col: 0, cols: 1 }));
+
+  const sorted = [...items].sort(
+    (a, b) => a.startMinutes - b.startMinutes || a.durationMinutes - b.durationMinutes,
+  );
+
+  const colForId = new Map<string, number>();
+  const active: Array<{ end: number; col: number; id: string }> = [];
+  const used = new Set<number>();
+
+  const releaseEnded = (start: number) => {
+    for (let i = active.length - 1; i >= 0; i--) {
+      if (active[i].end <= start) {
+        used.delete(active[i].col);
+        active.splice(i, 1);
+      }
+    }
+  };
+
+  const pickCol = () => {
+    let c = 0;
+    while (used.has(c)) c++;
+    return c;
+  };
+
+  for (const it of sorted) {
+    releaseEnded(it.startMinutes);
+    const col = pickCol();
+    used.add(col);
+    const end = it.startMinutes + it.durationMinutes;
+    active.push({ end, col, id: it.task.id });
+    colForId.set(it.task.id, col);
+  }
+
+  // Build overlap components so each component shares the same cols-count.
+  const byId = new Map(sorted.map((it) => [it.task.id, it] as const));
+  const overlaps = (a: ScheduledTask, b: ScheduledTask) => {
+    const ae = a.startMinutes + a.durationMinutes;
+    const be = b.startMinutes + b.durationMinutes;
+    return a.startMinutes < be && b.startMinutes < ae;
+  };
+
+  const seen = new Set<string>();
+  const colsForId = new Map<string, number>();
+
+  for (const it of sorted) {
+    const id = it.task.id;
+    if (seen.has(id)) continue;
+    const stack = [id];
+    const component: string[] = [];
+    seen.add(id);
+    while (stack.length) {
+      const cur = stack.pop()!;
+      component.push(cur);
+      const a = byId.get(cur)!;
+      for (const other of sorted) {
+        const oid = other.task.id;
+        if (seen.has(oid)) continue;
+        if (overlaps(a, other)) {
+          seen.add(oid);
+          stack.push(oid);
+        }
+      }
+    }
+    const maxCol = Math.max(...component.map((cid) => colForId.get(cid) ?? 0));
+    const cols = maxCol + 1;
+    for (const cid of component) colsForId.set(cid, cols);
+  }
+
+  return sorted.map((it) => ({
+    ...it,
+    col: colForId.get(it.task.id) ?? 0,
+    cols: colsForId.get(it.task.id) ?? 1,
+  }));
+}
+
+function buildConflictGroups(map: Map<string, ScheduledTask[]>): ConflictGroup[] {
+  const out: ConflictGroup[] = [];
+  for (const [dayKey, list] of map.entries()) {
+    const ids = new Set<string>();
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        const ae = a.startMinutes + a.durationMinutes;
+        const be = b.startMinutes + b.durationMinutes;
+        if (a.startMinutes < be && b.startMinutes < ae) {
+          ids.add(a.task.id);
+          ids.add(b.task.id);
+        }
+      }
+    }
+    if (ids.size === 0) continue;
+
+    const day = new Date(`${dayKey}T00:00:00`);
+    const dayLabel = day.toLocaleDateString(undefined, {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+    });
+
+    const free = computeFreeSlots(list);
+    const items = list
+      .filter((it) => ids.has(it.task.id))
+      .map((it) => ({
+        ...it,
+        alternatives: free.filter((s) => s.end - s.start >= it.durationMinutes),
+      }));
+
+    out.push({ dayKey, day, dayLabel, items });
+  }
+
+  out.sort((a, b) => a.dayKey.localeCompare(b.dayKey));
+  return out;
+}
+
 function computeFreeSlots(items: ScheduledTask[]) {
   const startMin = HOUR_START * 60;
   const endMin = HOUR_END * 60;
@@ -539,4 +831,11 @@ function formatHM(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function minutesToDate(day: Date, minutes: number) {
+  const d = startOfLocalDay(day);
+  d.setHours(0, 0, 0, 0);
+  d.setMinutes(minutes);
+  return d;
 }

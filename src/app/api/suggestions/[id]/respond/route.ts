@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
 import { isHttpError } from "@/lib/http/errors";
 import { maybeApplyCooldownAfterReject } from "@/lib/adaptive/engineConfig";
+import { normalizeStartViewHref } from "@/lib/settings/start-view";
 
 const RespondSchema = z.object({
   action: z.enum(["accept", "reject", "snooze", "undo"]),
@@ -106,7 +107,7 @@ async function applySuggestion(
       : {};
 
   if (s.type === "start_view") {
-    const href = String(payload.suggestedStartView ?? "/heute");
+    const href = normalizeStartViewHref(String(payload.suggestedStartView ?? "/heute"));
     await prisma.userPreference.upsert({
       where: { userId_key: { userId, key: "startView" } },
       update: { value: { href } },

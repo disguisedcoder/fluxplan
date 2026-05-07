@@ -10,13 +10,12 @@ import { Button } from "@/components/ui/button";
 import type { AdaptiveRule } from "./types";
 import type { Preferences } from "./suggestions-screen";
 import { InterventionLevelSlider } from "@/components/settings/intervention-level-slider";
-
-const LEVELS = [
-  { value: 0, label: "Aus", desc: "Keine adaptiven Vorschläge." },
-  { value: 1, label: "Leise", desc: "Nur sehr seltene, eindeutige Vorschläge." },
-  { value: 2, label: "Aktiv", desc: "Standard. Vorschläge erscheinen bei klaren Mustern." },
-  { value: 3, label: "Eng begleitet", desc: "Häufiger Vorschläge, alle erklärbar und reversibel." },
-];
+import {
+  INTERVENTION_LEVELS,
+  readInterventionLevel,
+  readPreferenceBool,
+  clampInterventionLevel,
+} from "@/lib/settings/intervention-levels";
 
 export function PersonalizationTab({
   rules,
@@ -31,7 +30,9 @@ export function PersonalizationTab({
 }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [evaluating, setEvaluating] = useState(false);
-  const interventionLevel = readNumber(preferences["adaptive.interventionLevel"], 2);
+  const [levelBusy, setLevelBusy] = useState(false);
+  const adaptiveEnabled = readPreferenceBool(preferences["adaptive.enabled"], true);
+  const interventionLevel = readInterventionLevel(preferences["adaptive.interventionLevel"], 2);
 
   async function evaluateNow() {
     setEvaluating(true);
@@ -79,12 +80,22 @@ export function PersonalizationTab({
   }
 
   async function setLevel(value: number) {
-    await fetch("/api/preferences", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ key: "adaptive.interventionLevel", value }),
-    });
-    onChanged();
+    const clamped = clampInterventionLevel(value);
+    setLevelBusy(true);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "adaptive.interventionLevel", value: clamped }),
+      });
+      if (!res.ok) {
+        toast.error("Konnte Eingriffsstufe nicht speichern.");
+        return;
+      }
+      onChanged();
+    } finally {
+      setLevelBusy(false);
+    }
   }
 
   return (
@@ -133,12 +144,14 @@ export function PersonalizationTab({
             <div>
               <h3 className="text-sm font-semibold tracking-tight">Eingriffsstufe</h3>
               <p className="text-xs text-muted-foreground">
-                Wie aufdringlich darf FluxPlan sein? Du kannst es jederzeit ändern.
+                Gleiche Einstellung wie unter Einstellungen. Wenn „Adaptive Vorschläge“ dort
+                aus ist, sind hier keine Änderungen möglich.
               </p>
             </div>
             <InterventionLevelSlider
               value={interventionLevel}
-              levels={LEVELS}
+              levels={[...INTERVENTION_LEVELS]}
+              disabled={levelBusy || !adaptiveEnabled}
               onChange={setLevel}
             />
           </CardContent>
@@ -218,11 +231,3 @@ function Stat({
   );
 }
 
-function readNumber(v: unknown, fallback: number): number {
-  if (typeof v === "number") return v;
-  if (typeof v === "object" && v !== null && "value" in v) {
-    const inner = (v as { value?: unknown }).value;
-    if (typeof inner === "number") return inner;
-  }
-  return fallback;
-}

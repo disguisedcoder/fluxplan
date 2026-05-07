@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getStudyCookies } from "@/lib/auth/study-session";
 import { prisma } from "@/lib/db/prisma";
+import { isAdminPseudonym } from "@/lib/admin/is-admin";
 
 export async function GET() {
   const { userId, sessionId } = await getStudyCookies();
@@ -20,6 +21,10 @@ export async function GET() {
       : Promise.resolve(null),
   ]);
 
-  return NextResponse.json({ user, session });
+  return NextResponse.json({
+    user,
+    session,
+    isAdmin: user ? isAdminPseudonym(user.pseudonym) : false,
+  });
 }
 

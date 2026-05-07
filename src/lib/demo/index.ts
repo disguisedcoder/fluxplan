@@ -1,0 +1,25 @@
+import type { DemoRoleDefinition, DemoRoleKey } from "./types";
+import { assertTenTasks } from "./types";
+import { familienplannerRole } from "./roles/familienplanner";
+import { taskplannerRole } from "./roles/taskplanner";
+import { evalrunnerRole } from "./roles/evalrunner";
+
+export function roleFromPseudonym(pseudonym: string): DemoRoleKey {
+  const p = pseudonym.trim().toUpperCase();
+  if (p.startsWith("F")) return "familienplanner";
+  if (p.startsWith("T")) return "taskplanner";
+  if (p.startsWith("E")) return "evalrunner";
+  return "taskplanner";
+}
+
+export function getDemoRole(role: DemoRoleKey, now = new Date()): DemoRoleDefinition {
+  const def =
+    role === "familienplanner"
+      ? familienplannerRole(now)
+      : role === "evalrunner"
+        ? evalrunnerRole(now)
+        : taskplannerRole(now);
+  assertTenTasks(def);
+  return def;
+}
+

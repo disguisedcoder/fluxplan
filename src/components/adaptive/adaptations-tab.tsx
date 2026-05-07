@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Clock, HelpCircle, Sparkles, Undo2, X } from "lucide-react";
 
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { AdaptiveSuggestion } from "./types";
+import { labelForStartHref, normalizeStartViewHref } from "@/lib/settings/start-view";
 
 export function AdaptationsTab({
   suggestions,
@@ -156,6 +158,7 @@ function DetailPanel({
   suggestion: AdaptiveSuggestion | null;
   onChanged: () => void;
 }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const whyLogged = useRef(false);
 
@@ -191,6 +194,15 @@ function DetailPanel({
               : "Rückgängig.",
       );
       onChanged();
+      if (action === "accept" && suggestion!.type === "start_view") {
+        const p =
+          suggestion!.payload && typeof suggestion!.payload === "object"
+            ? (suggestion!.payload as Record<string, unknown>)
+            : {};
+        const raw = typeof p.suggestedStartView === "string" ? p.suggestedStartView : "/heute";
+        router.push(normalizeStartViewHref(raw));
+        router.refresh();
+      }
     } finally {
       setBusy(false);
     }
@@ -292,12 +304,11 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
   const obj = (payload && typeof payload === "object" ? payload : {}) as Record<string, unknown>;
 
   if (type === "start_view") {
+    const href = normalizeStartViewHref(String(obj.suggestedStartView ?? "/heute"));
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Startansicht setzen auf{" "}
-        <span className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-          {String(obj.suggestedStartView ?? "/heute")}
-        </span>
+        Startansicht: <span className="font-medium text-foreground">{labelForStartHref(href)}</span>{" "}
+        <span className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{href}</span>
       </div>
     );
   }

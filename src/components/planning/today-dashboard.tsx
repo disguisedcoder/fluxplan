@@ -1,15 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Check, Clock, Sparkles, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/page-header";
 import { QuickAddInput } from "@/components/tasks/quick-add-input";
 import { MiniMonthCalendar } from "./mini-month-calendar";
 import type { Task } from "@/components/tasks/types";
+import type { AdaptiveSuggestion } from "@/components/adaptive/types";
+import { ExplanationPopover } from "@/components/adaptive/explanation-popover";
 import { cn } from "@/lib/utils";
 import {
   categoryBadgeClass,
@@ -17,12 +22,14 @@ import {
   pickPrimaryCategory,
 } from "@/lib/ui/category";
 import { isSameLocalDay, startOfLocalDay } from "./date";
+import { normalizeStartViewHref } from "@/lib/settings/start-view";
 
 type TaskWithDue = Task & { dueAt?: Date };
 
 export function TodayDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingSuggestion, setPendingSuggestion] = useState<AdaptiveSuggestion | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -34,6 +41,23 @@ export function TodayDashboard() {
     }
   }, []);
 
+  const loadPendingSuggestion = useCallback(async () => {
+    const res = await fetch("/api/suggestions?status=pending", { cache: "no-store" });
+    if (!res.ok) {
+      setPendingSuggestion(null);
+      return;
+    }
+    const data = await res.json();
+    const suggestions = (data.suggestions ?? []) as AdaptiveSuggestion[];
+    const preferred = suggestions.find(
+      (s) =>
+        s.ruleKey === "daily_focus" ||
+        s.ruleKey === "view_preference" ||
+        s.type === "start_view",
+    );
+    setPendingSuggestion(preferred ?? suggestions[0] ?? null);
+  }, []);
+
   useEffect(() => {
     load();
     fetch("/api/adaptive/evaluate", {
@@ -41,7 +65,9 @@ export function TodayDashboard() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ screen: "/heute" }),
     }).catch(() => {});
-  }, [load]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadPendingSuggestion().catch(() => {});
+  }, [load, loadPendingSuggestion]);
 
   const { focus, agenda, dueTodayCount, openCount, highlightedDates } = useMemo(
     () => deriveTodayBuckets(tasks),
@@ -59,6 +85,18 @@ export function TodayDashboard() {
           </Link>
         }
       />
+
+      {pendingSuggestion ? (
+        <div className="mb-6">
+          <TodaySuggestionBanner
+            suggestion={pendingSuggestion}
+            onChanged={() => {
+              loadPendingSuggestion().catch(() => {});
+              load().catch(() => {});
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr_1fr]">
         <FocusListCard
@@ -82,6 +120,136 @@ export function TodayDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+function TodaySuggestionBanner({
+  suggestion,
+  onChanged,
+}: {
+  suggestion: AdaptiveSuggestion;
+  onChanged: () => void;
+}) {
+  const router = useRouter();
+  /** Regeln ohne applySuggestion-Zweig: nur Transparenz / Logging, keine Datenänderung. */
+  const isInformationalOnly =
+    suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus";
+
+  const seenLogged = useRef(false);
+
+  useEffect(() => {
+    if (seenLogged.current) return;
+    seenLogged.current = true;
+    fetch("/api/events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        eventType: "suggestion_seen",
+        screen: "/heute",
+        metadata: { suggestionId: suggestion.id, ruleKey: suggestion.ruleKey },
+      }),
+    }).catch(() => {});
+  }, [suggestion.id, suggestion.ruleKey]);
+
+  async function respond(action: "accept" | "reject" | "snooze") {
+    const res = await fetch(`/api/suggestions/${suggestion.id}/respond`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) {
+      toast.error("Aktion fehlgeschlagen.");
+      return;
+    }
+    toast.success(
+      action === "accept"
+        ? isInformationalOnly
+          ? "Notiert."
+          : suggestion.type === "start_view"
+            ? "Startansicht gespeichert."
+            : "Übernommen."
+        : action === "snooze"
+          ? "Später."
+          : "Abgelehnt.",
+    );
+    onChanged();
+    if (action === "accept" && suggestion.type === "start_view") {
+      const p =
+        suggestion.payload && typeof suggestion.payload === "object"
+          ? (suggestion.payload as Record<string, unknown>)
+          : {};
+      const raw = typeof p.suggestedStartView === "string" ? p.suggestedStartView : "/heute";
+      router.push(normalizeStartViewHref(raw));
+      router.refresh();
+    }
+  }
+
+  return (
+    <Card className="fp-card border-primary/20 bg-primary/[0.04]">
+      <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold tracking-tight">
+                {suggestion.title}
+              </div>
+              <div className="truncate text-xs text-muted-foreground">
+                {suggestion.explanation}
+              </div>
+              {isInformationalOnly ? (
+                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  Die <span className="font-medium text-foreground">Fokusliste</span> darunter kommt aus deinen offenen
+                  Aufgaben (überfällig, heute fällig, hohe Priorität, sonst Auffüller). Dieser Kasten{" "}
+                  <span className="font-medium text-foreground">ändert keine Aufgaben</span> — „Verstanden“ bestätigt
+                  nur den Hinweis (z. B. für die Studienauswertung) und blendet ihn aus.
+                </div>
+              ) : null}
+              {suggestion.type === "start_view" ? (
+                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  Mit <span className="font-medium text-foreground">Ja</span> wird deine{" "}
+                  <span className="font-medium text-foreground">Standardansicht</span> gespeichert und du springst
+                  sofort dorthin. In der Sidebar öffnet <span className="font-medium text-foreground">Start</span> ab
+                  dann genau diese Seite (Heute, Kalender, …). Tour und Prinzipien bleiben unter{" "}
+                  <span className="font-medium text-foreground">Willkommen</span> erreichbar.
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => respond("accept")} className="gap-2">
+            <Check className="h-4 w-4" />
+            {isInformationalOnly ? "Verstanden" : "Ja"}
+          </Button>
+          <Button variant="outline" onClick={() => respond("snooze")} className="gap-2">
+            <Clock className="h-4 w-4" />
+            Später
+          </Button>
+          <Button variant="ghost" onClick={() => respond("reject")} className="gap-2">
+            <X className="h-4 w-4" />
+            Ablehnen
+          </Button>
+          <ExplanationPopover
+            explanation={suggestion.explanation}
+            onOpen={() => {
+              fetch("/api/events", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  eventType: "why_clicked",
+                  screen: "/heute",
+                  metadata: { suggestionId: suggestion.id, ruleKey: suggestion.ruleKey },
+                }),
+              }).catch(() => {});
+            }}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

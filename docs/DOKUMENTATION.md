@@ -1,9 +1,10 @@
-# FluxPlan – Anleitung & Technologie
+# FluxPlan – Anleitung, Technologie, Architektur & Projektgeschichte
 
-Dieses Dokument hat zwei Teile:
+Dieses Dokument hat **drei** Hauptteile:
 
 1. **Anleitung** – was die Anwendung kann und wie du jede Funktion ausprobieren kannst.
 2. **Technologie** – was hinter den Kulissen passiert, einfach erklärt. Ziel: Du kannst jeden Punkt im Code zeigen und in 1–2 Sätzen erklären.
+3. **Architektur & Projektentwicklung** – geplante vs. umgesetzte Architekturentscheidungen, Systemdiagramme (Mermaid) und eine **Chronik** von Feedback und Änderungen im Projektverlauf (für Bachelorarbeit/Abwehr im Verteidigungsgespräch).
 
 ---
 
@@ -19,7 +20,7 @@ Dieses Dokument hat zwei Teile:
 
    Browser öffnen: `http://localhost:3000`.
 
-2. Auf `/start` landest du auf dem Onboarding. Über `/einstellungen → Pseudonym & Session` legst du einen frei wählbaren Code an (z. B. `P01`). Erst danach werden Aufgaben und Logs unter diesem Pseudonym gespeichert.
+2. Beim Öffnen der App: **`/` → `/start`**. **„Start“** in der Sidebar führt zur **gespeicherten Standardansicht** (z. B. `/heute`, `/kalender`, `/aufgaben`, `/erstellen` — aus der Preference `startView`; ohne Session oder ohne abgeschlossenes Willkommen → **`/willkommen`**). **„Willkommen“** ist eine **eigene** Seite mit Tour & Prinzipien (`/willkommen`). Über `/einstellungen → Pseudonym & Session` legst du einen frei wählbaren Code an (z. B. `P01`). Erst danach werden Aufgaben und Logs unter diesem Pseudonym gespeichert.
 
 3. Über die Sidebar wechselst du zwischen den Hauptbereichen. Auf Mobile gibt es die untere Tab-Bar.
 
@@ -38,7 +39,7 @@ Dieses Dokument hat zwei Teile:
 
 ### Sprachparser (`/erstellen`)
 
-Du tippst frei deutsch und FluxPlan extrahiert daraus Datum, Zeit, Priorität, Tags und Dauer. Beispiele:
+Du tippst frei deutsch und FluxPlan extrahiert daraus Datum, Zeit, Priorität, Tags und Dauer. Beispiele: 
 
 - `morgen 9:30 für Studium 60 min` → Datum + Zeit + Liste + Dauer
 - `Fr 12.5. !hoch #recherche` → Datum + Priorität + Tag
@@ -116,7 +117,95 @@ Alternativ: Tab Personalisierung → **Heuristiken jetzt prüfen**.
 - **Export**: `/einstellungen → Export JSON` oder `Export CSV` (oder direkt `GET /api/export?format=json|csv`).
 - **Reset**: roter Knopf „Daten zurücksetzen" + Bestätigungsdialog. Löscht Aufgaben, Vorschläge, Logs und Präferenzen für das Pseudonym. Pseudonym selbst bleibt.
 
-## 1.9 Logging im Hintergrund (transparent)
+## 1.9 Demo-Setup, Rollen & Study Sheets (druckfertig)
+
+FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lange Eingabe** direkt sinnvolle Daten bekommen.
+
+### Rollen (Stories)
+
+- **Familienplanner**: kalendernah, Termine/Reminder, Konflikte im Wochenraster, häufiger Wechsel zwischen Heute und Kalender.
+- **Taskplanner**: aufgabengetrieben, Kategorien/Tags, Suche/Filter, Quick-Add und Sprachparser.
+- **Eval-Runner**: reproduzierbarer Feature-Check (Vorschläge, Konflikte, Export/Reset).
+
+### Demo-Button (UI)
+
+1. Study Session starten (z. B. Pseudonym `F01` / `T01` / `E01`).
+2. `/einstellungen` → Karte **„Demo-Setup“** → Rolle auswählen → **„Demo-Daten laden“**.
+
+Das lädt **genau 10 Aufgaben** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach eine Heuristik-Prüfung aus.
+
+### Demo-Endpoint (API)
+
+- `POST /api/data/demo`
+  - macht standardmäßig: **Reset → 10 Tasks + View-Events + Preferences → mehrere Engine-Evaluations → final evaluate auf `/heute`**
+  - optionaler Body:
+
+    ```json
+    { "role": "familienplanner" | "taskplanner" | "evalrunner", "resetFirst": true }
+    ```
+
+### Study Sheets (zum Ausdrucken)
+
+Die druckfertigen Aufgabenblätter liegen unter:
+
+- `docs/study-sheets/familienplanner.md`
+- `docs/study-sheets/taskplanner.md`
+- `docs/study-sheets/evalrunner.md`
+
+Jedes Sheet enthält:
+- 10 Aufgaben (damit die Person nicht erst Daten eintippen muss)
+- einen kurzen Ablauf (8–15 Minuten), um Features gezielt zu triggern
+
+### Seed-Testuser (10–15 Pseudonyme)
+
+Für schnelle Tests erzeugt das Prisma-Seed aktuell 15 Pseudonyme:
+
+- `F01–F05` (Familienplanner)
+- `T01–T05` (Taskplanner)
+- `E01–E05` (Eval-Runner)
+
+Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), damit sie sich nicht gegenseitig überschreiben.
+
+### Während des Testens zurücksetzen (empfohlener Ablauf)
+
+**Nur der aktuell eingeloggte Pseudonym-User** (dein Browser nach „Session starten“):
+
+- `/einstellungen → Daten zurücksetzen` — löscht Aufgaben, Interaktionen, Vorschläge und Präferenzen; **Pseudonym bleibt**.
+- Oder erneut **„Demo-Daten laden“** — macht intern ebenfalls einen Reset und legt die 10 Rollen-Aufgaben plus Trigger-Daten neu an (schneller Weg „frischer Zustand“).
+
+**Alle 15 Seed-Testuser auf einmal** (wenn mehrere Personen an `F01`–`E05` getestet haben und die DB wieder sauber sein soll):
+
+1. Im Ordner `fluxplan/` mit gültiger `DATABASE_URL` (wie bei Prisma):
+   ```bash
+   npm run reset:test-users
+   npm run prisma:seed
+   ```
+2. `reset:test-users` **löscht die User** `F01`–`F05`, `T01`–`T05`, `E01`–`E05` inkl. aller zugehörigen Daten (Cascade). `prisma:seed` legt sie mit den Standard-10-Aufgaben pro Rolle neu an.
+
+Liste der Pseudonyme im Code: `src/lib/demo/test-pseudonyms.ts`.
+
+### Admin in der Oberfläche (alle Demo-Testuser zurücksetzen)
+
+Für die Studie brauchst du manchmal **kein Terminal**: ein **Admin-Pseudonym** sieht in `/einstellungen` eine gelbe Karte **„Admin: Demo-Testuser“**.
+
+1. In `.env` bzw. Docker (`docker-compose.yml`) setzen: `FLUXPLAN_ADMIN_PSEUDONYMS` — Standard ist **`admin`** (ein Eintrag reicht; mehrere möglich, kommagetrennt). Der Vergleich ist **case-insensitive** (`Admin` und `ADMIN` sind dasselbe).
+2. App neu starten (damit die Variable geladen wird).
+3. Unter `/einstellungen → Pseudonym & Session` als Pseudonym z. B. **`admin`** eintragen und **Session starten**.
+4. Karte **„Alle Demo-Testuser zurücksetzen“** öffnen und `RESET_DEMO_USERS` eintippen.
+
+Das löscht nur `F01`–`F05`, `T01`–`T05`, `E01`–`E05` und legt sie wie beim Seed neu an. **Dein Admin-Konto bleibt.**
+
+Backend: `POST /api/data/reset-demo-users` mit Body `{ "confirm": "RESET_DEMO_USERS" }` (nur wenn eingeloggt und Admin-Pseudonym).
+
+### Session beenden (Abmelden / User wechseln)
+
+- In `/einstellungen` gibt es den Button **„Session beenden“** (oben in der Session-Karte und bei „Study Session“). Er löscht die httpOnly-Cookies — du bist dann **kein eingeloggter User** mehr.
+- Danach kannst du ein anderes Pseudonym starten (z. B. wieder `admin` oder `F01`).
+- **Ohne Session** liefern viele Seiten leere Daten oder keine persönlichen Aufgaben (API antwortet mit 401). Zum Arbeiten mit Daten immer zuerst eine Session starten.
+
+Technisch: `POST /api/study/logout`.
+
+## 1.10 Logging im Hintergrund (transparent)
 
 Alle wichtigen Interaktionen werden mitgeschrieben (in `TaskInteraction` oder `EventLog`):
 
@@ -129,7 +218,7 @@ Alle wichtigen Interaktionen werden mitgeschrieben (in `TaskInteraction` oder `E
 
 Der Export liefert genau diese Tabellen — kein zusätzliches Tracking, kein externer Service.
 
-## 1.10 Tastatur-Shortcuts
+## 1.11 Tastatur-Shortcuts
 
 | Taste | Wirkung |
 | --- | --- |
@@ -188,6 +277,7 @@ Die Library setzt nur die Klasse `.dark` (oder entfernt sie) auf das `<html>`-El
   2. `prisma migrate` — verwandelt das Schema in echte SQL-Migrations und führt sie auf der DB aus.
   3. `@prisma/client` — der TypeScript-Client. Damit schreiben wir z. B. `prisma.task.findMany({ where: { userId } })` ohne SQL.
 - **Seed**: `prisma/seed.ts` füllt die DB mit Beispiel-Daten (User, Aufgaben, Vorschläge). Beim ersten Start im Container wird das automatisch ausgeführt.
+  - Zusätzlich werden 10–15 Test-Pseudonyme (`Fxx`, `Txx`, `Exx`) mit je 10 Aufgaben angelegt, um Features schnell prüfen zu können.
 
 ## 2.5 Auth: HTTP-only Cookies, kein OAuth
 
@@ -266,6 +356,7 @@ src/
     db/prisma.ts          # Prisma Singleton
     auth/                 # Cookie- und User-Helper
     adaptive/             # Engine + Regeln + EngineConfig
+    demo/                 # Rollen-Definitionen für Demo/Seed (je Rolle 10 Tasks)
     parser/               # Sprachparser für /erstellen
     hooks/                # useKeyboardShortcuts
     ui/                   # Kategorie-Helper
@@ -276,6 +367,7 @@ prisma/
 docs/
   DOKUMENTATION.md        # diese Datei
   NEXT_PROMPT.md          # ursprünglicher Bauplan
+  study-sheets/           # druckfertige Rollen-Sheets (10 Tasks + Ablauf)
 docker-compose.yml        # db + app
 Dockerfile                # Container für die App
 ```
@@ -335,7 +427,193 @@ In `src/lib/hooks/use-shortcuts.ts` in `useGlobalNavigationShortcuts` einen Eint
 | Prisma-Fehler `did not initialize yet` | `npx prisma generate` (oder Container neu bauen) |
 | „Theme" wechselt nicht | Hard-Reload (`Strg+Shift+R`), `localStorage` ggf. leeren |
 | Vorschläge erscheinen nie | Eingriffsstufe ≥ 1 prüfen, Master-Toggle an, Tab Personalisierung → „Heuristiken jetzt prüfen" |
+| Demo-Button meldet „unauthorized“ | Erst eine Study Session starten (`/einstellungen → Pseudonym & Session`), dann Demo laden |
 | Build-Warnung über Lockfile | Im `next.config.ts` `turbopack.root` setzen oder lockfile in `C:\Users\janse\` löschen |
+| `npm run build` bricht mit doppelten `export`/`POST` in einer Route | Route-Datei auf **eine** Implementierung prüfen (z. B. Merge-Artefakt); siehe Historie „Demo-Route“ unten |
+
+---
+
+# Teil 3 · Architektur & Projektentwicklung
+
+Dieser Teil ist für die **Bachelorarbeit** gedacht: Architektur begründen, Abweichungen von der ursprünglichen Spezifikation (`docs/NEXT_PROMPT.md`) erklären und nachvollziehbar machen, **wie** sich das Projekt durch Feedback und technische Notwendigkeiten weiterentwickelt hat.
+
+## 3.1 Architekturüberblick (Systemkontext)
+
+FluxPlan ist ein **Web-Prototyp** mit klarer Trennung: Browser (UI), **eine** Node-Anwendung (Next.js), **eine** relationale Datenbank (PostgreSQL). Es gibt **keinen** separaten Microservice-Stack, kein externes LLM-Backend und kein Third-Party-Analytics-Produkt — bewusst, um **Erklärbarkeit** und **kontrollierte Evaluation** zu sichern.
+
+```mermaid
+flowchart LR
+  subgraph client [Browser]
+    UI[React_UI]
+  end
+  subgraph server [Nextjs_App]
+    Pages[AppRouter_Pages]
+    Api[RouteHandlers_API]
+    Engine[AdaptiveEngine]
+  end
+  subgraph data [Datenhaltung]
+    PG[(PostgreSQL)]
+  end
+  UI -->|HTTP| Pages
+  UI -->|fetch_JSON| Api
+  Api --> Engine
+  Api --> PG
+  Engine --> PG
+```
+
+**Lesart:** Nutzerinteraktionen laufen über React-Komponenten; schreibende/lesende Fachlogik liegt in `route.ts`-Handlern; die **Adaptive Engine** ist eine **reine Server-Logik** (Heuristiken), die auf derselben Datenbank operiert.
+
+## 3.2 Schichtenmodell (Code-Organisation)
+
+| Schicht | Rolle | Typische Pfade |
+| --- | --- | --- |
+| Präsentation | Screens, Layout, Formulare, Kalender | `src/app/(app)/*/page.tsx`, `src/components/**` |
+| API-Grenze | Validierung (Zod), Auth, Orchestrierung | `src/app/api/**/route.ts` |
+| Domänenlogik | Parser, Demo-/Seed-Hilfen, Admin-Hilfen | `src/lib/parser`, `src/lib/demo`, `src/lib/admin` |
+| Adaptivität | Regeln, Konfiguration, Engine-Schleife | `src/lib/adaptive/**` |
+| Persistenz | Schema, Migrationen, Seed | `prisma/schema.prisma`, `prisma/migrations`, `prisma/seed.ts` |
+
+```mermaid
+flowchart TB
+  subgraph presentation [Presentation]
+    Shell[AppShell]
+    Screens[Heute_Aufgaben_Kalender_etc]
+  end
+  subgraph api [API_Layer]
+    TasksAPI["/api/tasks"]
+    EvalAPI["/api/adaptive/evaluate"]
+    DemoAPI["/api/data/demo"]
+    ResetAPI["/api/data/reset"]
+  end
+  subgraph domain [Domain]
+    Parser[task_parser]
+    DemoSeed[seed_demo_test_users]
+    Admin[is_admin_pseudonym]
+  end
+  subgraph adaptive [Adaptive_Layer]
+    Config[engineConfig]
+    Rules[rules_*]
+    Loop[adaptiveEngine]
+  end
+  subgraph db [Persistence]
+    Prisma[PrismaClient]
+  end
+  Shell --> Screens
+  Screens --> TasksAPI
+  Screens --> EvalAPI
+  Screens --> DemoAPI
+  TasksAPI --> Prisma
+  EvalAPI --> Loop
+  DemoAPI --> DemoSeed
+  DemoAPI --> Loop
+  ResetAPI --> Prisma
+  Loop --> Rules
+  Loop --> Config
+  Loop --> Prisma
+  Parser --> TasksAPI
+  DemoSeed --> Prisma
+```
+
+## 3.3 Datenfluss: Session, Aufgabe, Vorschlag (vereinfacht)
+
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant S as StudySession_API
+  participant T as Tasks_API
+  participant E as Evaluate_API
+  participant DB as Postgres
+
+  B->>S: POST_pseudonym_variant
+  S->>DB: upsert_User_create_Session
+  S-->>B: Set_httpOnly_cookies
+
+  B->>T: GET_tasks
+  T->>DB: findMany_Task
+  T-->>B: tasks_JSON
+
+  B->>E: POST_screen_metadata
+  E->>DB: load_prefs_rules_history
+  E->>DB: maybe_create_Suggestion
+  E-->>B: createdCount_ruleKeys
+```
+
+**Wichtig für die Arbeit:** Cookies sind **httpOnly** — der Browser-JS-Code kann die User-ID nicht lesen; nur der Server verarbeitet sie (`requireUserId`). Das ist eine bewusste **Sicherheits-/Einfachheitsentscheidung** für einen Studienprototyp (kein OAuth, kein Passwort-Reset-Flow).
+
+## 3.4 Geplante vs. durchgesetzte Architekturentscheidungen
+
+Die folgende Tabelle bezieht sich auf die **Leitidee** aus `docs/NEXT_PROMPT.md` (Mockup-genaue, ruhige UX; Adaptivität als zweite Schicht; Evaluation über Logs/Export) und darauf, was im **Ist-Code** prioritär umgesetzt wurde. „Geplant“ = Spezifikation/Mockup-Prompt; „Durchgesetzt“ = tragfähige technische Umsetzung im Repository.
+
+| Thema | Geplant / Zielbild | Durchgesetzt / Ist | Begründung (kurz) |
+| --- | --- | --- | --- |
+| Gesamtstack | Next.js + TS + Prisma + Postgres + Docker | Entsprechend umgesetzt | Ein Stack, ein Repo, gut erklärbar; passt zu „Prototyp für Evaluation“. |
+| Adaptivität | Heuristiken, keine Black-Box, Nutzerkontrolle | Regeln in `src/lib/adaptive/rules/*`, Vorschläge in DB, Responses über API | Transparenz: jede Regel ist lesbarer Code; keine LLM-Abhängigkeit. |
+| Auth | Pseudonym + Session, kein echtes Login | Cookies `fp_userId` / `fp_sessionId`, `requireUserId()` | Minimaler Aufwand; Trennung der Teilnehmer über Pseudonym; Session für Export/Logs. |
+| Routing | Deutsche Pfade, Redirects von alten englischen URLs | `/(app)/heute` etc., Redirects wo nötig | Konsistente IA für deutschsprachige Mockups. |
+| Kalender | Leichtgewichtige Planung, Konflikte sichtbar | Wochenraster + Konfliktlogik + Detailkarten (Weiterentwicklung im Projektverlauf) | Fokus auf **Transparenz** statt automatischer Planung. |
+| Demo & Studie | Reproduzierbare Szenarien | Rollen (`familienplanner`, `taskplanner`, `evalrunner`), je 10 Tasks, `POST /api/data/demo`, Seed-User, Study-Sheets `.md` | Ohne Demo-Daten wäre Evaluation fragil; Sheets sind **druckbar** für Probanden. |
+| Admin / Reset | Nicht zwingend in NEXT_PROMPT | Admin-Pseudonym via `FLUXPLAN_ADMIN_PSEUDONYMS`, `reset-demo-users`, CLI `reset:test-users` | Praxisbedarf: zwischen Testläufen **schnell** konsistente DB-Zustände herstellen. |
+| Logout / User-Wechsel | Nicht explizit im alten Prompt | `POST /api/study/logout`, UI „Session beenden“ | Ohne Logout ist Multi-User-Testing am selben Rechner unnötig frickelig. |
+| Build / Qualität | Stabiler Prototyp | `npm run lint`; `npm run build` soll grün sein | „Buildfähiger Prototyp“ ist in Verteidigung/Paper verteidigbar. |
+
+**Hinweis:** Einzelne **Mockup-Details** aus `NEXT_PROMPT.md` (z. B. Umfang des CSV-Exports, `seenWelcome`-Redirect, Tablet-Sidebar-Modus) können **noch offen** oder nur teilweise umgesetzt sein — das ist **normal** bei einem iterativen Prototyp; wichtig ist, im Text klar zu sagen: *Was ist MVP? Was ist Nice-to-have? Was kommt aus Feedback?*
+
+## 3.5 Projekt- und Feedback-Chronik (detailliert)
+
+Die Chronik fasst **projektinterne** und **nutzergetriebene** Änderungen zusammen — in der Thesis kannst du daraus z. B. einen Unterpunkt „Iterative Weiterentwicklung“ oder „Design-Korrekturen nach Formativevaluation“ machen.
+
+### Phase A – Ausgangslage und Spezifikation
+
+- **Ausgangspunkt:** Bachelor-Prototyp „FluxPlan“ mit Fokus **human-centered adaptive** Planung: Basis-UI zuerst, Adaptivität als erklärbare Schicht (`docs/NEXT_PROMPT.md` als Mockup-/Akzeptanzreferenz).
+- **Architekturentscheidung:** Monolith Next.js + Postgres statt getrenntem Backend — geringe operative Komplexität, klare Zuordnung von UI und API im selben Repo.
+
+### Phase B – Nutzerfeedback (UI/Studie) und Konsequenzen
+
+Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **technische Konsequenz** ist jeweils skizziert:
+
+1. **Baseline / Adaptive wirken wie zwei Primär-Buttons**  
+   - **Problem:** Visuelle Hierarchie suggeriert zwei gleichwertige „Hauptaktionen“.  
+   - **Konsequenz:** Auswahl der Studienvariante soll **sekundär** wirken (Outline/`aria-pressed`); die eigentliche Primäraktion bleibt „Session starten“ (`SessionCodeInput`).
+
+2. **„Erstellen“ als eigene Hauptnavigation wirkt verwirrend**  
+   - **Problem:** Informationsarchitektur: Nutzer erwarten Erstellung eher **kontextuell** (Heute/Aufgaben) als gleichrangigen Hauptpunkt.  
+   - **Konsequenz:** IA überdenken bzw. in der Nav **nicht** als „Primary“ hervorheben (AppShell); Kalender bekam u. a. einen klaren CTA „Zeitblock erstellen“ Richtung `/erstellen`.
+
+3. **Eingriffsstufe (0–3): Benennung und Verständlichkeit**  
+   - **Problem:** Begriffe wie „Aus / leise / aktiv“ allein reichen nicht oder wirken uneinheitlich gegenüber vier Stufen.  
+   - **Konsequenz:** Vier Stufen **beibehalten** (Engine-Schwellen unverändert), UI-Texte zentral in `src/lib/settings/intervention-levels.ts`: **Aus / Leicht / Mittel / Viel**; Master-Schalter (`adaptive.enabled`) vs. Stufe „Aus“ (`interventionLevel === 0`) in den Hilfetexten getrennt.
+
+4. **Story-Rollen: Familienplanner vs. Taskplanner (+ Eval)**  
+   - **Ziel:** Unterschiedliche Aufgaben-Sets, um **Konflikte**, **Reminder-Muster**, **Listen/Filter** und **Adaptivität** gezielt zu triggern.  
+   - **Konsequenz:** Drei Rollen mit **je 10 Tasks** in `src/lib/demo/roles/*.ts`, zentral über `getDemoRole`/`roleFromPseudonym`; **druckbare** Study-Sheets unter `docs/study-sheets/*.md`; Seed legt **15 Pseudonyme** (`Fxx`, `Txx`, `Exx`) an.
+
+5. **Demo: Daten setzen und Engine sofort prüfen**  
+   - **Ziel:** Kein „Warten auf Zufall“ — nach Laden der Demo soll evaluierbar sein.  
+   - **Konsequenz:** `POST /api/data/demo` mit Reset-Option, View-Events, Preferences und **mehreren** `runAdaptiveEngine`-Aufrufen; UI-Button unter Einstellungen.
+
+6. **Kalender: Raumnutzung, Konflikte, Ungeplant**  
+   - **Feedback:** Volle Breite, Konflikte verständlicher; „Heute“ bei ungeplanten Aufgaben soll **Bearbeiten** öffnen.  
+   - **Konsequenz:** Shell/Breakpoints und Kalender-UX weiterentwickelt; Ungeplant-Liste mit **Heute** (Dialog) vs. **Planen** (Zeit setzen) differenziert; Konflikt-Karten detaillierter.
+
+7. **Admin und Multi-Tester-Reset**  
+   - **Bedarf:** Zwischen Probanden wieder **definierte** DB-Zustände ohne manuelle SQL-Arbeit.  
+   - **Konsequenz:** Admin-Pseudonym (`FLUXPLAN_ADMIN_PSEUDONYMS`, Standard `admin`), UI „Alle Demo-Testuser zurücksetzen“ (`POST /api/data/reset-demo-users`), CLI `npm run reset:test-users` + `prisma:seed`.
+
+8. **Session beenden / Pseudonym wechseln**  
+   - **Bedarf:** Gleicher Rechner, mehrere Rollen — ohne Cookie-Chaos.  
+   - **Konsequenz:** `POST /api/study/logout`, Button „Session beenden“ in Session-UI.
+
+### Phase C – Technische Korrekturen (Qualitätssicherung)
+
+- **Build-Fehler in `src/app/api/data/demo/route.ts`:** Durch ein **Duplikat** (zweiter Import-Block, zweites `DemoSchema`, zweite `POST`-Funktion) schlug `npm run build` fehl.  
+  - **Fix:** Datei auf **eine** konsistente Implementierung reduziert (Rollen-Demo mit `getDemoRole`).  
+- **TypeScript-Strikte:** `eventLogMetadata` und `tags` (readonly vs. Prisma `string[]`) angepasst, damit `next build` / `tsc` zuverlässig grün sind.
+
+### Wie du das in der Thesis formulieren kannst (Vorschlag)
+
+- **Architektur:** „Wir wählen einen monolithischen Next.js-Prototyp mit Prisma/Postgres, weil Erklärbarkeit und Evaluation im Vordergrund stehen.“  
+- **Iteration:** „Die Architektur blieb stabil; Anpassungen betrafen überwiegend **UX/IA**, **Studienprozeduren** (Demo/Sheets/Reset) und **Defensive Coding** (Auth-Logout, Admin-Reset, Build-Fixes).“  
+- **Abgrenzung:** „Nicht jede Zeile in `NEXT_PROMPT.md` ist umgesetzt; der Prototyp priorisiert **MVP für Evaluation** über vollständige Mockup-Pixelgenauigkeit.“
 
 ---
 
@@ -351,6 +629,7 @@ docker compose down
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
+npm run reset:test-users   # nur die 15 Demo-Pseudonyme löschen; danach prisma:seed
 npm run prisma:studio
 
 # Code-Qualität

@@ -24,6 +24,7 @@ services:
       NEXT_PUBLIC_APP_NAME: FluxPlan
       STUDY_MODE_ENABLED: "true"
       DATABASE_URL: postgresql://fluxplan:fluxplan@db:5432/fluxplan?schema=public
+      FLUXPLAN_ADMIN_PSEUDONYMS: admin
     ports:
       - "3000:3000"
     depends_on:

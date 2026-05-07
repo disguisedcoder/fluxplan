@@ -24,13 +24,21 @@ export function TaskFormDialog({
   initial,
   triggerLabel,
   onSaved,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger,
 }: {
   mode: "create" | "edit";
   initial?: Task;
   triggerLabel: string;
   onSaved?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = controlledOnOpenChange ?? setUncontrolledOpen;
   const [submitting, setSubmitting] = useState(false);
 
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -82,11 +90,11 @@ export function TaskFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={<Button variant={mode === "create" ? "default" : "outline"} />}
-      >
-        {triggerLabel}
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger render={<Button variant={mode === "create" ? "default" : "outline"} />}>
+          {triggerLabel}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Neue Aufgabe" : "Aufgabe bearbeiten"}</DialogTitle>

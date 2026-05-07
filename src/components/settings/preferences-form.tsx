@@ -8,13 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { InterventionLevelSlider } from "./intervention-level-slider";
 import { DataResetButton } from "./data-reset-button";
 import { EventLogExportButton } from "@/components/study/event-log-export-button";
-
-const LEVELS = [
-  { value: 0, label: "Aus", desc: "Keine adaptiven Vorschläge." },
-  { value: 1, label: "Leise", desc: "Nur sehr seltene, eindeutige Vorschläge." },
-  { value: 2, label: "Aktiv", desc: "Standard. Vorschläge bei klaren Mustern." },
-  { value: 3, label: "Eng", desc: "Häufiger, alle bleiben erklärbar und reversibel." },
-];
+import { DemoSeedButton } from "./demo-seed-button";
+import { AdminResetDemoUsersCard } from "./admin-reset-demo-users-card";
+import {
+  INTERVENTION_LEVELS,
+  readInterventionLevel,
+  readPreferenceBool,
+  clampInterventionLevel,
+} from "@/lib/settings/intervention-levels";
 
 type Preferences = Record<string, unknown>;
 
@@ -52,8 +53,8 @@ export function PreferencesForm() {
     }
   }
 
-  const adaptiveEnabled = readBool(prefs["adaptive.enabled"], true);
-  const level = readNumber(prefs["adaptive.interventionLevel"], 2);
+  const adaptiveEnabled = readPreferenceBool(prefs["adaptive.enabled"], true);
+  const level = readInterventionLevel(prefs["adaptive.interventionLevel"], 2);
 
   return (
     <div className="space-y-4">
@@ -77,13 +78,17 @@ export function PreferencesForm() {
           <div className="space-y-2 border-t border-border/60 pt-4">
             <div className="text-sm font-semibold tracking-tight">Eingriffsstufe</div>
             <p className="text-xs text-muted-foreground">
-              Bestimmt, wie schnell ein Vorschlag erscheint. „Aus“ deaktiviert ihn vollständig.
+              Steuert die Sensitivität der Heuristiken. „Aus“ unterbindet neue Vorschläge auf
+              Engine-Ebene; der Schalter oben schaltet die gesamte adaptive Ebene inkl. Karten
+              und Banner ab (Verlauf bleibt sichtbar).
             </p>
             <InterventionLevelSlider
               value={level}
-              levels={LEVELS}
+              levels={[...INTERVENTION_LEVELS]}
               disabled={busy || !adaptiveEnabled}
-              onChange={(v) => update("adaptive.interventionLevel", v)}
+              onChange={(v) =>
+                update("adaptive.interventionLevel", clampInterventionLevel(v))
+              }
             />
           </div>
         </CardContent>
@@ -104,6 +109,20 @@ export function PreferencesForm() {
         </CardContent>
       </Card>
 
+      <AdminResetDemoUsersCard />
+
+      <Card className="fp-card">
+        <CardContent className="space-y-3 p-5">
+          <div>
+            <div className="text-sm font-semibold tracking-tight">Demo-Setup</div>
+            <p className="text-xs text-muted-foreground">
+              Lädt pro Rolle genau 10 Aufgaben (inkl. Konflikte/Trigger) und prüft die Heuristiken sofort.
+            </p>
+          </div>
+          <DemoSeedButton onDone={load} />
+        </CardContent>
+      </Card>
+
       <Card className="fp-card border-destructive/30 bg-destructive/[0.04]">
         <CardContent className="space-y-3 p-5">
           <div>
@@ -120,20 +139,3 @@ export function PreferencesForm() {
   );
 }
 
-function readBool(v: unknown, fallback: boolean): boolean {
-  if (typeof v === "boolean") return v;
-  if (typeof v === "object" && v !== null && "value" in v) {
-    const inner = (v as { value?: unknown }).value;
-    if (typeof inner === "boolean") return inner;
-  }
-  return fallback;
-}
-
-function readNumber(v: unknown, fallback: number): number {
-  if (typeof v === "number") return v;
-  if (typeof v === "object" && v !== null && "value" in v) {
-    const inner = (v as { value?: unknown }).value;
-    if (typeof inner === "number") return inner;
-  }
-  return fallback;
-}

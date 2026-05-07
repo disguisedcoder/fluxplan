@@ -1,0 +1,123 @@
+import type { PrismaClient } from "@prisma/client";
+import { TaskPriority, TaskStatus } from "@prisma/client";
+
+import { getDemoRole, roleFromPseudonym } from "./index";
+import { DEMO_TEST_PSEUDONYMS } from "./test-pseudonyms";
+
+export async function ensureAdaptiveRules(prisma: PrismaClient) {
+  await prisma.adaptiveRule.createMany({
+    data: [
+      {
+        key: "view_preference",
+        name: "Ansichtspräferenz",
+        description:
+          "Schlägt vor, eine häufig genutzte Ansicht als Startansicht zu setzen.",
+        enabled: true,
+      },
+      {
+        key: "reminder_preference",
+        name: "Reminder-Präferenz",
+        description:
+          "Schlägt bei ähnlichen Aufgaben einen Reminder vor, wenn du das oft tust.",
+        enabled: true,
+      },
+      {
+        key: "daily_focus",
+        name: "Fokusvorschlag",
+        description:
+          "Schlägt beim Öffnen der Heute-Ansicht Fokus-Aufgaben vor (ohne automatisch zu priorisieren).",
+        enabled: true,
+      },
+      {
+        key: "calendar_conflict",
+        name: "Kalender-Konflikthinweis",
+        description:
+          "Weist auf mögliche Konflikte mit geplanten Zeitfenstern hin (keine automatische Verschiebung).",
+        enabled: true,
+      },
+      {
+        key: "adaptive_task_creation",
+        name: "Adaptives Aufgabenformular",
+        description:
+          "Hält das Formular zuerst einfach und schlägt Zusatzfelder als Chips vor.",
+        enabled: true,
+      },
+    ],
+    skipDuplicates: true,
+  });
+}
+
+export async function seedDemoTestUsers(prisma: PrismaClient, now = new Date()) {
+  for (const pseudonym of DEMO_TEST_PSEUDONYMS) {
+    const user = await prisma.user.upsert({
+      where: { pseudonym },
+      update: {},
+      create: { pseudonym, studyModeEnabled: true },
+      select: { id: true, pseudonym: true },
+    });
+
+    await prisma.$transaction([
+      prisma.eventLog.deleteMany({ where: { userId: user.id } }),
+      prisma.studySession.deleteMany({ where: { userId: user.id } }),
+      prisma.adaptiveSuggestion.deleteMany({ where: { userId: user.id } }),
+      prisma.taskInteraction.deleteMany({ where: { userId: user.id } }),
+      prisma.task.deleteMany({ where: { userId: user.id } }),
+      prisma.userPreference.deleteMany({ where: { userId: user.id } }),
+    ]);
+
+    const def = getDemoRole(roleFromPseudonym(pseudonym), now);
+
+    await prisma.userPreference.createMany({
+      data: [
+        { userId: user.id, key: "adaptive.enabled", value: { value: true } },
+        { userId: user.id, key: "adaptive.interventionLevel", value: { value: 2 } },
+      ],
+      skipDuplicates: true,
+    });
+
+    await prisma.task.createMany({
+      data: def.tasks.map((t) => ({
+        userId: user.id,
+        title: `${pseudonym}: ${t.title}`,
+        status: TaskStatus.open,
+        priority: (t.priority ?? "medium") as TaskPriority,
+        dueDate: t.dueDate ?? null,
+        reminderAt: t.reminderAt ?? null,
+        listName: t.listName ?? null,
+        tags: [...(t.tags ?? [])],
+        estimatedMinutes: t.estimatedMinutes ?? null,
+      })),
+      skipDuplicates: true,
+    });
+
+    await prisma.studySession
+      .create({
+        data: {
+          userId: user.id,
+          sessionCode: `S-${pseudonym}-${now.toISOString().replaceAll(":", "").replaceAll("-", "").slice(0, 15)}`,
+          variant: "adaptive",
+          notes: `Seed-Testuser (${def.key})`,
+        },
+      })
+      .catch(() => {});
+
+    if (def.viewEvents?.length) {
+      await prisma.taskInteraction.createMany({
+        data: def.viewEvents.map((e, idx) => ({
+          userId: user.id,
+          type: "view_changed",
+          metadata: { from: e.from ?? null, to: e.to, source: "seed", order: idx },
+        })),
+      });
+    }
+
+    await prisma.eventLog.create({
+      data: {
+        userId: user.id,
+        eventType: "seed_initialized",
+        screen: "system",
+        metadata: { role: def.key, tasksCreated: def.tasks.length },
+      },
+    });
+  }
+}

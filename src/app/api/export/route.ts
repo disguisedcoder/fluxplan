@@ -38,20 +38,52 @@ export async function GET(req: Request) {
     ]);
 
     if (format === "csv") {
-      const rows = eventLogs.map((e) => ({
-        id: e.id,
-        userId: e.userId,
-        sessionId: e.sessionId,
-        eventType: e.eventType,
-        screen: e.screen,
-        createdAt: e.createdAt.toISOString(),
-        metadata: e.metadata,
-      }));
+      const rows: Record<string, unknown>[] = [
+        ...eventLogs.map((e) => ({
+          recordType: "event",
+          id: e.id,
+          userId: e.userId,
+          sessionId: e.sessionId,
+          eventType: e.eventType,
+          screen: e.screen,
+          createdAt: e.createdAt.toISOString(),
+          metadata: e.metadata,
+        })),
+        ...tasks.map((t) => ({
+          recordType: "task",
+          id: t.id,
+          userId: t.userId,
+          title: t.title,
+          status: t.status,
+          priority: t.priority,
+          dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+          reminderAt: t.reminderAt ? t.reminderAt.toISOString() : null,
+          listName: t.listName,
+          tags: t.tags,
+          estimatedMinutes: t.estimatedMinutes,
+          createdAt: t.createdAt.toISOString(),
+          completedAt: t.completedAt ? t.completedAt.toISOString() : null,
+        })),
+        ...suggestions.map((s) => ({
+          recordType: "suggestion",
+          id: s.id,
+          userId: s.userId,
+          ruleKey: s.ruleKey,
+          type: s.type,
+          status: s.status,
+          title: s.title,
+          explanation: s.explanation,
+          payload: s.payload,
+          createdAt: s.createdAt.toISOString(),
+          respondedAt: s.respondedAt ? s.respondedAt.toISOString() : null,
+        })),
+      ];
+
       const csv = toCsv(rows);
       return new NextResponse(csv, {
         headers: {
           "content-type": "text/csv; charset=utf-8",
-          "content-disposition": "attachment; filename=\"fluxplan-eventlog.csv\"",
+          "content-disposition": "attachment; filename=\"fluxplan-export.csv\"",
         },
       });
     }

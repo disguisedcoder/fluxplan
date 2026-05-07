@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const PRINCIPLE_TAGS = [
@@ -34,6 +38,40 @@ const SAMPLE_TODAY = [
 ] as const;
 
 export function OnboardingHero() {
+  const router = useRouter();
+
+  async function markSeenAndGo() {
+    await fetch("/api/preferences", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key: "seenWelcome", value: true }),
+    }).catch(() => {});
+    router.push("/start");
+    router.refresh();
+  }
+
+  async function loadDemo(storyKey: "family" | "task") {
+    const res = await fetch("/api/data/demo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ storyKey }),
+    });
+    if (res.status === 401) {
+      toast.error("Bitte starte zuerst eine Study Session.", {
+        description: "Du findest den Einstieg unter „Einstellungen“.",
+      });
+      router.push("/einstellungen");
+      return;
+    }
+    if (!res.ok) {
+      toast.error("Demo-Daten konnten nicht geladen werden.");
+      return;
+    }
+    toast.success("Demo-Daten geladen.");
+    router.push("/start");
+    router.refresh();
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
       <Card className="fp-card">
@@ -75,18 +113,30 @@ export function OnboardingHero() {
           </ul>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Link
-              href="/heute"
-              className={buttonVariants({ size: "lg" })}
-            >
+            <Button size="lg" onClick={markSeenAndGo}>
               Erste Schritte
-            </Link>
-            <Link
-              href="/heute"
-              className={buttonVariants({ variant: "ghost" })}
-            >
+            </Button>
+            <Button variant="ghost" onClick={markSeenAndGo}>
               Ohne Tour
+            </Button>
+            <Link href="/einstellungen" className={buttonVariants({ variant: "outline" })}>
+              Pseudonym setzen
             </Link>
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+            <div className="text-sm font-semibold tracking-tight">Demo-Story</div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Lädt Beispielaufgaben und prüft die Adaptivität sofort.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => loadDemo("family")}>
+                Familienplanner
+              </Button>
+              <Button variant="outline" onClick={() => loadDemo("task")}>
+                Taskplanner
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

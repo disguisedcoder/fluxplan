@@ -18,7 +18,9 @@ FluxPlan ist ein **human-centered, adaptiver Aufgaben- und Planungs-Prototyp** m
 ## Routen (UI)
 | Pfad | Inhalt |
 | --- | --- |
-| `/start` | Onboarding-Hero (Welcome + Prinzipien) |
+| `/` | Weiterleitung auf `/start` |
+| `/start` | Weiterleitung auf die **Standardansicht** (`startView`, sonst `/heute`); ohne Willkommen → `/willkommen` |
+| `/willkommen` | Tour, Prinzipien, Demo (eigener Menüpunkt) |
 | `/heute` | Heute-Dashboard (Fokusliste, Agenda, Mini-Kalender, Schnellzugriff/Shortcuts) |
 | `/aufgaben` | Liste, Suche, Quickfilter, Sortierung, Kategorie-Gruppen |
 | `/kalender` | Wochen-Grid mit Konflikt-Markierung, ungeplante Aufgaben, freie Slots |

@@ -30,3 +30,10 @@ export async function setStudyCookies(input: { userId: string; sessionId: string
   });
 }
 
+/** Beendet die Study-Session im Browser (httpOnly-Cookies löschen). */
+export async function clearStudyCookies() {
+  const store = await cookies();
+  store.delete(FP_USER_ID_COOKIE);
+  store.delete(FP_SESSION_ID_COOKIE);
+}
+

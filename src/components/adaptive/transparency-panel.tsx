@@ -26,8 +26,19 @@ export function TransparencyPanel() {
     async function load() {
       try {
         const res = await fetch("/api/insights", { cache: "no-store" });
-        const j = (await res.json()) as Insights;
-        if (!cancelled) setData(j);
+        if (!res.ok) {
+          if (!cancelled) setData(null);
+          return;
+        }
+        const j = (await res.json()) as Partial<Insights>;
+        const hasShape = Boolean(
+          j &&
+            typeof j === "object" &&
+            (j as Insights).tasks &&
+            (j as Insights).suggestions &&
+            (j as Insights).engine,
+        );
+        if (!cancelled) setData(hasShape ? (j as Insights) : null);
       } catch {
         if (!cancelled) setData(null);
       } finally {

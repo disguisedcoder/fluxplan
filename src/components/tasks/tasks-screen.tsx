@@ -35,6 +35,29 @@ const QUICK_FILTERS: { id: Quick; label: string }[] = [
   { id: "no_date", label: "Ohne Datum" },
 ];
 
+/** Explizite Trigger-Labels — Base UI kann sonst den Rohwert (`due_asc`) anzeigen, wenn Items nicht gemountet sind. */
+const SORT_LABELS: Record<Sort, string> = {
+  due_asc: "Fällig (aufsteigend)",
+  due_desc: "Fällig (absteigend)",
+  priority: "Priorität",
+  created_desc: "Neu zuerst",
+  alpha: "A–Z",
+};
+
+const STATUS_LABELS: Record<Status, string> = {
+  all: "Alle",
+  open: "Offen",
+  done: "Erledigt",
+  archived: "Archiv",
+};
+
+const PRIORITY_LABELS: Record<Priority, string> = {
+  all: "Alle",
+  low: "Niedrig",
+  medium: "Mittel",
+  high: "Hoch",
+};
+
 export function TasksScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +158,12 @@ export function TasksScreen() {
             <div className="flex items-center gap-2">
               <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
                 <SelectTrigger className="w-[170px]">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v) =>
+                      typeof v === "string" && v in SORT_LABELS
+                        ? SORT_LABELS[v as Sort]
+                        : "Sortierung"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="due_asc">Fällig (aufsteigend)</SelectItem>
@@ -199,7 +227,12 @@ export function TasksScreen() {
                 <div className="text-xs text-muted-foreground">Status</div>
                 <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(v) =>
+                        typeof v === "string" && v in STATUS_LABELS
+                          ? STATUS_LABELS[v as Status]
+                          : "Status"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle</SelectItem>
@@ -214,7 +247,12 @@ export function TasksScreen() {
                 <div className="text-xs text-muted-foreground">Priorität</div>
                 <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(v) =>
+                        typeof v === "string" && v in PRIORITY_LABELS
+                          ? PRIORITY_LABELS[v as Priority]
+                          : "Priorität"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle</SelectItem>

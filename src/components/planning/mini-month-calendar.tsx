@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,9 +29,16 @@ export function MiniMonthCalendar({
   reference = new Date(),
   highlightedDates = [],
 }: MiniMonthCalendarProps) {
-  const { weeks, today, monthLabel, year } = useMemo(() => {
+  /** Nur nach Mount setzen — sonst weicht „heute“ zwischen SSR- und Client-Zeitzone ab (Hydration). */
+  const [todayStamp, setTodayStamp] = useState<number | null>(null);
+  useEffect(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    queueMicrotask(() => setTodayStamp(t.getTime()));
+  }, []);
+
+  const { weeks, monthLabel, year } = useMemo(() => {
     const ref = new Date(reference);
-    const today = new Date();
     const year = ref.getFullYear();
     const month = ref.getMonth();
     const monthLabel = MONTH_LABELS[month];
@@ -52,7 +59,7 @@ export function MiniMonthCalendar({
       weeks.push(cells.slice(i * 7, i * 7 + 7));
     }
 
-    return { weeks, today, monthLabel, year };
+    return { weeks, monthLabel, year };
   }, [reference]);
 
   const highlightSet = useMemo(() => {
@@ -85,15 +92,12 @@ export function MiniMonthCalendar({
       <div className="grid grid-cols-7 gap-y-1 text-sm">
         {weeks.flat().map((d, i) => {
           const isCurrentMonth = d.getMonth() === month;
-          const isToday =
-            d.getFullYear() === today.getFullYear() &&
-            d.getMonth() === today.getMonth() &&
-            d.getDate() === today.getDate();
           const stamp = (() => {
             const x = new Date(d);
             x.setHours(0, 0, 0, 0);
             return x.getTime();
           })();
+          const isToday = todayStamp !== null && stamp === todayStamp;
           const isHighlighted = highlightSet.has(stamp);
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 

@@ -2,10 +2,66 @@ import { prisma } from "@/lib/db/prisma";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 
+const SAMPLE = 24;
+
+type ViewTarget = {
+  id: string;
+  href: "/kalender" | "/aufgaben" | "/erstellen";
+  match: (to: string) => boolean;
+};
+
+const VIEW_TARGETS: ViewTarget[] = [
+  {
+    id: "calendar",
+    href: "/kalender",
+    match: (to) => to === "/kalender" || to === "/planning",
+  },
+  {
+    id: "tasks",
+    href: "/aufgaben",
+    match: (to) => to === "/aufgaben" || to === "/tasks",
+  },
+  {
+    id: "create",
+    href: "/erstellen",
+    match: (to) => to === "/erstellen",
+  },
+];
+
+function extractTo(metadata: unknown): string | null {
+  if (typeof metadata !== "object" || metadata === null) return null;
+  const to = (metadata as Record<string, unknown>).to;
+  return typeof to === "string" ? to : null;
+}
+
+function titleFor(href: ViewTarget["href"]): string {
+  switch (href) {
+    case "/kalender":
+      return "Kalender als Startansicht?";
+    case "/aufgaben":
+      return "Aufgabenliste als Startansicht?";
+    case "/erstellen":
+      return "Erstellen als Startansicht?";
+    default:
+      return "Startansicht anpassen?";
+  }
+}
+
+function explanationFor(href: ViewTarget["href"], count: number, sampleSize: number): string {
+  const where =
+    href === "/kalender"
+      ? "Kalender oder Planungsansicht"
+      : href === "/aufgaben"
+        ? "Aufgabenliste"
+        : "die Seite „Erstellen“";
+  return `Dieser Vorschlag erscheint, weil du in den letzten ${sampleSize} registrierten Ansichten ${count}× zu ${where} gewechselt bist — häufiger als zu den anderen vorgeschlagenen Bereichen.`;
+}
+
 export const viewPreferenceRule: AdaptiveRule = {
   key: "view_preference",
   name: "Ansichtspräferenz",
-  description: "Schlägt vor, eine häufig genutzte Ansicht als Startansicht zu setzen.",
+  description:
+    "Schlägt vor, die am häufigsten besuchte Kernansicht (Kalender, Aufgaben, Erstellen) als Startansicht zu setzen.",
   async evaluate(ctx) {
     if (!ctx.screen) return null;
 
@@ -18,30 +74,44 @@ export const viewPreferenceRule: AdaptiveRule = {
     const recent = await prisma.taskInteraction.findMany({
       where: { userId: ctx.userId, type: "view_changed" },
       orderBy: { createdAt: "desc" },
-      take: 12,
+      take: SAMPLE,
       select: { metadata: true },
     });
-
-    const planningCount = recent.filter((r) => {
-      const m = r.metadata as unknown;
-      if (typeof m !== "object" || m === null) return false;
-      const to = (m as Record<string, unknown>).to;
-      return to === "/kalender" || to === "/planning";
-    }).length;
 
     const baseThreshold = 4;
     const mult = ctx.config ? thresholdMultiplier(ctx.config) : 1;
     const threshold = Math.max(2, Math.ceil(baseThreshold * mult));
-    if (planningCount < threshold) return null;
 
+    const counts = VIEW_TARGETS.map((t) => ({
+      t,
+      count: recent.filter((r) => {
+        const to = extractTo(r.metadata);
+        return to !== null && t.match(to);
+      }).length,
+    }));
+
+    let winner: (typeof counts)[number] | null = null;
+    for (const row of counts) {
+      if (row.count < threshold) continue;
+      if (!winner || row.count > winner.count) winner = row;
+    }
+    if (!winner) return null;
+
+    const href = winner.t.href;
     return {
       ruleKey: "view_preference",
       type: "start_view",
-      title: "Kalenderansicht bevorzugen?",
-      explanation:
-        "Dieser Vorschlag erscheint, weil du in letzter Zeit häufig zur Kalenderansicht gewechselt hast.",
-      payload: { suggestedStartView: "/kalender", signal: { planningCount, sampleSize: recent.length } },
+      title: titleFor(href),
+      explanation: explanationFor(href, winner.count, recent.length),
+      payload: {
+        suggestedStartView: href,
+        signal: {
+          targetId: winner.t.id,
+          count: winner.count,
+          sampleSize: recent.length,
+          threshold,
+        },
+      },
     };
   },
 };
-
