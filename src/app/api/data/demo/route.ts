@@ -63,6 +63,11 @@ export async function POST(req: Request) {
 
     await ensureRules();
 
+    const session = sessionId
+      ? await prisma.studySession.findUnique({ where: { id: sessionId }, select: { variant: true } })
+      : null;
+    const isBaseline = session?.variant === "baseline";
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { pseudonym: true },
@@ -85,8 +90,20 @@ export async function POST(req: Request) {
 
     // Seed tasks + interactions + preferences (idempotent-ish by title + key).
     await prisma.$transaction(async (tx) => {
+      // Baseline must stay baseline: demo should not re-enable suggestions.
+      if (isBaseline) {
+        await tx.userPreference.upsert({
+          where: { userId_key: { userId, key: "adaptive.enabled" } },
+          update: { value: { value: false } as unknown as Prisma.InputJsonValue },
+          create: { userId, key: "adaptive.enabled", value: { value: false } as unknown as Prisma.InputJsonValue },
+        });
+      }
+
       if (def.preferences?.length) {
         for (const p of def.preferences) {
+          if (isBaseline && (p.key === "adaptive.enabled" || p.key === "adaptive.interventionLevel")) {
+            continue;
+          }
           const value =
             p.value === null || p.value === undefined
               ? null
@@ -150,7 +167,7 @@ export async function POST(req: Request) {
     });
     const idByTitle = new Map(tasks.map((t) => [t.title, t.id]));
 
-    const evaluations = def.evaluations ?? [];
+    const evaluations = isBaseline ? [] : (def.evaluations ?? []);
     const results = [];
     for (const ev of evaluations) {
       const taskId = ev.screen === "task_created" ? idByTitle.get(ev.taskTitle) : undefined;
@@ -163,12 +180,13 @@ export async function POST(req: Request) {
       results.push({ screen: ev.screen, taskTitle: ev.taskTitle, ...r });
     }
 
-    // Always one evaluate at /heute to populate focus/view suggestions.
-    const final = await runAdaptiveEngine({
-      userId,
-      screen: "/heute",
-      metadata: { trigger: "demo_seeded" },
-    });
+    const final = isBaseline
+      ? { createdCount: 0 }
+      : await runAdaptiveEngine({
+          userId,
+          screen: "/heute",
+          metadata: { trigger: "demo_seeded" },
+        });
 
     return NextResponse.json({
       ok: true,
@@ -176,6 +194,7 @@ export async function POST(req: Request) {
       createdTasks: def.tasks.length,
       evaluations: results,
       final,
+      baseline: isBaseline,
     });
   } catch (e: unknown) {
     if (isHttpError(e) && e.status === 401)

@@ -54,7 +54,7 @@ const MOBILE_NAV: NavItem[] = [
 
 type Me = {
   user: { pseudonym: string } | null;
-  session: { sessionCode: string } | null;
+  session: { sessionCode: string; variant?: string | null } | null;
   isAdmin?: boolean;
 };
 
@@ -88,6 +88,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const isBaseline = me?.session?.variant === "baseline";
+
   function toggleCompact() {
     setCompactSidebar((v) => {
       const next = !v;
@@ -111,6 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           me={me}
           compact={compactSidebar}
           onToggleCompact={toggleCompact}
+          isBaseline={isBaseline}
         />
         <main className="min-w-0 px-4 pb-24 pt-6 md:px-12 md:pb-10 md:pt-10 2xl:px-16">
           <div className="mx-auto w-full max-w-none">
@@ -119,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <MobileAppMenu />
-      <MobileBottomNav pathname={pathname} />
+      <MobileBottomNav pathname={pathname} isBaseline={isBaseline} />
     </div>
   );
 }
@@ -129,12 +132,15 @@ function BrandSidebar({
   me,
   compact,
   onToggleCompact,
+  isBaseline,
 }: {
   pathname: string;
   me: Me | null;
   compact: boolean;
   onToggleCompact: () => void;
+  isBaseline: boolean;
 }) {
+  const nav = isBaseline ? PRIMARY_NAV.filter((i) => i.href !== "/anpassungen") : PRIMARY_NAV;
   return (
     <aside className="hidden md:flex md:min-h-dvh md:flex-col md:border-r md:border-border/60 md:bg-sidebar/80 md:backdrop-blur">
       <div className={cn("flex items-center gap-2 pb-2 pt-7", compact ? "px-4" : "px-6")}>
@@ -158,13 +164,13 @@ function BrandSidebar({
 
       <nav className={cn("mt-6 flex-1", compact ? "px-2" : "px-4")}>
         <ul className="space-y-1">
-          {PRIMARY_NAV.map((item) => (
+          {nav.map((item) => (
             <SidebarItem key={item.href} item={item} pathname={pathname} compact={compact} />
           ))}
         </ul>
       </nav>
 
-      <UserBadge me={me} compact={compact} />
+      <UserBadge me={me} compact={compact} isBaseline={isBaseline} />
     </aside>
   );
 }
@@ -206,7 +212,7 @@ function SidebarItem({
   );
 }
 
-function UserBadge({ me, compact }: { me: Me | null; compact: boolean }) {
+function UserBadge({ me, compact, isBaseline }: { me: Me | null; compact: boolean; isBaseline: boolean }) {
   const initials = me?.user?.pseudonym?.slice(0, 2).toUpperCase() ?? "?";
   return (
     <Link
@@ -226,7 +232,7 @@ function UserBadge({ me, compact }: { me: Me | null; compact: boolean }) {
             {me?.user?.pseudonym ?? "Pseudonym setzen"}
           </div>
           <div className="truncate text-xs text-muted-foreground">
-            {me?.user ? "Adaptive Planung aktiv" : "Session starten"}
+            {me?.user ? (isBaseline ? "Baseline-Modus" : "Vorschläge aktiv") : "Session starten"}
           </div>
         </div>
       )}
@@ -265,14 +271,15 @@ function MobileAppMenu() {
   );
 }
 
-function MobileBottomNav({ pathname }: { pathname: string }) {
+function MobileBottomNav({ pathname, isBaseline }: { pathname: string; isBaseline: boolean }) {
+  const nav = isBaseline ? MOBILE_NAV.filter((i) => i.href !== "/anpassungen") : MOBILE_NAV;
   return (
     <nav
       aria-label="Hauptnavigation"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-background/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur md:hidden"
     >
       <ul className="grid grid-cols-7">
-        {MOBILE_NAV.map((item) => {
+        {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
@@ -298,15 +305,6 @@ function MobileBottomNav({ pathname }: { pathname: string }) {
 function useLogViewChange(pathname: string) {
   useEffect(() => {
     if (!pathname) return;
-    fetch("/api/interactions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        type: "view_changed",
-        screen: pathname,
-        metadata: { to: pathname },
-      }),
-    }).catch(() => {});
     fetch("/api/events", {
       method: "POST",
       headers: { "content-type": "application/json" },

@@ -31,6 +31,7 @@ export function TodayDashboard() {
   const [loading, setLoading] = useState(true);
   const [pendingSuggestion, setPendingSuggestion] = useState<AdaptiveSuggestion | null>(null);
   const [justCompleted, setJustCompleted] = useState<Task[]>([]);
+  const [isBaseline, setIsBaseline] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -61,16 +62,32 @@ export function TodayDashboard() {
 
   useEffect(() => {
     load();
-    fetch("/api/adaptive/evaluate", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ screen: "/heute" }),
-    }).catch(() => {});
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadPendingSuggestion().catch(() => {});
+    // Baseline: keine Vorschläge laden, keine Evaluate-Calls starten (normale App bleibt voll nutzbar).
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((me: { session?: { variant?: string | null } | null }) => {
+        const baseline = me?.session?.variant === "baseline";
+        setIsBaseline(baseline);
+        if (baseline) return;
+        fetch("/api/adaptive/evaluate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ screen: "/heute" }),
+        }).catch(() => {});
+        loadPendingSuggestion().catch(() => {});
+      })
+      .catch(() => {
+        setIsBaseline(false);
+        fetch("/api/adaptive/evaluate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ screen: "/heute" }),
+        }).catch(() => {});
+        loadPendingSuggestion().catch(() => {});
+      });
   }, [load, loadPendingSuggestion]);
 
-  const { focus, agenda, dueTodayCount, openCount, highlightedDates, dayCountsByStamp } = useMemo(
+  const { focus, agenda, dueTodayCount, openCount, highlightedDates, dayCountsByStamp, dayTasksByStamp } = useMemo(
     () => deriveTodayBuckets(tasks),
     [tasks],
   );
@@ -87,7 +104,7 @@ export function TodayDashboard() {
         }
       />
 
-      {pendingSuggestion ? (
+      {!isBaseline && pendingSuggestion ? (
         <div className="mb-6">
           <TodaySuggestionBanner
             suggestion={pendingSuggestion}
@@ -117,10 +134,11 @@ export function TodayDashboard() {
           <WeekGlanceCard
             highlightedDates={highlightedDates}
             dayCountsByStamp={dayCountsByStamp}
+            dayTasksByStamp={dayTasksByStamp}
             openCount={openCount}
             dueTodayCount={dueTodayCount}
           />
-          <SystemStatusCard />
+          <SystemStatusCard isBaseline={isBaseline} hasSuggestion={Boolean(pendingSuggestion)} />
         </div>
       </div>
     </div>
@@ -205,8 +223,8 @@ function TodaySuggestionBanner({
               </div>
               {isInformationalOnly ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Die <span className="font-medium text-foreground">Fokusliste</span> darunter kommt aus deinen offenen
-                  Aufgaben (überfällig, heute fällig, hohe Priorität, sonst Auffüller). Dieser Kasten{" "}
+                  Die <span className="font-medium text-foreground">To‑Do‑Liste</span> darunter kommt aus deinen offenen
+                  Aufgaben (überfällig, heute fällig, hohe Priorität, sonst Auffüller). Dieser Hinweis{" "}
                   <span className="font-medium text-foreground">ändert keine Aufgaben</span> — „Verstanden“ bestätigt
                   nur den Hinweis (z. B. für die Studienauswertung) und blendet ihn aus.
                 </div>
@@ -274,7 +292,7 @@ function FocusListCard({
     <Card className="fp-card">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold tracking-tight">Fokusliste</h2>
+          <h2 className="text-base font-semibold tracking-tight">To‑Do‑Liste</h2>
           <Link
             href="/aufgaben"
             className="text-xs text-muted-foreground hover:text-foreground"
@@ -283,7 +301,7 @@ function FocusListCard({
           </Link>
         </div>
         <div className="text-xs text-muted-foreground">
-          Aus offenen Aufgaben zusammengestellt (überfällig, heute fällig, Priorität, dann Auffüller).
+          Für heute zusammengestellt (überfällig, heute fällig, Priorität, dann Auffüller).
         </div>
 
         {loading ? (
@@ -376,7 +394,7 @@ function FocusListItem({
         minute: "2-digit",
       })}`;
     }
-    return task.listName ?? "ohne Zeitblock";
+    return task.listName ?? "ohne Uhrzeit";
   })();
 
   async function toggleDone(next: boolean) {
@@ -499,11 +517,13 @@ function ShortcutRow({
 function WeekGlanceCard({
   highlightedDates,
   dayCountsByStamp,
+  dayTasksByStamp,
   openCount,
   dueTodayCount,
 }: {
   highlightedDates: Date[];
   dayCountsByStamp: Record<string, number>;
+  dayTasksByStamp: Record<string, { id: string; title: string }[]>;
   openCount: number;
   dueTodayCount: number;
 }) {
@@ -511,7 +531,11 @@ function WeekGlanceCard({
     <Card className="fp-card">
       <CardContent className="space-y-4 p-6">
         <h3 className="text-sm font-semibold tracking-tight">Woche im Überblick</h3>
-        <MiniMonthCalendar highlightedDates={highlightedDates} dayCountsByStamp={dayCountsByStamp} />
+        <MiniMonthCalendar
+          highlightedDates={highlightedDates}
+          dayCountsByStamp={dayCountsByStamp}
+          dayTasksByStamp={dayTasksByStamp}
+        />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3 text-sm">
           <div className="text-muted-foreground">Offen</div>
           <div className="font-medium">{openCount} Aufgaben</div>
@@ -525,16 +549,29 @@ function WeekGlanceCard({
   );
 }
 
-function SystemStatusCard() {
+function SystemStatusCard({
+  isBaseline,
+  hasSuggestion,
+}: {
+  isBaseline: boolean;
+  hasSuggestion: boolean;
+}) {
   const STATUS = [
-    { label: "Keine Regel aktiv", tone: "is-info" },
-    { label: "Undo verfügbar", tone: "is-positive" },
-    { label: "Transparenz sichtbar", tone: "is-info" },
+    {
+      label: isBaseline ? "Modus: Baseline (ohne Vorschläge)" : "Modus: Adaptive",
+      tone: isBaseline ? ("is-warning" as const) : ("is-info" as const),
+    },
+    {
+      label: hasSuggestion ? "Vorschlag verfügbar" : "Keine Vorschläge offen",
+      tone: hasSuggestion ? ("is-positive" as const) : ("is-info" as const),
+    },
+    { label: "Undo: direkte Rückgängig-Aktion bei Bedarf", tone: "is-positive" as const },
+    { label: "Transparenz: „Warum?“ erklärt Vorschläge", tone: "is-info" as const },
   ] as const;
   return (
     <Card className="fp-card">
       <CardContent className="space-y-3 p-6">
-        <h3 className="text-sm font-semibold tracking-tight">Systemstatus</h3>
+        <h3 className="text-sm font-semibold tracking-tight">Status</h3>
         <ul className="flex flex-col gap-2">
           {STATUS.map((s) => (
             <li
@@ -556,6 +593,7 @@ function deriveTodayBuckets(tasks: Task[]) {
   const startToday = startOfLocalDay(now);
 
   const dayCountsByStamp: Record<string, number> = {};
+  const dayTasksByStamp: Record<string, { id: string; title: string }[]> = {};
 
   const enriched: TaskWithDue[] = tasks.map((t) => ({
     ...t,
@@ -567,6 +605,7 @@ function deriveTodayBuckets(tasks: Task[]) {
     d.setHours(0, 0, 0, 0);
     const key = String(d.getTime());
     dayCountsByStamp[key] = (dayCountsByStamp[key] ?? 0) + 1;
+    (dayTasksByStamp[key] ??= []).push({ id: t.id, title: t.title });
   }
 
   const overdue = enriched.filter(
@@ -607,5 +646,6 @@ function deriveTodayBuckets(tasks: Task[]) {
     openCount: enriched.length,
     highlightedDates,
     dayCountsByStamp,
+    dayTasksByStamp,
   };
 }

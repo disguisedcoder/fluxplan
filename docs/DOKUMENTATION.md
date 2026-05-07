@@ -30,7 +30,7 @@ Dieses Dokument hat **drei** Hauptteile:
 | --- | --- |
 | Anlegen (klassisch) | `/aufgaben` → Knopf „Neue Aufgabe" |
 | Anlegen (mit Sprache) | `/erstellen` |
-| Schnell anlegen | `/heute` → Eingabezeile unter der Fokusliste |
+| Schnell anlegen | `/heute` → Eingabezeile unter der To‑Do‑Liste |
 | Bearbeiten | Stift-Icon an jeder Aufgabe |
 | Erledigen | Häkchen anklicken |
 | Löschen | Mülleimer-Icon |
@@ -49,11 +49,11 @@ Die geparsten Werte erscheinen als Chips. Du kannst sie jederzeit überschreiben
 
 ## 1.3 Heute-Dashboard (`/heute`)
 
-- **Fokusliste**: Überfällige + heute fällige Aufgaben in einer Liste.
+- **To‑Do‑Liste**: Für heute zusammengestellte Aufgaben (überfällig, heute fällig, Priorität, dann Auffüller).
 - **Heute im Überblick**: Termine mit Uhrzeit als Mini-Agenda.
 - **Schnellzugriff**: Liste der Tastatur-Shortcuts (siehe 1.10).
 - **Woche im Überblick**: Mini-Monatskalender mit Tagen, an denen Aufgaben fällig sind.
-- **Systemstatus**: Status-Badges (z. B. „Undo verfügbar").
+- **Status**: Modus + Vorschlags-/Undo-Info (praktische Hinweise, keine „Deko“-Badges).
 
 ## 1.4 Kalender (`/kalender`)
 
@@ -577,7 +577,7 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 
 2. **„Erstellen“ als eigene Hauptnavigation wirkt verwirrend**  
    - **Problem:** Informationsarchitektur: Nutzer erwarten Erstellung eher **kontextuell** (Heute/Aufgaben) als gleichrangigen Hauptpunkt.  
-   - **Konsequenz:** IA überdenken bzw. in der Nav **nicht** als „Primary“ hervorheben (AppShell); Kalender bekam u. a. einen klaren CTA „Zeitblock erstellen“ Richtung `/erstellen`.
+  - **Konsequenz:** IA überdenken bzw. in der Nav **nicht** als „Primary“ hervorheben (AppShell); Kalender bekam u. a. einen klaren CTA „Neue Aufgabe (mit Zeit)“ Richtung `/erstellen`.
 
 3. **Eingriffsstufe (0–3): Benennung und Verständlichkeit**  
    - **Problem:** Begriffe wie „Aus / leise / aktiv“ allein reichen nicht oder wirken uneinheitlich gegenüber vier Stufen.  

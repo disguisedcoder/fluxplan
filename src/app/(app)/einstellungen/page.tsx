@@ -4,13 +4,21 @@ import { SessionCodeInput } from "@/components/study/session-code-input";
 import { StudySessionBanner } from "@/components/study/study-session-banner";
 import { PreferencesForm } from "@/components/settings/preferences-form";
 import { AppearanceCard } from "@/components/settings/appearance-card";
+import { getStudyCookies } from "@/lib/auth/study-session";
+import { prisma } from "@/lib/db/prisma";
 
-export default function EinstellungenPage() {
+export default async function EinstellungenPage() {
+  const { sessionId } = await getStudyCookies();
+  const session = sessionId
+    ? await prisma.studySession.findUnique({ where: { id: sessionId }, select: { variant: true } })
+    : null;
+  const isBaseline = session?.variant === "baseline";
+
   return (
     <div>
       <PageHeader
         title="Einstellungen"
-        subtitle="Pseudonym, Eingriffsstufe, Daten-Export und Reset – alles an einem Ort."
+        subtitle="Pseudonym, Studienmodus, Export und Reset – alles an einem Ort."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -42,7 +50,7 @@ export default function EinstellungenPage() {
           </Card>
         </div>
 
-        <PreferencesForm />
+        <PreferencesForm isBaseline={isBaseline} />
       </div>
     </div>
   );

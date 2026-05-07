@@ -49,7 +49,7 @@ export function DemoSeedButton({ onDone }: { onDone?: () => void }) {
       <div className="flex items-center gap-2">
         <div className="text-sm font-medium">Rolle</div>
         <Select value={role} onValueChange={(v) => setRole(v as Role)} disabled={busy}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

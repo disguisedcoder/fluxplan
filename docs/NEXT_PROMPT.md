@@ -104,12 +104,12 @@ Für JEDE Seite gilt: Loading State, Empty State, Fehler-Toast, Tastatur-/Screen
 - H1 „Heute“, Subline „Ruhige Übersicht für Aufgaben und Termine.“
 - Top right: „Neue Aufgabe“ (öffnet Quick-Add bzw. `/erstellen`).
 - 3-Spalten-Layout (Desktop), gestapelt (Mobile):
-  - **Fokusliste**: Top 3–5 Aufgaben mit Kategorie-Badge (Mockup zeigt „Studium“, „Research“, „Prototype“, „Review“). Zeile mit Checkbox + Titel + Zeitfenster („Heute - 09:00–10:30“).
+  - **To‑Do‑Liste**: Top 3–5 Aufgaben mit Kategorie-Badge (Mockup zeigt „Studium“, „Research“, „Prototype“, „Review“). Zeile mit Checkbox + Titel + Zeitfenster („Heute - 09:00–10:30“).
   - Quick-Add Eingabefeld + „Anlegen“ Button am Ende der Spalte.
   - **Heute im Überblick** (Tagescolumn): Zeitstempel links, kleine Pill-Cards rechts: „10:30 Design-Review“, „13:00 Pause“, „16:00 QG-Notizen“. Reine Anzeige (aus Tasks mit Tagesdatum + Uhrzeit / oder Termin-Tasks).
   - **Ruhige Hinweise** (Empty/Pre-State): Hinweis, dass adaptive Vorschläge erst entstehen, wenn Muster auftreten.
   - **Woche im Überblick**: Mini-Monatskalender (markiert: heute fett, Wochenenden andersfarbig). Darunter Stats „6 Aufgaben“ / „2 Termine“ (offene + heute fällig).
-  - **Systemstatus**: 3 Pill-Tags („Keine Regel aktiv“ / „Undo verfügbar“ / „Transparenz sichtbar“).
+  - **Status**: hilfreiche Hinweise zu Modus / Vorschlägen / Undo / Transparenz.
 - Wenn adaptive Suggestion „start_view“ ODER „daily_focus“ ODER „view_preference“ aktiv ist, oben volle Breite eine **dezente Banner-Suggestion-Karte** (Mockup 08): „Du wechselst oft zur Kalenderansicht. Kompaktansicht rechts einblenden?“ mit Buttons `Ja` / `Später` und „Warum sehe ich das?“.
 - Akzeptanz: Today funktioniert auch wenn KEINE Suggestions vorhanden sind.
 
@@ -123,9 +123,9 @@ Für JEDE Seite gilt: Loading State, Empty State, Fehler-Toast, Tastatur-/Screen
 
 ### 4.4 `/kalender` (Mockup 03 + 09)
 - H1 „Aufgaben & Kalender“, Subline „Liste und Zeitbezug greifen sichtbar ineinander.“
-- Top right: Primary „Zeitblock erstellen“.
+- Top right: Primary „Neue Aufgabe (mit Zeit)“.
 - 3-Spalten-Layout (Desktop):
-  - **Ungeplante Aufgaben**: Liste, jeder Task „ohne Zeitblock“ + Kategorie-Badge.
+  - **Ungeplante Aufgaben**: Liste, jeder Task „ohne Uhrzeit“ + Kategorie-Badge.
   - **Woche** (z.B. 7.–13. Apr.): horizontale Spalten Mo–Fr, Zeitachse links 08:00–18:00, Tasks mit Zeit als farbige Slot-Cards.
   - **Freie Slots**: 3–5 Vorschläge `Di 15:30-16:15`, `Do 09:00-09:45`. Reines Anzeige-/Hilfemodul, nicht autonom.
   - **Planungslogik**: kleine Erklärbox (4 Bullet-Points: Aufgaben bleiben lesbar, Konflikte werden markiert, Vorschläge bleiben optional, Kalender bleibt Planungsfläche).
@@ -291,7 +291,7 @@ Neu:
 - [ ] Sidebar + Mobile-Nav umgesetzt, Aktiv-Item sichtbar, User-Badge unten.
 - [ ] Alle 7 Hauptscreens existieren und sehen mockup-nah aus.
 - [ ] Tasks: Erstellen / Bearbeiten / Erledigen / Archivieren / Löschen / Suche / Filter.
-- [ ] Today: Fokusliste + Tagescolumn + Mini-Kalender + Systemstatus.
+- [ ] Today: To‑Do‑Liste + Tagescolumn + Mini-Kalender + Status.
 - [ ] Kalender: Week-Grid + Ungeplante + Freie Slots + Konflikt-Modus.
 - [ ] Erstellen: Progressive Form + Chips + Sprachparsing-Modul.
 - [ ] Anpassungen: Verlauf + Detail + Personalisierung + Cooldown.

@@ -18,7 +18,7 @@ const PRINCIPLES = [
   {
     tone: "is-positive",
     title: "Heute als Startpunkt",
-    body: "Fokusliste, Quick Add und Kalenderbezug bleiben sichtbar.",
+    body: "To‑Do‑Liste, Quick Add und Kalenderbezug bleiben sichtbar.",
   },
   {
     tone: "is-info",
@@ -187,7 +187,7 @@ export function OnboardingHero() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <span className="fp-status-dot is-info" />
-                Heute-Ansicht mit Fokusliste
+                Heute-Ansicht mit To‑Do‑Liste
               </li>
               <li className="flex items-center gap-2">
                 <span className="fp-status-dot is-info" />

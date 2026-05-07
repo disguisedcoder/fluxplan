@@ -82,7 +82,26 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
 
     await prisma.task.delete({ where: { id } });
     await prisma.taskInteraction.create({
-      data: { userId, taskId: null, type: "task_deleted", metadata: { taskId: id } },
+      data: {
+        userId,
+        taskId: null,
+        type: "task_deleted",
+        metadata: {
+          taskId: id,
+          snapshot: {
+            title: existing.title,
+            status: existing.status,
+            priority: existing.priority,
+            dueDate: existing.dueDate ? existing.dueDate.toISOString() : null,
+            reminderAt: existing.reminderAt ? existing.reminderAt.toISOString() : null,
+            listName: existing.listName,
+            tags: existing.tags,
+            estimatedMinutes: existing.estimatedMinutes,
+            createdAt: existing.createdAt.toISOString(),
+            completedAt: existing.completedAt ? existing.completedAt.toISOString() : null,
+          },
+        },
+      },
     });
 
     return NextResponse.json({ ok: true });

@@ -107,7 +107,7 @@ export function familienplannerRole(now = new Date()): DemoRoleDefinition {
       estimatedMinutes: 10,
     },
     {
-      title: "Hausaufgaben-Zeitblock morgen setzen",
+      title: "Hausaufgaben morgen einplanen (mit Uhrzeit)",
       priority: "medium",
       dueDate: at(now, 1, 17, 0),
       listName: "Familie",

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const WEEK_LABELS = ["M", "D", "M", "D", "F", "S", "S"];
 const MONTH_LABELS = [
@@ -25,12 +26,15 @@ export type MiniMonthCalendarProps = {
   highlightedDates?: Date[];
   /** Map: local-midnight stamp (ms) -> number of tasks due that day. */
   dayCountsByStamp?: Record<string, number>;
+  /** Map: local-midnight stamp (ms) -> tasks due that day (for drill-down). */
+  dayTasksByStamp?: Record<string, { id: string; title: string }[]>;
 };
 
 export function MiniMonthCalendar({
   reference = new Date(),
   highlightedDates = [],
   dayCountsByStamp = {},
+  dayTasksByStamp = {},
 }: MiniMonthCalendarProps) {
   /** Nur nach Mount setzen — sonst weicht „heute“ zwischen SSR- und Client-Zeitzone ab (Hydration). */
   const [todayStamp, setTodayStamp] = useState<number | null>(null);
@@ -106,19 +110,23 @@ export function MiniMonthCalendar({
           const isHighlighted = highlightSet.has(stamp);
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const count = dayCountsByStamp[String(stamp)] ?? 0;
+          const dayTasks = dayTasksByStamp[String(stamp)] ?? [];
           const dots = Math.min(count, MAX_DOTS);
           const overflow = count > MAX_DOTS ? count - MAX_DOTS : 0;
+          const dateLabel = d.toLocaleDateString(undefined, {
+            weekday: "short",
+            day: "2-digit",
+            month: "2-digit",
+          });
 
-          return (
+          const cell = (
             <div
-              key={i}
               className={cn(
                 "mx-auto flex h-9 w-7 flex-col items-center justify-center gap-0.5 rounded-full text-[12px]",
                 !isCurrentMonth && "text-muted-foreground/40",
                 isCurrentMonth && isWeekend && !isToday && "text-rose-500/80",
                 isHighlighted && !isToday && "bg-primary/10 text-primary",
-                isToday &&
-                  "bg-primary text-primary-foreground font-semibold shadow-sm",
+                isToday && "bg-primary text-primary-foreground font-semibold shadow-sm",
               )}
             >
               <div className="leading-none">{d.getDate()}</div>
@@ -152,6 +160,52 @@ export function MiniMonthCalendar({
                   </span>
                 ) : null}
               </div>
+            </div>
+          );
+
+          return (
+            <div key={i}>
+              {count > 0 ? (
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <button
+                        type="button"
+                        className="block"
+                        aria-label={`${dateLabel}: ${count} Aufgaben`}
+                        title={`${dateLabel}: ${count} Aufgaben`}
+                      />
+                    }
+                  >
+                    {cell}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">
+                        {dateLabel} · {count} Aufgaben
+                      </div>
+                      <div className="max-h-44 overflow-auto rounded-md border border-border/60 bg-card">
+                        <ul className="divide-y divide-border/50">
+                          {(dayTasks.length ? dayTasks : Array.from({ length: count }, () => null))
+                            .slice(0, 50)
+                            .map((t, idx) => (
+                              <li key={t ? t.id : idx} className="px-3 py-2 text-xs text-muted-foreground">
+                                {t ? t.title : "Aufgabe"}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                      {dayTasks.length > 50 ? (
+                        <div className="text-xs text-muted-foreground">
+                          … und weitere {dayTasks.length - 50}
+                        </div>
+                      ) : null}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                cell
+              )}
             </div>
           );
         })}

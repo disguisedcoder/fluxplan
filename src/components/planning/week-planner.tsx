@@ -88,10 +88,10 @@ export function WeekPlanner() {
         body: JSON.stringify({ dueDate: null }),
       });
       if (!res.ok) {
-        toast.error("Konnte Zeitblock nicht entfernen.");
+        toast.error("Konnte Uhrzeit nicht entfernen.");
         return;
       }
-      toast.success("Als Aufgabe ohne Zeitblock gespeichert.");
+      toast.success("Als Aufgabe ohne Uhrzeit gespeichert.");
       await load();
     } finally {
       setBusyId(null);
@@ -247,7 +247,7 @@ function WeekGrid({
     );
   }
   return (
-    <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))]">
+    <div className="min-w-[860px] grid grid-cols-[56px_repeat(7,minmax(0,1fr))]">
       <div className="sticky top-0 z-10 border-b border-border/60 bg-card" />
       {days.map((d) => (
         <DayHeaderCell key={d.toISOString()} d={d} />
@@ -504,7 +504,7 @@ function ConflictDetailsCard({
           Konflikt erkannt
         </div>
         <p className="text-sm text-amber-900/80">
-          {count} Zeitblock{count === 1 ? "" : "s"} überlapp{count === 1 ? "t" : "en"} sich. Du kannst Alternativen wählen oder „Nur Aufgabe“ speichern.
+          {count} Termin{count === 1 ? "" : "e"} überlapp{count === 1 ? "t" : "en"} sich. Du kannst Alternativen wählen oder „Nur Aufgabe“ speichern.
         </p>
 
         <div className="space-y-3">
@@ -527,7 +527,7 @@ function ConflictDetailsCard({
                         disabled={busyId === it.task.id}
                         onClick={() => {
                           const ok = window.confirm(
-                            "Zeitblock entfernen?\n\nDie Aufgabe bleibt erhalten, aber ohne festes Zeitfenster.",
+                            "Uhrzeit entfernen?\n\nDie Aufgabe bleibt erhalten, aber ohne festes Zeitfenster.",
                           );
                           if (!ok) return;
                           onClearTime(it.task.id);

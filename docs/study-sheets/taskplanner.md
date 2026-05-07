@@ -1,42 +1,73 @@
-# FluxPlan – Dein Aufgaben-Sheet · Rolle **Deep-Work & Deadline-Jongleur**
+# FluxPlan – Aufgaben‑Sheet · Rolle **Taskplanner (Deep‑Work & Deadline‑Jongleur)**
 
-> Projektphase: Literatur, Prototyp, ein bisschen Chaos. Die App ist dein **Schreibtisch** — du testest, ob der Überblick **klebt** oder **zerbröselt**.
+> Projektphase: Literatur, Prototyp, ein bisschen Chaos. FluxPlan ist dein **Schreibtisch** — du testest, ob der Überblick **klebt** oder **zerbröselt**.
 
-## Phase 0 — Einmalig, ganz am Anfang
-1. Pseudonym: **`T01`** (oder **`Txx`**).
-2. **`/einstellungen`** → **Demo-Setup** → **Taskplanner** → **Demo-Daten laden**.
+## Vorab (gilt immer)
+- **Keine echten privaten Daten** eingeben. Erfundenes Uni‑Chaos ist ok.
+- Du testest **2 Phasen** nacheinander:
+  - **Phase 1: Baseline** → normale Aufgaben‑ & Planungs‑App (keine adaptiven Vorschläge).
+  - **Phase 2: Adaptive** → FluxPlan darf Vorschläge machen, aber **nichts passiert heimlich** (du entscheidest).
+- **Wichtig**:
+  - Starte **zuerst** mit Baseline.
+  - Lade **einmal** Demo‑Daten.
+  - Arbeite danach auf diesen Aufgaben weiter.
+  - Stelle später mit **demselben Pseudonym** auf Adaptive um.
+  - **Demo nicht erneut laden.**
+  - Am Ende **nichts exportieren** und **nichts zurücksetzen**. Sag einfach Bescheid, wenn du fertig bist.
 
-**Ab jetzt:** Die **Demo-Aufgaben** sind **fertig drin** (größeres Set für realistischen Überblick). Für den Ablauf unten brauchst du **keine** weiteren Aufgaben in der Liste — **außer** an den zwei Stellen mit **✏️ „Jetzt selbst anlegen“**.
+## Phase 0 — Setup (einmalig, 1 Minute)
+1. Öffne FluxPlan.
+2. Pseudonym: **`T01`** (oder dein zugeteilter Code).
+3. Variante: **Baseline** auswählen und starten.
+4. In der App: **`/einstellungen`** → **Demo‑Setup** → Rolle **Taskplanner** → **Demo‑Daten laden**.
 
-## Die Levels (nur finden & nutzen)
-1. **Kapitel 2 lesen** — heute früh, hoch priorisiert. *(#literatur)*
-2. **Zusammenfassung schreiben** — heute. *(#schreiben)*
-3. **Interviewfragen** — morgen, mit Erinnerung. *(#interview)*
-4. **Mockups vergleichen** — in ein paar Tagen. *(#ui)*
-5. **Feedback einarbeiten** — hohe Priorität. *(#review)*
-6. **Tagging-Schema** — **ohne Datum**. *(#taxonomy)*
-7. **Prioritäten sortieren** — **überfällig** (absichtlich). *(#cleanup)*
-8. **Erinnerung testen** — später, mit Erinnerung. *(#erinnerung)*
-9. **Quick-Add Beispiele** — später. *(#quickadd)*
-10. **Export prüfen** — noch später. *(#export)*
+## Phase 1 — Baseline (ca. 6–8 Minuten)
+**Reihenfolge frei.** Ziel ist: du kennst die Grundscreens und hast typische Aktionen einmal gemacht.
 
-## Phase 1 — Bestehende Demo nutzen (ca. 5 Min.)
-**Keine neuen Aufgaben** — nur Filtern & Lesen.
+### Mini‑Aufgaben‑Set anlegen (damit später Vergleich möglich ist)
+Lege in Baseline **4 neue Aufgaben** an (frei erfunden). Bitte mit diesen Eigenschaften:
 
-1. **`/aufgaben`:** Suche, Filter, Chips (**Heute**, **Überfällig**, **Ohne Datum**) ausprobieren.
-2. **Ping-Pong:** **4–5×** zwischen **`/heute`** und **`/aufgaben`** wechseln.
+- [ ] **1 Aufgabe ohne Datum/Uhrzeit** (Backlog)
+- [ ] **2 Aufgaben mit Datum** (eine davon gern **mit Uhrzeit**)
+- [ ] **1 Aufgabe mit hoher Priorität**
 
-## Phase 2 — ✏️ Jetzt selbst anlegen (ca. 3–5 Min.)
-Hier **musst** du **zwei neue** Einträge erzeugen (die bleiben in deiner Session; das ist gewollt):
+### Checkliste (einmal erledigen)
+- [ ] **Aufgaben (`/aufgaben`)** öffnen und dir einen Überblick verschaffen.
+- [ ] Finde eine Aufgabe auf **deine Art** (Suche *oder* Filter/Chips *oder* Sortierung).
+- [ ] **Heute (`/heute`)** öffnen und die **To‑Do‑Liste** kurz ansehen.
+- [ ] **1 Aufgabe erledigen** und – wenn möglich – **wieder öffnen**.
+- [ ] **1 Aufgabe bearbeiten** (z. B. Titel, Priorität, Kategorie/Liste).
+- [ ] **Kalender (`/kalender`)** kurz ansehen: wirkt die Verteilung mit Datum/Uhrzeit für dich nachvollziehbar?
 
-1. **`/heute` → Quick-Add:** Ein **kurzer Satz** als neue Aufgabe (alles, was dir einfällt — z. B. „Kaffee für das Team besorgen“).
-2. **`/erstellen`:** **Freitext** eingeben, z. B. *„Donnerstag 14 Uhr Interviewleitfaden fertig 60 min #recherche“* — und schauen, was die App daraus **macht**.
+### Danach: kurz „normal weiterarbeiten“
+Nimm dir **2–3 Minuten**, um einfach weiter zu machen (abhaken, umplanen, bearbeiten) – so, wie du es wirklich nutzen würdest.
 
-## Phase 3 — Kurz notieren
-- Wo hättest du dir einen **Stupser** gewünscht, wo eher **Stille**?
+## Phase 2 — Adaptive (ca. 6–8 Minuten)
+1. Gehe zu **`/einstellungen`**, nutze **denselben Pseudonym‑Code** und stelle auf **Adaptive** um (Eingriffsstufe übernehmen).
+2. **Demo nicht erneut laden.**
 
-> **Fair:** Niemand verrät, ob die App „mitdenkt“ — dein Gefühl zählt.
+### Muster erzeugen (damit Vorschläge eine Chance haben)
+Lege jetzt **5 neue Aufgaben** an (kurz, erfunden). Wichtig ist nur das Muster:
+
+- [ ] **2 ähnliche Aufgaben** (z. B. beide „Interview …“ oder beide „Kapitel …“) mit **Datum** (gern mit Uhrzeit)
+- [ ] **mindestens 1 davon mit Erinnerung** *(falls möglich)*
+- [ ] **1 Aufgabe über `/erstellen`** (Freitext ausprobieren; du entscheidest den Text)
+- [ ] **1 Aufgabe über Quick‑Add** (auf `/heute`)
+- [ ] **1 Aufgabe ohne Datum/Uhrzeit** (Backlog)
+
+### Wenn ein Vorschlag auftaucht
+- Lies ihn komplett.
+- Öffne **„Warum?“** (falls vorhanden).
+- Triff **eine** Entscheidung: **annehmen** *oder* **nicht jetzt** *oder* **ablehnen**.
+- Wenn danach **Rückgängig/Undo** sichtbar ist: einmal testen (optional).
+
+### Danach: weiterarbeiten wie im Alltag
+Jetzt nochmal **2–3 Minuten** normal arbeiten. Wenn noch etwas auftaucht: entscheide, aber nichts muss „abgehakt“ werden.
+
+### Feedback (kurz)
+- Hat Adaptive dir Arbeit abgenommen oder eher **neue Entscheidungen** erzeugt?
+- Gab es einen Moment, wo du dachtest: „**Das ist praktisch**“ (oder „stört eher“)? 1 Satz reicht.
 
 ---
 
-*Viel Erfolg — die überfällige Aufräum-Aufgabe starrt dich absichtlich an.*
+*Mission: Aufgaben zähmen, bevor sie sich vermehren.*

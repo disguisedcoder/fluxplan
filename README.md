@@ -21,7 +21,7 @@ FluxPlan ist ein **human-centered, adaptiver Aufgaben- und Planungs-Prototyp** m
 | `/` | Weiterleitung auf `/start` |
 | `/start` | Weiterleitung auf die **Standardansicht** (`startView`, sonst `/heute`); ohne Willkommen → `/willkommen` |
 | `/willkommen` | Tour, Prinzipien, Demo (eigener Menüpunkt) |
-| `/heute` | Heute-Dashboard (Fokusliste, Agenda, Mini-Kalender, Schnellzugriff/Shortcuts) |
+| `/heute` | Heute-Dashboard (To‑Do‑Liste, Agenda, Mini-Kalender, Schnellzugriff/Shortcuts) |
 | `/aufgaben` | Liste, Suche, Quickfilter, Sortierung, Kategorie-Gruppen |
 | `/kalender` | Wochen-Grid mit Konflikt-Markierung, ungeplante Aufgaben, freie Slots |
 | `/erstellen` | Progressives Formular + deutscher Sprachparser |

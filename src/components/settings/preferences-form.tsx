@@ -19,7 +19,7 @@ import {
 
 type Preferences = Record<string, unknown>;
 
-export function PreferencesForm() {
+export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
   const [prefs, setPrefs] = useState<Preferences>({});
   const [busy, setBusy] = useState(false);
 
@@ -58,41 +58,13 @@ export function PreferencesForm() {
 
   return (
     <div className="space-y-4">
-      <Card className="fp-card">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold tracking-tight">Vorschläge</div>
-              <p className="text-xs text-muted-foreground">
-                Master-Schalter. Wenn aus, erscheinen keine Vorschläge und kein Banner.
-                Der Verlauf bleibt sichtbar.
-              </p>
-            </div>
-            <Switch
-              checked={adaptiveEnabled}
-              disabled={busy}
-              onCheckedChange={(v) => update("adaptive.enabled", Boolean(v))}
-            />
-          </div>
-
-          <div className="space-y-2 border-t border-border/60 pt-4">
-            <div className="text-sm font-semibold tracking-tight">Eingriffsstufe</div>
-            <p className="text-xs text-muted-foreground">
-              Steuert, wie streng FluxPlan sein muss, bevor es Vorschläge macht. „Aus“ unterbindet
-              neue Vorschläge; der Schalter oben blendet Vorschläge und Banner komplett aus
-              (der Verlauf bleibt sichtbar).
-            </p>
-            <InterventionLevelSlider
-              value={level}
-              levels={[...INTERVENTION_LEVELS]}
-              disabled={busy || !adaptiveEnabled}
-              onChange={(v) =>
-                update("adaptive.interventionLevel", clampInterventionLevel(v))
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <StudyModeCard
+        isBaseline={isBaseline}
+        adaptiveEnabled={adaptiveEnabled}
+        level={level}
+        busy={busy}
+        onUpdate={update}
+      />
 
       <Card className="fp-card">
         <CardContent className="space-y-3 p-5">
@@ -116,7 +88,9 @@ export function PreferencesForm() {
           <div>
             <div className="text-sm font-semibold tracking-tight">Demo-Setup</div>
             <p className="text-xs text-muted-foreground">
-              Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Trigger) und prüft Vorschläge sofort.
+              {isBaseline
+                ? "Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Beispiele). Vorschläge bleiben in der Baseline deaktiviert."
+                : "Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Trigger) und bereitet Vorschläge für die adaptive Variante vor."}
             </p>
           </div>
           <DemoSeedButton onDone={load} />
@@ -136,6 +110,75 @@ export function PreferencesForm() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function StudyModeCard({
+  isBaseline,
+  adaptiveEnabled,
+  level,
+  busy,
+  onUpdate,
+}: {
+  isBaseline: boolean;
+  adaptiveEnabled: boolean;
+  level: number;
+  busy: boolean;
+  onUpdate: (key: string, value: unknown) => Promise<void>;
+}) {
+  if (isBaseline) {
+    return (
+      <Card className="fp-card">
+        <CardContent className="space-y-3 p-5">
+          <div>
+            <div className="text-sm font-semibold tracking-tight">Studienmodus: Baseline</div>
+            <p className="text-xs text-muted-foreground">
+              In der Baseline nutzt du FluxPlan als normale Aufgaben- und Planungs-App. Vorschläge und Anpassungen sind
+              deaktiviert.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+            Wenn du später bewusst zu <span className="font-medium text-foreground">Adaptive</span> wechselst, bleiben
+            deine Aufgaben erhalten. Starte dafür oben im Session-Bereich eine neue Session mit derselben Kennung und
+            wähle <span className="font-medium text-foreground">Adaptive</span>.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="fp-card">
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold tracking-tight">Vorschläge</div>
+            <p className="text-xs text-muted-foreground">
+              Master-Schalter. Wenn aus, erscheinen keine Vorschläge und kein Banner. Der Verlauf bleibt sichtbar.
+            </p>
+          </div>
+          <Switch
+            checked={adaptiveEnabled}
+            disabled={busy}
+            onCheckedChange={(v) => onUpdate("adaptive.enabled", Boolean(v))}
+          />
+        </div>
+
+        <div className="space-y-2 border-t border-border/60 pt-4">
+          <div className="text-sm font-semibold tracking-tight">Eingriffsstufe</div>
+          <p className="text-xs text-muted-foreground">
+            Steuert, wie klar ein Muster sein muss, bevor FluxPlan einen Vorschlag macht. „Aus“ unterbindet neue
+            Vorschläge.
+          </p>
+          <InterventionLevelSlider
+            value={level}
+            levels={[...INTERVENTION_LEVELS]}
+            disabled={busy || !adaptiveEnabled}
+            onChange={(v) => onUpdate("adaptive.interventionLevel", clampInterventionLevel(v))}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -11,7 +11,7 @@ export default function KalenderPage() {
         subtitle="Liste und Zeitbezug greifen sichtbar ineinander. Konflikte werden markiert, nicht autonom aufgelöst."
         right={
           <Link href="/erstellen" className={buttonVariants()}>
-            Zeitblock erstellen
+            Neue Aufgabe (mit Zeit)
           </Link>
         }
       />

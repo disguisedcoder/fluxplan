@@ -48,6 +48,8 @@ export function TaskCard({ task, onChanged }: { task: Task; onChanged: () => voi
   }
 
   async function remove() {
+    const ok = window.confirm(`Aufgabe wirklich löschen?\n\n„${task.title}“`);
+    if (!ok) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });

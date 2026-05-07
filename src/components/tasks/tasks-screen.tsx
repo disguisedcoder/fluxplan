@@ -223,7 +223,7 @@ export function TasksScreen() {
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div
                 className="hidden md:inline-flex rounded-full border border-border/70 bg-card p-1 text-xs"
                 role="tablist"
@@ -262,7 +262,7 @@ export function TasksScreen() {
               </div>
 
               <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-                <SelectTrigger className="w-[170px]">
+                <SelectTrigger className="w-full sm:w-[170px]">
                   <SelectValue>
                     {(v) =>
                       typeof v === "string" && v in SORT_LABELS
@@ -283,12 +283,16 @@ export function TasksScreen() {
                 variant={showAdvanced ? "secondary" : "outline"}
                 onClick={() => setShowAdvanced((v) => !v)}
                 aria-pressed={showAdvanced}
+                className="w-full sm:w-auto"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 Filter
               </Button>
 
-              <Link href="/erstellen" className={buttonVariants()}>
+              <Link
+                href="/erstellen"
+                className={cn(buttonVariants(), "w-full justify-center sm:w-auto")}
+              >
                 Neue Aufgabe
               </Link>
             </div>
@@ -608,6 +612,8 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
   }
 
   async function remove() {
+    const ok = window.confirm(`Aufgabe wirklich löschen?\n\n„${task.title}“`);
+    if (!ok) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
