@@ -1,85 +1,145 @@
-# FluxPlan – Aufgaben‑Sheet · Rolle **Familienplanner (Familien‑Captain)**
+# FluxPlan – Aufgaben-Sheet · Rolle Familienplanner
+## Familien-Captain: Der Tag hat Pläne, du hast FluxPlan
 
-> Du bist heute die Person, die alles im Blick haben muss: Kita, Arzt, Geburtstag — und nebenbei noch Einkauf. Kein Stress: Es geht darum, **die App natürlich zu benutzen**, nicht um perfekte Planung.
+Du bist heute die Person, die alles im Blick behalten soll: Termine, Einkauf, kleine Erledigungen und diese eine Aufgabe, die sonst garantiert erst um 22:47 wieder einfällt.
 
-## Vorab (gilt immer)
-- **Keine echten privaten Daten** eingeben. Erfundenes Alltagschaos ist ausdrücklich ok.
-- Du testest **2 Phasen** nacheinander:
-  - **Phase 1: Baseline** → normale Aufgaben‑ & Planungs‑App (keine adaptiven Vorschläge).
-  - **Phase 2: Adaptive** → FluxPlan darf Vorschläge machen, aber **nichts passiert heimlich** (du entscheidest).
-- **Wichtig**:
-  - Starte **zuerst** mit Baseline.
-  - Lade **einmal** Demo‑Daten.
-  - Arbeite danach auf diesen Aufgaben weiter.
-  - Stelle später mit **demselben Pseudonym** auf Adaptive um.
-  - **Demo nicht erneut laden.**
-  - Am Ende **nichts exportieren** und **nichts zurücksetzen**. Sag einfach Bescheid, wenn du fertig bist.
+Es geht nicht darum, perfekt zu planen. Nutze FluxPlan so, als würdest du einen vollen Alltag sortieren wollen.
 
-## Phase 0 — Setup (einmalig, 1 Minute)
+## Vorab
+- Bitte keine echten privaten Daten eingeben.
+- Erfundenes Alltagschaos ist ausdrücklich erlaubt.
+- Du testest zwei Phasen:
+  - Phase 1: Baseline – normale Aufgaben- und Planungs-App ohne adaptive Vorschläge.
+  - Phase 2: Adaptive – FluxPlan darf Vorschläge machen, aber du entscheidest immer selbst.
+- Demo-Daten nur einmal laden.
+- Beim Umstieg auf Adaptive denselben Pseudonym-Code verwenden.
+- Nichts zurücksetzen.
+- Am Ende nichts exportieren. Sag einfach der Studienleitung Bescheid.
+
+## Phase 0 – Start und Demo laden
 1. Öffne FluxPlan.
-2. Pseudonym: **`F01`** (oder dein zugeteilter Code).
-3. Variante: **Baseline** auswählen und starten.
-4. In der App: **`/einstellungen`** → **Demo‑Setup** → Rolle **Familienplanner** → **Demo‑Daten laden**.
+2. Gib dein Pseudonym ein: `F01` oder deinen zugeteilten Code.
+3. Wähle `Baseline`.
+4. Bestätige die Auswahl und starte die Session.
+5. Öffne `Einstellungen`.
+6. Wähle im Demo-Setup die Rolle `Familienplanner`.
+7. Klicke auf `Demo-Daten laden`.
+8. Öffne danach `Heute`.
 
-> Ab jetzt: Die Aufgaben sind **schon drin**. Bitte **keine eigenen echten Aufgaben** eintragen. (Eine kleine Test‑Aufgabe ist später ok, wenn es im Ablauf steht.)
+Kurzer Check: Du solltest jetzt bereits mehrere Familien-Aufgaben sehen. Wenn nicht, bitte kurz Bescheid sagen.
 
-## Phase 1 — Baseline (ca. 6–8 Minuten)
-**Reihenfolge frei.** Mach die Punkte so, wie du es im Alltag tun würdest — Hauptsache, du hast am Ende alles **einmal** ausprobiert.
+## Phase 1 – Baseline: Erstmal ohne Mitdenken der App
+Ziel: Du lernst die normale App kennen und erzeugst genug echte Nutzung, damit später ein Vergleich möglich ist.
 
-### Mini‑Aufgaben‑Set anlegen (damit später Vergleich möglich ist)
-Lege in Baseline **3 neue Aufgaben** an. Inhalt darf frei erfunden sein, aber bitte nach diesem Muster:
+### Runde 1: Überblick gewinnen
+1. Öffne `Heute`.
+2. Schau dir die Fokusliste an. Sie ist deine „Was sollte ich als Nächstes anschauen?“-Ecke.
+3. Öffne `Aufgaben`.
+4. Suche nach `Geburtstag`, `Kita`, `Schule` oder `Einkauf`.
+5. Nutze einmal Filter oder Sortierung.
+6. Öffne `Kalender` und schau, ob der Tag eher nach „passt schon“ oder „das wird sportlich“ aussieht.
 
-- [ ] **1 Aufgabe mit Datum + Uhrzeit** (z. B. „Turnbeutel morgen 07:30 vorbereiten“)
-- [ ] **1 Aufgabe ohne Datum/Uhrzeit** (bleibt „ungeplant“, z. B. „Snackliste für Besuch ergänzen“)
-- [ ] **1 Aufgabe mit Erinnerung** *(falls das Feld sichtbar ist)* — sonst einfach eine weitere Aufgabe mit Datum/Uhrzeit
+### Runde 2: Bestehende Aufgaben bearbeiten
+Erledige diese Aktionen mit bestehenden Demo-Aufgaben:
 
-### Checkliste (einmal erledigen)
-- [ ] **Heute öffnen (`/heute`)** und die **To‑Do‑Liste** kurz überfliegen.
-- [ ] **1 Aufgabe erledigen** (abhaken).
-- [ ] Falls möglich: **die erledigte Aufgabe wieder öffnen** (weil sich Pläne ändern).
-- [ ] **Aufgabenliste (`/aufgaben`)**: Finde eine Aufgabe auf **deine Art** (z. B. Suche *oder* Filter/Chips *oder* Sortierung).
-- [ ] **1 Aufgabe bearbeiten** (z. B. Titel, Priorität oder Kategorie/Liste).
-- [ ] **Kalender (`/kalender`)**: Schau dir an, wie Aufgaben mit Uhrzeit erscheinen und ob dir **Engstellen/Konflikte** auffallen.
-- [ ] **Ungeplant**: Finde eine Aufgabe **ohne Uhrzeit/Datum** und plane sie ein (z. B. über „Heute“/Planen). Beobachte einfach, wie sich das anfühlt.
+1. Markiere zwei Aufgaben als erledigt.
+2. Öffne eine erledigte Aufgabe wieder.
+3. Bearbeite eine bestehende Aufgabe und ändere Priorität, Datum oder Kategorie.
+4. Bearbeite eine zweite Aufgabe und ändere den Titel leicht.
+5. Plane eine Aufgabe ohne Datum ein, falls du eine findest. Wenn nicht: ändere bei einer Aufgabe das Datum.
 
-### Danach: kurz „normal weiterarbeiten“ (wichtig für den Vergleich)
-Nimm dir **2–3 Minuten**, um einfach weiter zu machen, wie du es tun würdest:
+### Runde 3: Neue Aufgaben anlegen
+Lege fünf neue Aufgaben an. Sie dürfen frei erfunden sein.
 
-- zwischen **Heute ↔ Aufgaben ↔ Kalender** wechseln, wenn es dir hilft
-- 1–2 Aufgaben umplanen/ändern/abhaken – frei nach Gefühl
+1. Aufgabe mit Datum und Uhrzeit: `Turnbeutel morgen 07:30 vorbereiten`
+2. Aufgabe ohne Datum: `Snackliste für Besuch ergänzen`
+3. Aufgabe mit hoher Priorität: `Kinderarzt-Unterlagen prüfen`
+4. Aufgabe mit Kategorie oder Tag: `Familienkalender für Wochenende checken`
+5. Wegwerf-Aufgabe: `Bitte wieder löschen`
 
-### Mini‑Notiz (1 Satz)
-- Was hat dir beim Orientieren geholfen — und was war eher unklar?
+Danach:
+1. Lösche die Aufgabe `Bitte wieder löschen`.
+2. Öffne wieder `Heute`.
+3. Markiere eine deiner neuen Aufgaben als erledigt.
+4. Öffne `Kalender` und prüfe, ob deine neuen Aufgaben auftauchen.
 
-## Phase 2 — Adaptive (ca. 6–8 Minuten)
-1. Gehe zu **`/einstellungen`**, nutze **denselben Pseudonym‑Code** und stelle auf **Adaptive** um (Eingriffsstufe übernehmen).
-2. **Demo nicht erneut laden.**
-3. Nutze FluxPlan wieder kurz „normal“: **Heute ↔ Aufgaben ↔ Kalender** so, wie du es machen würdest.
+## Mini-Pause
+Nimm dir 1 Minute und beantworte innerlich:
+Was hat dir geholfen, dich zu orientieren? Was war eher unklar?
 
-### Muster erzeugen (damit Vorschläge eine Chance haben)
-Lege jetzt in Adaptive **4 neue Aufgaben** an (kurz, erfunden). Wichtig ist nur das Muster:
+Du musst nichts aufschreiben, außer die Studienleitung bittet dich darum.
 
-- [ ] **2 ähnliche Aufgaben** (z. B. beide „Geburtstag …“ oder beide „Kita …“) mit **Datum/Uhrzeit**
-- [ ] **mindestens 1 davon mit Erinnerung** *(falls möglich)*
-- [ ] **1 weitere Aufgabe ohne Datum/Uhrzeit** (damit „ungeplant“ wieder vorkommt)
-- [ ] **1 zusätzliche kleine Aufgabe** (frei)
+## Phase 2 – Auf Adaptive umstellen
+Jetzt darf FluxPlan vorsichtig mitdenken.
 
-### Wenn ein Vorschlag auftaucht
-- Lies ihn komplett.
-- Öffne **„Warum?“** (falls vorhanden).
-- Triff **eine** Entscheidung: **annehmen** *oder* **nicht jetzt** *oder* **ablehnen**.
-- Wenn danach **Rückgängig/Undo** sichtbar ist: einmal testen (optional).
+1. Öffne `Einstellungen`.
+2. Gib denselben Pseudonym-Code ein wie vorher.
+3. Wähle `Adaptive`.
+4. Bestätige Adaptive.
+5. Übernimm die vorgeschlagene Eingriffsstufe.
+6. Starte/übernimm die neue Phase.
+7. Lade die Demo-Daten nicht erneut.
+8. Öffne `Heute` und prüfe, ob deine bisherigen Aufgaben noch da sind.
 
-### Danach: weiterarbeiten wie im Alltag (damit du den Nutzen spürst)
-Jetzt nochmal **2–3 Minuten** „normal arbeiten“ – so, wie du es tatsächlich nutzen würdest:
+## Phase 2A – Adaptive warmfahren
+Damit FluxPlan Muster erkennen kann, benutze die App jetzt etwas gezielter.
 
-- mach weiter mit To‑Dos und Kalender
-- wenn zwischendurch noch ein Vorschlag auftaucht: du entscheidest, aber nichts muss „abgearbeitet“ werden
+1. Wechsle einmal zu `Aufgaben`.
+2. Wechsle zu `Kalender`.
+3. Wechsle zurück zu `Heute`.
+4. Wechsle zu `Erstellen`.
+5. Wechsle zurück zu `Aufgaben`.
+6. Wechsle nochmal zu `Heute`.
 
-### Feedback (kurz)
-- Hat sich Adaptive eher wie **Hilfe**, **Ablenkung** oder **neutral** angefühlt?
-- Gab es einen Moment, wo du dachtest: „**Ja, das spart mir gerade Zeit**“ (oder eben nicht)?
+Das ist kein Sporttest, nur ein kleiner Navigationskreis.
 
----
+## Phase 2B – Neue Aufgaben mit Muster anlegen
+Lege jetzt sechs neue Aufgaben an.
 
-*Mission: Familienlogistik, aber ohne Kühlschrankzettel.*
+1. `Geburtstagskerzen morgen kaufen`
+   - mit Datum
+   - wenn möglich mit Erinnerung
+
+2. `Geschenk abholen morgen`
+   - mit Datum
+   - wenn möglich mit Erinnerung
+
+3. `Einladungen nachfassen morgen`
+   - mit Datum
+   - wenn möglich mit Erinnerung
+
+4. `Geburtstagstisch vorbereiten`
+   - mit Datum
+   - ohne Erinnerung, falls möglich
+
+5. `Familien-Ausflug grob planen`
+   - ohne Datum
+
+6. `Kita-Wechselkleidung prüfen`
+   - mit Kategorie oder Tag, falls möglich
+
+Wenn du ein Feld nicht findest, ist das kein Problem. Lege die Aufgabe trotzdem an.
+
+## Phase 2C – Vorschläge bewusst testen
+Wenn ein Vorschlag erscheint:
+
+1. Lies den Vorschlag vollständig.
+2. Klicke auf `Warum?`, falls sichtbar.
+3. Entscheide dich bewusst:
+   - Annehmen
+   - Nicht jetzt
+   - Ablehnen
+4. Wenn nach dem Annehmen `Rückgängig` oder `Undo` sichtbar ist, teste es einmal.
+5. Öffne `Anpassungen` und schau, ob du Verlauf und Erklärung nachvollziehen kannst.
+
+Wenn kein Vorschlag erscheint:
+1. Öffne nochmal `Heute`.
+2. Erstelle noch eine kurze Aufgabe mit Datum.
+3. Wechsle einmal zu `Kalender` und zurück zu `Heute`.
+4. Dann einfach weitermachen. Kein Vorschlag ist kein Fehler.
+
+## Abschluss
+Sag der Studienleitung: `Ich bin fertig.`
+
+Kurze Abschlussfrage:
+Hat sich Adaptive eher wie Hilfe, Ablenkung oder neutral angefühlt?
