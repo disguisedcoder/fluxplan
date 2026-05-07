@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
+import { normalizeStartViewHref } from "@/lib/settings/start-view";
 
 const SAMPLE = 24;
 
@@ -71,6 +72,19 @@ export const viewPreferenceRule: AdaptiveRule = {
     });
     if (existing) return null;
 
+    // Wenn der Nutzer gerade erst einen View-Preference-Vorschlag angenommen hat, nicht erneut nerven.
+    // (Die Startansicht ist dann ohnehin gesetzt.)
+    const recentlyAccepted = await prisma.adaptiveSuggestion.findFirst({
+      where: {
+        userId: ctx.userId,
+        ruleKey: "view_preference",
+        status: "accepted",
+        respondedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+      select: { id: true },
+    });
+    if (recentlyAccepted) return null;
+
     const recent = await prisma.taskInteraction.findMany({
       where: { userId: ctx.userId, type: "view_changed" },
       orderBy: { createdAt: "desc" },
@@ -98,6 +112,18 @@ export const viewPreferenceRule: AdaptiveRule = {
     if (!winner) return null;
 
     const href = winner.t.href;
+
+    // Falls die Standardansicht bereits auf diese Route zeigt, keinen Vorschlag erzeugen.
+    const startPref = await prisma.userPreference.findUnique({
+      where: { userId_key: { userId: ctx.userId, key: "startView" } },
+      select: { value: true },
+    });
+    const raw =
+      startPref?.value && typeof startPref.value === "object" && startPref.value !== null
+        ? String((startPref.value as Record<string, unknown>).href ?? "")
+        : "";
+    if (normalizeStartViewHref(raw) === href) return null;
+
     return {
       ruleKey: "view_preference",
       type: "start_view",

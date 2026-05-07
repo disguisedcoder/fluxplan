@@ -116,7 +116,7 @@ export function PreferencesForm() {
           <div>
             <div className="text-sm font-semibold tracking-tight">Demo-Setup</div>
             <p className="text-xs text-muted-foreground">
-              Lädt pro Rolle genau 10 Aufgaben (inkl. Konflikte/Trigger) und prüft die Heuristiken sofort.
+              Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Trigger) und prüft die Heuristiken sofort.
             </p>
           </div>
           <DemoSeedButton onDone={load} />

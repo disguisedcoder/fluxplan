@@ -86,6 +86,64 @@ export function evalrunnerRole(now = new Date()): DemoRoleDefinition {
       tags: ["reset"],
       estimatedMinutes: 10,
     },
+    // more varied surface area (keeps eval role demanding)
+    {
+      title: "Ansichten: Kurz hin und her (A)",
+      priority: "low",
+      dueDate: null,
+      listName: "Eval",
+      tags: ["trigger"],
+      estimatedMinutes: 5,
+    },
+    {
+      title: "Ansichten: Kurz hin und her (B)",
+      priority: "low",
+      dueDate: null,
+      listName: "Eval",
+      tags: ["trigger"],
+      estimatedMinutes: 5,
+    },
+    {
+      title: "Backlog: 3 Mini-Aufgaben bündeln",
+      priority: "medium",
+      dueDate: null,
+      listName: "Eval",
+      tags: ["cleanup"],
+      estimatedMinutes: 15,
+    },
+    {
+      title: "Kalender: Freien Slot auswählen",
+      priority: "medium",
+      dueDate: at(now, 0, 14, 0),
+      listName: "Eval",
+      tags: ["planning"],
+      estimatedMinutes: 10,
+    },
+    {
+      title: "Reminder: zweite Bestätigung",
+      priority: "high",
+      dueDate: at(now, 0, 18, 0),
+      reminderAt: at(now, 0, 17, 45),
+      listName: "Eval",
+      tags: ["reminder"],
+      estimatedMinutes: 10,
+    },
+    {
+      title: "Überlast: Heute zu viel vornehmen",
+      priority: "high",
+      dueDate: at(now, 0, 16, 0),
+      listName: "Eval",
+      tags: ["focus"],
+      estimatedMinutes: 180,
+    },
+    {
+      title: "Überlast: noch ein Block (absichtlich)",
+      priority: "high",
+      dueDate: at(now, 0, 16, 0),
+      listName: "Eval",
+      tags: ["konflikt"],
+      estimatedMinutes: 120,
+    },
   ] as const;
 
   return {
@@ -109,7 +167,7 @@ export function evalrunnerRole(now = new Date()): DemoRoleDefinition {
       { screen: "task_created", taskTitle: "Konflikt-Block 1", metadata: { source: "demo" } },
       { screen: "/heute", taskTitle: "Fokus: Wichtige Aufgabe", metadata: { trigger: "demo" } },
     ],
-    eventLogMetadata: { role: "evalrunner", taskCount: 10 },
+    eventLogMetadata: { role: "evalrunner", taskCount: tasks.length },
   };
 }
 

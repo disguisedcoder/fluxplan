@@ -19,7 +19,7 @@ export default async function WillkommenPage() {
               Zur Standardansicht
             </Link>
           ) : (
-            <Link href="/einstellungen" className={buttonVariants({ size: "default", variant: "outline" })}>
+            <Link href="/" className={buttonVariants({ size: "default", variant: "outline" })}>
               Session starten
             </Link>
           )

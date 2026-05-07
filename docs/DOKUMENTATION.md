@@ -132,12 +132,12 @@ FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lang
 1. Study Session starten (z. B. Pseudonym `F01` / `T01` / `E01`).
 2. `/einstellungen` → Karte **„Demo-Setup“** → Rolle auswählen → **„Demo-Daten laden“**.
 
-Das lädt **genau 10 Aufgaben** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach eine Heuristik-Prüfung aus.
+Das lädt ein **größeres Aufgaben-Set** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach eine Heuristik-Prüfung aus.
 
 ### Demo-Endpoint (API)
 
 - `POST /api/data/demo`
-  - macht standardmäßig: **Reset → 10 Tasks + View-Events + Preferences → mehrere Engine-Evaluations → final evaluate auf `/heute`**
+  - macht standardmäßig: **Reset → Aufgaben-Set + View-Events + Preferences → mehrere Engine-Evaluations → final evaluate auf `/heute`**
   - optionaler Body:
 
     ```json
@@ -153,7 +153,7 @@ Die druckfertigen Aufgabenblätter liegen unter:
 - `docs/study-sheets/evalrunner.md`
 
 Jedes Sheet enthält:
-- 10 Aufgaben (damit die Person nicht erst Daten eintippen muss)
+- ein vollständiges Aufgaben-Set (damit die Person nicht erst Daten eintippen muss)
 - einen kurzen Ablauf (8–15 Minuten), um Features gezielt zu triggern
 
 ### Seed-Testuser (10–15 Pseudonyme)
@@ -277,7 +277,7 @@ Die Library setzt nur die Klasse `.dark` (oder entfernt sie) auf das `<html>`-El
   2. `prisma migrate` — verwandelt das Schema in echte SQL-Migrations und führt sie auf der DB aus.
   3. `@prisma/client` — der TypeScript-Client. Damit schreiben wir z. B. `prisma.task.findMany({ where: { userId } })` ohne SQL.
 - **Seed**: `prisma/seed.ts` füllt die DB mit Beispiel-Daten (User, Aufgaben, Vorschläge). Beim ersten Start im Container wird das automatisch ausgeführt.
-  - Zusätzlich werden 10–15 Test-Pseudonyme (`Fxx`, `Txx`, `Exx`) mit je 10 Aufgaben angelegt, um Features schnell prüfen zu können.
+  - Zusätzlich werden 10–15 Test-Pseudonyme (`Fxx`, `Txx`, `Exx`) mit je einem Aufgaben-Set angelegt, um Features schnell prüfen zu können.
 
 ## 2.5 Auth: HTTP-only Cookies, kein OAuth
 
@@ -356,7 +356,7 @@ src/
     db/prisma.ts          # Prisma Singleton
     auth/                 # Cookie- und User-Helper
     adaptive/             # Engine + Regeln + EngineConfig
-    demo/                 # Rollen-Definitionen für Demo/Seed (je Rolle 10 Tasks)
+    demo/                 # Rollen-Definitionen für Demo/Seed (je Rolle Aufgaben-Set)
     parser/               # Sprachparser für /erstellen
     hooks/                # useKeyboardShortcuts
     ui/                   # Kategorie-Helper
@@ -367,7 +367,7 @@ prisma/
 docs/
   DOKUMENTATION.md        # diese Datei
   NEXT_PROMPT.md          # ursprünglicher Bauplan
-  study-sheets/           # druckfertige Rollen-Sheets (10 Tasks + Ablauf)
+  study-sheets/           # druckfertige Rollen-Sheets (Aufgaben-Set + Ablauf)
 docker-compose.yml        # db + app
 Dockerfile                # Container für die App
 ```
@@ -551,7 +551,7 @@ Die folgende Tabelle bezieht sich auf die **Leitidee** aus `docs/NEXT_PROMPT.md`
 | Auth | Pseudonym + Session, kein echtes Login | Cookies `fp_userId` / `fp_sessionId`, `requireUserId()` | Minimaler Aufwand; Trennung der Teilnehmer über Pseudonym; Session für Export/Logs. |
 | Routing | Deutsche Pfade, Redirects von alten englischen URLs | `/(app)/heute` etc., Redirects wo nötig | Konsistente IA für deutschsprachige Mockups. |
 | Kalender | Leichtgewichtige Planung, Konflikte sichtbar | Wochenraster + Konfliktlogik + Detailkarten (Weiterentwicklung im Projektverlauf) | Fokus auf **Transparenz** statt automatischer Planung. |
-| Demo & Studie | Reproduzierbare Szenarien | Rollen (`familienplanner`, `taskplanner`, `evalrunner`), je 10 Tasks, `POST /api/data/demo`, Seed-User, Study-Sheets `.md` | Ohne Demo-Daten wäre Evaluation fragil; Sheets sind **druckbar** für Probanden. |
+| Demo & Studie | Reproduzierbare Szenarien | Rollen (`familienplanner`, `taskplanner`, `evalrunner`) mit Aufgaben-Set, `POST /api/data/demo`, Seed-User, Study-Sheets `.md` | Ohne Demo-Daten wäre Evaluation fragil; Sheets sind **druckbar** für Probanden. |
 | Admin / Reset | Nicht zwingend in NEXT_PROMPT | Admin-Pseudonym via `FLUXPLAN_ADMIN_PSEUDONYMS`, `reset-demo-users`, CLI `reset:test-users` | Praxisbedarf: zwischen Testläufen **schnell** konsistente DB-Zustände herstellen. |
 | Logout / User-Wechsel | Nicht explizit im alten Prompt | `POST /api/study/logout`, UI „Session beenden“ | Ohne Logout ist Multi-User-Testing am selben Rechner unnötig frickelig. |
 | Build / Qualität | Stabiler Prototyp | `npm run lint`; `npm run build` soll grün sein | „Buildfähiger Prototyp“ ist in Verteidigung/Paper verteidigbar. |
@@ -585,7 +585,7 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 
 4. **Story-Rollen: Familienplanner vs. Taskplanner (+ Eval)**  
    - **Ziel:** Unterschiedliche Aufgaben-Sets, um **Konflikte**, **Reminder-Muster**, **Listen/Filter** und **Adaptivität** gezielt zu triggern.  
-   - **Konsequenz:** Drei Rollen mit **je 10 Tasks** in `src/lib/demo/roles/*.ts`, zentral über `getDemoRole`/`roleFromPseudonym`; **druckbare** Study-Sheets unter `docs/study-sheets/*.md`; Seed legt **15 Pseudonyme** (`Fxx`, `Txx`, `Exx`) an.
+   - **Konsequenz:** Drei Rollen mit **Aufgaben-Sets** in `src/lib/demo/roles/*.ts`, zentral über `getDemoRole`/`roleFromPseudonym`; **druckbare** Study-Sheets unter `docs/study-sheets/*.md`; Seed legt **15 Pseudonyme** (`Fxx`, `Txx`, `Exx`) an.
 
 5. **Demo: Daten setzen und Engine sofort prüfen**  
    - **Ziel:** Kein „Warten auf Zufall“ — nach Laden der Demo soll evaluierbar sein.  

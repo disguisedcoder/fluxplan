@@ -21,7 +21,7 @@ export type DemoRoleDefinition = {
   key: DemoRoleKey;
   label: string;
   description: string;
-  tasks: DemoTaskInput[]; // exactly 10 (enforced by creator)
+  tasks: DemoTaskInput[]; // sized per study design (>= 10 recommended)
   viewEvents?: DemoViewEvent[];
   preferences?: Array<{ key: string; value: unknown }>;
   // extra evaluations that require (screen=task_created, taskId)
@@ -30,9 +30,9 @@ export type DemoRoleDefinition = {
   eventLogMetadata?: Record<string, unknown>;
 };
 
-export function assertTenTasks(def: DemoRoleDefinition) {
-  if (def.tasks.length !== 10) {
-    throw new Error(`Demo role ${def.key} must define exactly 10 tasks, got ${def.tasks.length}`);
+export function assertMinTasks(def: DemoRoleDefinition, min = 10) {
+  if (def.tasks.length < min) {
+    throw new Error(`Demo role ${def.key} must define at least ${min} tasks, got ${def.tasks.length}`);
   }
 }
 

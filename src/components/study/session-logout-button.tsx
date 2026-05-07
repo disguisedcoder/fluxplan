@@ -33,7 +33,7 @@ export function SessionLogoutButton({
       toast.success("Session beendet. Du kannst ein anderes Pseudonym starten.");
       onDone?.();
       router.refresh();
-      router.push("/einstellungen");
+      router.push("/");
     } finally {
       setBusy(false);
     }

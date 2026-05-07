@@ -30,7 +30,7 @@ type MeResponse = {
   isAdmin?: boolean;
 };
 
-export function SessionCodeInput() {
+export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean }) {
   const router = useRouter();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [pseudonym, setPseudonym] = useState("");
@@ -150,6 +150,36 @@ export function SessionCodeInput() {
     }
   }
 
+  async function startGuest() {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/study/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          pseudonym: "G01",
+          variant: "adaptive",
+          interventionLevel: 2,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toast.error("Gast-Session konnte nicht gestartet werden.", {
+          description: body?.error ?? "Ungültige Eingabe oder Serverfehler.",
+        });
+        return;
+      }
+      toast.success("Gast-Session gestartet.", {
+        description: "Pseudonym: G01",
+      });
+      router.push("/start");
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <>
       <Card className="max-w-xl">
@@ -236,9 +266,16 @@ export function SessionCodeInput() {
             <Button onClick={startSession} disabled={!normalized || !variantConfirmed || submitting}>
               Session starten
             </Button>
-          <Button type="button" variant="outline" onClick={() => router.push("/start")}>
-            Zur App
-          </Button>
+            {allowGuest ? (
+              <Button type="button" variant="outline" onClick={startGuest} disabled={submitting}>
+                Als Gast starten
+              </Button>
+            ) : null}
+            {me?.user ? (
+              <Button type="button" variant="outline" onClick={() => router.push("/start")}>
+                Zur App
+              </Button>
+            ) : null}
           </div>
         </CardContent>
       </Card>

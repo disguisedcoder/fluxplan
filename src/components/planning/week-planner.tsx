@@ -443,15 +443,15 @@ function UnplannedList({
                     ) : null}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <TaskFormDialog mode="edit" initial={t} triggerLabel="Heute" onSaved={() => {}} />
                     <Button
                       size="xs"
-                      variant="ghost"
+                      variant="secondary"
                       disabled={busyId === t.id}
                       onClick={() => onPlanToday(t.id)}
                     >
-                      Planen
+                      Heute
                     </Button>
+                    <TaskFormDialog mode="edit" initial={t} triggerLabel="Planen" onSaved={() => {}} />
                   </div>
                 </li>
               );

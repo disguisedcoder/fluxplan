@@ -6,9 +6,9 @@
 1. Pseudonym: **`F01`** (oder ein anderes **`Fxx`**).
 2. In der App: **`/einstellungen`** → **Demo-Setup** → Rolle **Familienplanner** → **Demo-Daten laden**.
 
-**Ab jetzt gilt:** Die **10 Aufgaben** stecken **bereits** in der Demo. Du **legst sie nicht von Hand an** und fügst für diese Rolle **keine weiteren Aufgaben** hinzu — so bleibt die Studie vergleichbar.
+**Ab jetzt gilt:** Die **Demo-Aufgaben** stecken **bereits** in der Demo (größeres Set, damit du echten Überblick brauchst). Du **legst sie nicht von Hand an** und fügst für diese Rolle **keine weiteren Aufgaben** hinzu — so bleibt die Studie vergleichbar.
 
-## Die 10 Mini-Missionen (nur in der App finden & abarbeiten)
+## Die Demo-Missionen (nur in der App finden & abarbeiten)
 Stell sie dir als **Episoden** vor — in der Liste tauchen sie unter diesen Titeln auf:
 
 1. **„Pünktlich zur Kita“** — Abholung heute 16:30, Wecker davor, 20 Min. *(#kita)*

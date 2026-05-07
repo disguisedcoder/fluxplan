@@ -1,5 +1,5 @@
 import type { DemoRoleDefinition, DemoRoleKey } from "./types";
-import { assertTenTasks } from "./types";
+import { assertMinTasks } from "./types";
 import { familienplannerRole } from "./roles/familienplanner";
 import { taskplannerRole } from "./roles/taskplanner";
 import { evalrunnerRole } from "./roles/evalrunner";
@@ -9,6 +9,7 @@ export function roleFromPseudonym(pseudonym: string): DemoRoleKey {
   if (p.startsWith("F")) return "familienplanner";
   if (p.startsWith("T")) return "taskplanner";
   if (p.startsWith("E")) return "evalrunner";
+  if (p.startsWith("G")) return "taskplanner"; // guest → simplest default role
   return "taskplanner";
 }
 
@@ -19,7 +20,7 @@ export function getDemoRole(role: DemoRoleKey, now = new Date()): DemoRoleDefini
       : role === "evalrunner"
         ? evalrunnerRole(now)
         : taskplannerRole(now);
-  assertTenTasks(def);
+  assertMinTasks(def, 10);
   return def;
 }
 

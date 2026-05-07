@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,9 @@ import {
 } from "@/components/ui/select";
 import { TaskCard } from "./task-card";
 import type { Task } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 import {
-  categoryToneFor,
   pickPrimaryCategory,
 } from "@/lib/ui/category";
 
@@ -67,6 +69,13 @@ export function TasksScreen() {
   const [quick, setQuick] = useState<Quick>("all");
   const [sort, setSort] = useState<Sort>("due_asc");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [density, setDensity] = useState<"compact" | "comfort">("compact");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    overdue_today: false,
+    next7: false,
+    later: true,
+    no_date: true,
+  });
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -138,7 +147,44 @@ export function TasksScreen() {
     return { all: tasks.length, today, overdue, week, no_date: noDate };
   }, [tasks]);
 
-  const grouped = useMemo(() => groupByCategory(filtered), [filtered]);
+  const sections = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
+    const endOfNext7 = new Date(startOfToday);
+    endOfNext7.setDate(endOfNext7.getDate() + 7);
+
+    const overdueToday: Task[] = [];
+    const next7: Task[] = [];
+    const later: Task[] = [];
+    const noDate: Task[] = [];
+
+    for (const t of filtered) {
+      if (!t.dueDate) {
+        noDate.push(t);
+        continue;
+      }
+      const d = new Date(t.dueDate);
+      if (t.status !== "done" && d < startOfToday) {
+        overdueToday.push(t);
+      } else if (d >= startOfToday && d < endOfToday) {
+        overdueToday.push(t);
+      } else if (d >= endOfToday && d < endOfNext7) {
+        next7.push(t);
+      } else {
+        later.push(t);
+      }
+    }
+
+    return [
+      { id: "overdue_today", label: "Heute & Überfällig", items: overdueToday },
+      { id: "next7", label: "Nächste 7 Tage", items: next7 },
+      { id: "later", label: "Später", items: later },
+      { id: "no_date", label: "Ohne Datum", items: noDate },
+    ] as const;
+  }, [filtered]);
 
   return (
     <div className="space-y-5">
@@ -221,6 +267,31 @@ export function TasksScreen() {
             })}
           </div>
 
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
+            <div className="text-xs text-muted-foreground">
+              {filtered.length} Aufgaben sichtbar
+              {tasks.length !== filtered.length ? ` (von ${tasks.length})` : ""}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={density === "compact" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setDensity("compact")}
+              >
+                Kompakt
+              </Button>
+              <Button
+                type="button"
+                variant={density === "comfort" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setDensity("comfort")}
+              >
+                Komfort
+              </Button>
+            </div>
+          </div>
+
           {showAdvanced ? (
             <div className="grid gap-3 border-t border-border/60 pt-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
@@ -275,23 +346,47 @@ export function TasksScreen() {
         <EmptyState onReset={() => setQuick("all")} hasFilter={quick !== "all" || q.length > 0} />
       ) : (
         <div className="space-y-6">
-          {grouped.map((group) => (
-            <section key={group.label} className="space-y-2">
-              <header className="flex items-center justify-between px-1">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  {group.label}
-                </h2>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {group.items.length}
-                </span>
-              </header>
-              <div className="grid gap-2.5">
-                {group.items.map((t) => (
-                  <TaskCard key={t.id} task={t} onChanged={load} />
-                ))}
-              </div>
-            </section>
-          ))}
+          {sections.map((s) => {
+            if (s.items.length === 0) return null;
+            const isCollapsed = Boolean(collapsed[s.id]);
+            return (
+              <section key={s.id} className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCollapsed((prev) => ({ ...prev, [s.id]: !Boolean(prev[s.id]) }))
+                  }
+                  className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-card px-3 py-2 text-left"
+                  aria-expanded={!isCollapsed}
+                >
+                  <div className="flex items-center gap-2">
+                    {isCollapsed ? (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      {s.label}
+                    </div>
+                  </div>
+                  <span className="text-xs tabular-nums text-muted-foreground">{s.items.length}</span>
+                </button>
+                {isCollapsed ? null : density === "comfort" ? (
+                  <div className="grid gap-2.5">
+                    {s.items.map((t) => (
+                      <TaskCard key={t.id} task={t} onChanged={load} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50 rounded-xl border border-border/60 bg-card">
+                    {s.items.map((t) => (
+                      <CompactTaskRow key={t.id} task={t} onChanged={load} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
         </div>
       )}
     </div>
@@ -395,14 +490,113 @@ function byDueAsc(a: Task, b: Task) {
   return ad - bd;
 }
 
-function groupByCategory(tasks: Task[]) {
-  const map = new Map<string, { label: string; tone: ReturnType<typeof categoryToneFor>; items: Task[] }>();
-  for (const t of tasks) {
-    const cat = pickPrimaryCategory(t) ?? "Ohne Kategorie";
-    const tone = categoryToneFor(cat === "Ohne Kategorie" ? null : cat);
-    const key = cat.toLowerCase();
-    if (!map.has(key)) map.set(key, { label: cat, tone, items: [] });
-    map.get(key)!.items.push(t);
+function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void }) {
+  const cat = pickPrimaryCategory(task);
+  const due = task.dueDate ? formatDue(task.dueDate) : null;
+  const overdue = task.status !== "done" && task.dueDate ? isOverdue(task.dueDate) : false;
+  const [busy, setBusy] = useState(false);
+
+  async function toggleDone(next: boolean) {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: next ? "done" : "open" }),
+      });
+      if (res.status === 401) {
+        toast.error("Bitte starte zuerst eine Study Session.");
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Konnte Aufgabe nicht aktualisieren.");
+        return;
+      }
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
   }
-  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+
+  async function remove() {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Konnte Aufgabe nicht löschen.");
+        return;
+      }
+      toast.success("Aufgabe gelöscht.");
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <Checkbox
+        checked={task.status === "done"}
+        onCheckedChange={(v) => toggleDone(Boolean(v))}
+        disabled={busy}
+        aria-label={`Aufgabe ${task.title} erledigen`}
+      />
+      <div className={cn("h-2.5 w-2.5 rounded-full", priorityDot(task.priority))} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <div className={cn("truncate text-sm font-medium", task.status === "done" && "line-through text-muted-foreground")}>
+          {task.title}
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          {due ? <span className={cn(overdue && "text-destructive")}>{due}</span> : <span>Ohne Datum</span>}
+          {cat ? <span className="capitalize">{cat}</span> : null}
+        </div>
+      </div>
+      <div className="ml-auto flex items-center gap-1">
+        <TaskFormDialog mode="edit" initial={task} triggerLabel="Bearbeiten" onSaved={onChanged} />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={remove}
+          disabled={busy}
+          aria-label="Löschen"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function priorityDot(priority: Task["priority"]) {
+  return priority === "high"
+    ? "bg-rose-500/80"
+    : priority === "medium"
+      ? "bg-amber-500/80"
+      : "bg-emerald-500/80";
+}
+
+function formatDue(dueDate: string) {
+  const d = new Date(dueDate);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  const datePart = sameDay(d, today)
+    ? "Heute"
+    : sameDay(d, tomorrow)
+      ? "Morgen"
+      : d.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "2-digit" });
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+  return hasTime ? `${datePart} · ${time}` : datePart;
+}
+
+function isOverdue(dueDate: string) {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  return new Date(dueDate).getTime() < startOfToday.getTime();
 }

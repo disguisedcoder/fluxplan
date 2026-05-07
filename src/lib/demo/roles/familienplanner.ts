@@ -89,6 +89,89 @@ export function familienplannerRole(now = new Date()): DemoRoleDefinition {
       tags: ["ferien"],
       estimatedMinutes: 30,
     },
+    // more backlog + planning friction (for stronger study effect)
+    {
+      title: "Schulranzen checken (Zettel/Unterschrift)",
+      priority: "medium",
+      dueDate: at(now, 0, 20, 30),
+      listName: "Familie",
+      tags: ["schule"],
+      estimatedMinutes: 15,
+    },
+    {
+      title: "Brotdose & Trinkflasche vorbereiten",
+      priority: "low",
+      dueDate: at(now, 0, 21, 0),
+      listName: "Familie",
+      tags: ["organisation"],
+      estimatedMinutes: 10,
+    },
+    {
+      title: "Hausaufgaben-Zeitblock morgen setzen",
+      priority: "medium",
+      dueDate: at(now, 1, 17, 0),
+      listName: "Familie",
+      tags: ["schule"],
+      estimatedMinutes: 60,
+    },
+    {
+      title: "Elternabend: Fragenliste sammeln",
+      priority: "medium",
+      dueDate: at(now, 2, 18, 0),
+      listName: "Familie",
+      tags: ["schule"],
+      estimatedMinutes: 25,
+    },
+    {
+      title: "Sportverein: Beitrag überweisen",
+      priority: "high",
+      dueDate: at(now, 1, 8, 30),
+      reminderAt: at(now, 1, 8, 0),
+      listName: "Finanzen",
+      tags: ["organisation"],
+      estimatedMinutes: 10,
+    },
+    {
+      title: "Kita-App: Ausflug bestätigen",
+      priority: "high",
+      dueDate: at(now, 0, 14, 0),
+      reminderAt: at(now, 0, 13, 30),
+      listName: "Familie",
+      tags: ["kita"],
+      estimatedMinutes: 10,
+    },
+    {
+      title: "Geschenkidee notieren (Backlog)",
+      priority: "low",
+      dueDate: null,
+      listName: "Familie",
+      tags: ["geburtstag"],
+      estimatedMinutes: 5,
+    },
+    {
+      title: "Gästeliste finalisieren",
+      priority: "high",
+      dueDate: at(now, 3, 9, 30),
+      listName: "Familie",
+      tags: ["geburtstag"],
+      estimatedMinutes: 45,
+    },
+    {
+      title: "Kuchen/Obst einkaufen",
+      priority: "medium",
+      dueDate: at(now, 3, 11, 30),
+      listName: "Haushalt",
+      tags: ["geburtstag", "einkauf"],
+      estimatedMinutes: 60,
+    },
+    {
+      title: "Aufräumen vor Besuch",
+      priority: "medium",
+      dueDate: at(now, 3, 12, 30),
+      listName: "Haushalt",
+      tags: ["geburtstag"],
+      estimatedMinutes: 90,
+    },
   ] as const;
 
   return {
@@ -111,7 +194,7 @@ export function familienplannerRole(now = new Date()): DemoRoleDefinition {
       { screen: "task_created", taskTitle: "Geburtstagsfeier planen", metadata: { source: "demo" } },
       { screen: "/heute", taskTitle: "Kita-Abholung organisieren", metadata: { trigger: "demo" } },
     ],
-    eventLogMetadata: { role: "familienplanner", taskCount: 10 },
+    eventLogMetadata: { role: "familienplanner", taskCount: tasks.length },
   };
 }
 

@@ -6,9 +6,9 @@
 1. Pseudonym: **`T01`** (oder **`Txx`**).
 2. **`/einstellungen`** → **Demo-Setup** → **Taskplanner** → **Demo-Daten laden**.
 
-**Ab jetzt:** Die **10 Demo-Aufgaben** sind **fertig drin**. Für den **großen** Ablauf unten brauchst du **keine** weiteren Aufgaben in der Liste — **außer** an den zwei Stellen mit **✏️ „Jetzt selbst anlegen“**.
+**Ab jetzt:** Die **Demo-Aufgaben** sind **fertig drin** (größeres Set für realistischen Überblick). Für den Ablauf unten brauchst du **keine** weiteren Aufgaben in der Liste — **außer** an den zwei Stellen mit **✏️ „Jetzt selbst anlegen“**.
 
-## Die 10 Levels (nur finden & nutzen)
+## Die Levels (nur finden & nutzen)
 1. **Kapitel 2 lesen** — heute früh, hoch priorisiert. *(#literatur)*
 2. **Zusammenfassung schreiben** — heute. *(#schreiben)*
 3. **Interviewfragen** — morgen, mit Reminder. *(#interview)*
