@@ -50,9 +50,9 @@ Die geparsten Werte erscheinen als Chips. Du kannst sie jederzeit überschreiben
 ## 1.3 Heute-Dashboard (`/heute`)
 
 - **Fokusliste**: Überfällige + heute fällige Aufgaben in einer Liste.
-- **Heute im Blick**: Termine mit Uhrzeit als Mini-Agenda.
+- **Heute im Überblick**: Termine mit Uhrzeit als Mini-Agenda.
 - **Schnellzugriff**: Liste der Tastatur-Shortcuts (siehe 1.10).
-- **Woche im Blick**: Mini-Monatskalender mit Tagen, an denen Aufgaben fällig sind.
+- **Woche im Überblick**: Mini-Monatskalender mit Tagen, an denen Aufgaben fällig sind.
 - **Systemstatus**: Status-Badges (z. B. „Undo verfügbar").
 
 ## 1.4 Kalender (`/kalender`)
@@ -123,7 +123,7 @@ FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lang
 
 ### Rollen (Stories)
 
-- **Familienplanner**: kalendernah, Termine/Reminder, Konflikte im Wochenraster, häufiger Wechsel zwischen Heute und Kalender.
+- **Familienplanner**: kalendernah, Termine/Erinnerungen, Konflikte im Wochenraster, häufiger Wechsel zwischen Heute und Kalender.
 - **Taskplanner**: aufgabengetrieben, Kategorien/Tags, Suche/Filter, Quick-Add und Sprachparser.
 - **Eval-Runner**: reproduzierbarer Feature-Check (Vorschläge, Konflikte, Export/Reset).
 
@@ -317,7 +317,7 @@ In `src/lib/adaptive/`:
 3. `runAdaptiveEngine` lädt die Engine-Konfiguration und durchläuft alle Regeln.
 4. Trifft `dailyFocusRule` zu (≥ 4 heutige Aufgaben), erzeugt sie einen Draft.
 5. Ist die Regel nicht pausiert (kein Cooldown, kein Snooze, Master-Toggle aktiv) und gibt es noch keinen offenen gleichen Vorschlag → eintragen in `AdaptiveSuggestion`.
-6. Du siehst ihn auf `/anpassungen`. Klick auf „Annehmen" ruft `POST /api/suggestions/:id/respond` mit Action `accept` auf — der Vorschlag wird umgesetzt (z. B. Reminder eintragen).
+6. Du siehst ihn auf `/anpassungen`. Klick auf „Annehmen" ruft `POST /api/suggestions/:id/respond` mit Action `accept` auf — der Vorschlag wird umgesetzt (z. B. Erinnerung eintragen).
 7. Klick auf „Ablehnen" zählt als Reject. Zwei Rejects in 14 Tagen ⇒ Cooldown (Regel 14 Tage pausiert).
 
 ### Warum so einfach?
@@ -584,7 +584,7 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
    - **Konsequenz:** Vier Stufen **beibehalten** (Engine-Schwellen unverändert), UI-Texte zentral in `src/lib/settings/intervention-levels.ts`: **Aus / Leicht / Mittel / Viel**; Master-Schalter (`adaptive.enabled`) vs. Stufe „Aus“ (`interventionLevel === 0`) in den Hilfetexten getrennt.
 
 4. **Story-Rollen: Familienplanner vs. Taskplanner (+ Eval)**  
-   - **Ziel:** Unterschiedliche Aufgaben-Sets, um **Konflikte**, **Reminder-Muster**, **Listen/Filter** und **Adaptivität** gezielt zu triggern.  
+   - **Ziel:** Unterschiedliche Aufgaben-Sets, um **Konflikte**, **Erinnerungs-Muster**, **Listen/Filter** und **Adaptivität** gezielt zu triggern.  
    - **Konsequenz:** Drei Rollen mit **Aufgaben-Sets** in `src/lib/demo/roles/*.ts`, zentral über `getDemoRole`/`roleFromPseudonym`; **druckbare** Study-Sheets unter `docs/study-sheets/*.md`; Seed legt **15 Pseudonyme** (`Fxx`, `Txx`, `Exx`) an.
 
 5. **Demo: Daten setzen und Engine sofort prüfen**  

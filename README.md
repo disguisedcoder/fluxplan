@@ -56,7 +56,7 @@ Alte englische Pfade (`/today`, `/tasks`, `/planning`, `/adaptive`, `/settings`,
 - **Eingriffsstufe** 0–3 skaliert die Trigger-Schwellen jeder Regel.
 - **Snooze 24 h**: vertagte Vorschläge verhindern dieselbe Regel für 24 Stunden.
 - **Cooldown 14 Tage**: zwei Rejects derselben Regel innerhalb von 14 Tagen pausieren sie automatisch.
-- **Reversibilität**: Jede Annahme kann rückgängig gemacht werden (z. B. Startansicht wird zurückgesetzt, Reminder entfernt).
+- **Reversibilität**: Jede Annahme kann rückgängig gemacht werden (z. B. Startansicht wird zurückgesetzt, Erinnerung entfernt).
 - **Probelauf**: Im Tab Personalisierung können Heuristiken auf Knopfdruck einmalig ausgeführt werden.
 
 ## UI-Detail-Features

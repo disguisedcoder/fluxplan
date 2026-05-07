@@ -61,12 +61,12 @@ export function taskplannerRole(now = new Date()): DemoRoleDefinition {
       estimatedMinutes: 25,
     },
     {
-      title: "Reminder-Setup testen",
+      title: "Erinnerung testen",
       priority: "medium",
       dueDate: at(now, 3, 9, 30),
       reminderAt: at(now, 3, 8, 30),
       listName: "Eval",
-      tags: ["reminder"],
+      tags: ["erinnerung"],
       estimatedMinutes: 20,
     },
     {
@@ -143,12 +143,12 @@ export function taskplannerRole(now = new Date()): DemoRoleDefinition {
       estimatedMinutes: 20,
     },
     {
-      title: "Reminder: 2 kritische Aufgaben prüfen",
+      title: "Erinnerung: 2 kritische Aufgaben prüfen",
       priority: "medium",
       dueDate: at(now, 0, 8, 30),
       reminderAt: at(now, 0, 8, 0),
       listName: "Eval",
-      tags: ["reminder"],
+      tags: ["erinnerung"],
       estimatedMinutes: 10,
     },
     {

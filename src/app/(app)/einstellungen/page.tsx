@@ -36,7 +36,7 @@ export default function EinstellungenPage() {
               <ul className="space-y-1.5 text-sm text-muted-foreground">
                 <li>· Logging läuft lokal in PostgreSQL. Es wird nichts extern gesendet.</li>
                 <li>· Pseudonyme sind frei wählbar und nicht mit echten Identitäten verknüpft.</li>
-                <li>· Adaptive Vorschläge greifen erst nach erkennbaren Mustern.</li>
+                <li>· Vorschläge erscheinen erst bei erkennbaren Mustern – und nur, wenn du sie erlaubst.</li>
               </ul>
             </CardContent>
           </Card>

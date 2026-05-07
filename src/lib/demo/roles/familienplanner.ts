@@ -177,7 +177,7 @@ export function familienplannerRole(now = new Date()): DemoRoleDefinition {
   return {
     key: "familienplanner",
     label: "Familienplanner",
-    description: "Kalendernah, Termine und Konflikte, Reminder-Muster und Ansichtswechsel.",
+    description: "Kalendernah, Termine und Konflikte, Erinnerungs-Muster und Ansichtswechsel.",
     tasks: [...tasks],
     viewEvents: [
       { from: "/heute", to: "/kalender" },

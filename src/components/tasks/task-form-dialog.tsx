@@ -27,6 +27,7 @@ export function TaskFormDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger,
+  triggerSize = "default",
 }: {
   mode: "create" | "edit";
   initial?: Task;
@@ -35,6 +36,7 @@ export function TaskFormDialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  triggerSize?: "xs" | "sm" | "default";
 }) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
@@ -91,7 +93,9 @@ export function TaskFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {hideTrigger ? null : (
-        <DialogTrigger render={<Button variant={mode === "create" ? "default" : "outline"} />}>
+        <DialogTrigger
+          render={<Button variant={mode === "create" ? "default" : "outline"} size={triggerSize} />}
+        >
           {triggerLabel}
         </DialogTrigger>
       )}

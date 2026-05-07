@@ -30,6 +30,7 @@ export function TodayDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingSuggestion, setPendingSuggestion] = useState<AdaptiveSuggestion | null>(null);
+  const [justCompleted, setJustCompleted] = useState<Task[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -69,7 +70,7 @@ export function TodayDashboard() {
     loadPendingSuggestion().catch(() => {});
   }, [load, loadPendingSuggestion]);
 
-  const { focus, agenda, dueTodayCount, openCount, highlightedDates } = useMemo(
+  const { focus, agenda, dueTodayCount, openCount, highlightedDates, dayCountsByStamp } = useMemo(
     () => deriveTodayBuckets(tasks),
     [tasks],
   );
@@ -101,8 +102,10 @@ export function TodayDashboard() {
       <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr_1fr]">
         <FocusListCard
           tasks={focus}
+          justCompleted={justCompleted}
           loading={loading}
           onChanged={load}
+          onJustCompletedChange={setJustCompleted}
         />
 
         <div className="space-y-6">
@@ -113,6 +116,7 @@ export function TodayDashboard() {
         <div className="space-y-6">
           <WeekGlanceCard
             highlightedDates={highlightedDates}
+            dayCountsByStamp={dayCountsByStamp}
             openCount={openCount}
             dueTodayCount={dueTodayCount}
           />
@@ -169,7 +173,7 @@ function TodaySuggestionBanner({
             ? "Startansicht gespeichert."
             : "Übernommen."
         : action === "snooze"
-          ? "Später."
+          ? "Vertagt."
           : "Abgelehnt.",
     );
     onChanged();
@@ -210,7 +214,7 @@ function TodaySuggestionBanner({
               {suggestion.type === "start_view" ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
                   Mit <span className="font-medium text-foreground">Ja</span> wird deine{" "}
-                  <span className="font-medium text-foreground">Standardansicht</span> gespeichert und du springst
+                  <span className="font-medium text-foreground">Startansicht</span> gespeichert und du springst
                   sofort dorthin. In der Sidebar öffnet <span className="font-medium text-foreground">Start</span> ab
                   dann genau diese Seite (Heute, Kalender, …). Tour und Prinzipien bleiben unter{" "}
                   <span className="font-medium text-foreground">Willkommen</span> erreichbar.
@@ -227,7 +231,7 @@ function TodaySuggestionBanner({
           </Button>
           <Button variant="outline" onClick={() => respond("snooze")} className="gap-2">
             <Clock className="h-4 w-4" />
-            Später
+            Nicht jetzt
           </Button>
           <Button variant="ghost" onClick={() => respond("reject")} className="gap-2">
             <X className="h-4 w-4" />
@@ -255,12 +259,16 @@ function TodaySuggestionBanner({
 
 function FocusListCard({
   tasks,
+  justCompleted,
   loading,
   onChanged,
+  onJustCompletedChange,
 }: {
   tasks: TaskWithDue[];
+  justCompleted: Task[];
   loading: boolean;
   onChanged: () => void;
+  onJustCompletedChange: React.Dispatch<React.SetStateAction<Task[]>>;
 }) {
   return (
     <Card className="fp-card">
@@ -271,8 +279,11 @@ function FocusListCard({
             href="/aufgaben"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
-            Alle Aufgaben
+            Alle Aufgaben (inkl. Erledigt)
           </Link>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Aus offenen Aufgaben zusammengestellt (überfällig, heute fällig, Priorität, dann Auffüller).
         </div>
 
         {loading ? (
@@ -284,10 +295,60 @@ function FocusListCard({
         ) : (
           <ul className="space-y-2">
             {tasks.slice(0, 5).map((t) => (
-              <FocusListItem key={t.id} task={t} onChanged={onChanged} />
+              <FocusListItem
+                key={t.id}
+                task={t}
+                onChanged={onChanged}
+                onJustCompleted={(doneTask) => {
+                  onJustCompletedChange((prev) => {
+                    const next = [doneTask, ...prev.filter((x) => x.id !== doneTask.id)];
+                    return next.slice(0, 5);
+                  });
+                }}
+              />
             ))}
           </ul>
         )}
+
+        {justCompleted.length > 0 ? (
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Gerade erledigt
+            </div>
+            <ul className="mt-2 space-y-2">
+              {justCompleted.slice(0, 3).map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium line-through text-muted-foreground">
+                      {t.title}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">Du kannst es direkt wieder öffnen.</div>
+                  </div>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={async () => {
+                      const res = await fetch(`/api/tasks/${t.id}`, {
+                        method: "PATCH",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ status: "open" }),
+                      });
+                      if (res.ok) {
+                        toast.success("Wieder geöffnet.");
+                        onJustCompletedChange((prev) => prev.filter((x) => x.id !== t.id));
+                        onChanged();
+                      } else {
+                        toast.error("Konnte nicht wieder öffnen.");
+                      }
+                    }}
+                  >
+                    Rückgängig
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div className="pt-1">
           <QuickAddInput onCreated={onChanged} />
@@ -300,9 +361,11 @@ function FocusListCard({
 function FocusListItem({
   task,
   onChanged,
+  onJustCompleted,
 }: {
   task: TaskWithDue;
   onChanged: () => void;
+  onJustCompleted: (t: Task) => void;
 }) {
   const category = pickPrimaryCategory(task);
   const tone = categoryToneFor(category);
@@ -317,11 +380,16 @@ function FocusListItem({
   })();
 
   async function toggleDone(next: boolean) {
+    if (next) {
+      const ok = window.confirm(`Als erledigt markieren?\n\n${task.title}`);
+      if (!ok) return;
+    }
     await fetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ status: next ? "done" : "open" }),
     });
+    if (next) onJustCompleted(task);
     onChanged();
   }
 
@@ -360,7 +428,7 @@ function AgendaCard({
   return (
     <Card className="fp-card">
       <CardContent className="space-y-3 p-6">
-        <h3 className="text-sm font-semibold tracking-tight">Heute im Blick</h3>
+        <h3 className="text-sm font-semibold tracking-tight">Heute im Überblick</h3>
         {loading ? (
           <div className="text-sm text-muted-foreground">Lade …</div>
         ) : agenda.length === 0 ? (
@@ -430,18 +498,20 @@ function ShortcutRow({
 
 function WeekGlanceCard({
   highlightedDates,
+  dayCountsByStamp,
   openCount,
   dueTodayCount,
 }: {
   highlightedDates: Date[];
+  dayCountsByStamp: Record<string, number>;
   openCount: number;
   dueTodayCount: number;
 }) {
   return (
     <Card className="fp-card">
       <CardContent className="space-y-4 p-6">
-        <h3 className="text-sm font-semibold tracking-tight">Woche im Blick</h3>
-        <MiniMonthCalendar highlightedDates={highlightedDates} />
+        <h3 className="text-sm font-semibold tracking-tight">Woche im Überblick</h3>
+        <MiniMonthCalendar highlightedDates={highlightedDates} dayCountsByStamp={dayCountsByStamp} />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3 text-sm">
           <div className="text-muted-foreground">Offen</div>
           <div className="font-medium">{openCount} Aufgaben</div>
@@ -485,10 +555,19 @@ function deriveTodayBuckets(tasks: Task[]) {
   const now = new Date();
   const startToday = startOfLocalDay(now);
 
+  const dayCountsByStamp: Record<string, number> = {};
+
   const enriched: TaskWithDue[] = tasks.map((t) => ({
     ...t,
     dueAt: t.dueDate ? new Date(t.dueDate) : undefined,
   }));
+  for (const t of enriched) {
+    if (!t.dueAt) continue;
+    const d = new Date(t.dueAt);
+    d.setHours(0, 0, 0, 0);
+    const key = String(d.getTime());
+    dayCountsByStamp[key] = (dayCountsByStamp[key] ?? 0) + 1;
+  }
 
   const overdue = enriched.filter(
     (t) => t.dueAt && t.dueAt.getTime() < startToday.getTime(),
@@ -527,5 +606,6 @@ function deriveTodayBuckets(tasks: Task[]) {
     dueTodayCount: today.length,
     openCount: enriched.length,
     highlightedDates,
+    dayCountsByStamp,
   };
 }

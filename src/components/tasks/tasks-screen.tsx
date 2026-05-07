@@ -62,6 +62,7 @@ const PRIORITY_LABELS: Record<Priority, string> = {
 
 export function TasksScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [recentDone, setRecentDone] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status>("open");
@@ -70,6 +71,7 @@ export function TasksScreen() {
   const [sort, setSort] = useState<Sort>("due_asc");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [density, setDensity] = useState<"compact" | "comfort">("compact");
+  const [recentDoneCollapsed, setRecentDoneCollapsed] = useState(true);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     overdue_today: false,
     next7: false,
@@ -97,6 +99,26 @@ export function TasksScreen() {
       }
       const data = await res.json();
       setTasks(data.tasks ?? []);
+
+      // Best practice: "Offen" bleibt ruhig, aber erledigte Tasks sind 1 Klick entfernt
+      // (und als eingeklappte Sektion sichtbar, damit man sie wiederfindet).
+      if (status === "open") {
+        void fetch("/api/tasks?status=done", { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            const rows = (d?.tasks ?? []) as Task[];
+            // Neueste zuerst (API sortiert nicht zwingend nach completedAt).
+            rows.sort(
+              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+            );
+            setRecentDone(rows.slice(0, 10));
+          })
+          .catch(() => {
+            setRecentDone([]);
+          });
+      } else {
+        setRecentDone([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -202,6 +224,43 @@ export function TasksScreen() {
             </div>
 
             <div className="flex items-center gap-2">
+              <div
+                className="hidden md:inline-flex rounded-full border border-border/70 bg-card p-1 text-xs"
+                role="tablist"
+                aria-label="Statusfilter"
+              >
+                {(["open", "done", "archived"] as const).map((s) => {
+                  const active = status === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setStatus(s)}
+                      className={cn(
+                        "rounded-full px-3 py-1 font-medium transition-colors",
+                        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                      )}
+                    >
+                      {STATUS_LABELS[s]}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={status === "all"}
+                  onClick={() => setStatus("all")}
+                  className={cn(
+                    "rounded-full px-3 py-1 font-medium transition-colors",
+                    status === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                  )}
+                >
+                  {STATUS_LABELS.all}
+                </button>
+              </div>
+
               <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
                 <SelectTrigger className="w-[170px]">
                   <SelectValue>
@@ -337,6 +396,36 @@ export function TasksScreen() {
           ) : null}
         </CardContent>
       </Card>
+
+      {status === "open" && recentDone.length > 0 ? (
+        <section className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setRecentDoneCollapsed((v) => !v)}
+            className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-card px-3 py-2 text-left"
+            aria-expanded={!recentDoneCollapsed}
+          >
+            <div className="flex items-center gap-2">
+              {recentDoneCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Zuletzt erledigt
+              </div>
+            </div>
+            <span className="text-xs tabular-nums text-muted-foreground">{recentDone.length}</span>
+          </button>
+          {recentDoneCollapsed ? null : (
+            <div className="divide-y divide-border/50 rounded-xl border border-border/60 bg-card">
+              {recentDone.slice(0, 10).map((t) => (
+                <CompactTaskRow key={t.id} task={t} onChanged={load} />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {loading ? (
         <Card className="fp-card">

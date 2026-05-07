@@ -11,12 +11,12 @@
 ## Die Levels (nur finden & nutzen)
 1. **Kapitel 2 lesen** — heute früh, hoch priorisiert. *(#literatur)*
 2. **Zusammenfassung schreiben** — heute. *(#schreiben)*
-3. **Interviewfragen** — morgen, mit Reminder. *(#interview)*
+3. **Interviewfragen** — morgen, mit Erinnerung. *(#interview)*
 4. **Mockups vergleichen** — in ein paar Tagen. *(#ui)*
 5. **Feedback einarbeiten** — hohe Priorität. *(#review)*
 6. **Tagging-Schema** — **ohne Datum**. *(#taxonomy)*
 7. **Prioritäten sortieren** — **überfällig** (absichtlich). *(#cleanup)*
-8. **Reminder-Setup testen** — später, mit Reminder. *(#reminder)*
+8. **Erinnerung testen** — später, mit Erinnerung. *(#erinnerung)*
 9. **Quick-Add Beispiele** — später. *(#quickadd)*
 10. **Export prüfen** — noch später. *(#export)*
 

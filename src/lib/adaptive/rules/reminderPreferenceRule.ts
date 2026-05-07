@@ -4,9 +4,9 @@ import { thresholdMultiplier } from "../engineConfig";
 
 export const reminderPreferenceRule: AdaptiveRule = {
   key: "reminder_preference",
-  name: "Reminder-Präferenz",
+  name: "Erinnerungs-Präferenz",
   description:
-    "Schlägt bei ähnlichen Aufgaben einen Reminder vor, wenn du das oft tust.",
+    "Schlägt bei ähnlichen Aufgaben eine Erinnerung vor, wenn du das oft tust.",
   async evaluate(ctx) {
     if (ctx.screen !== "task_created" || !ctx.taskId) return null;
 
@@ -51,7 +51,7 @@ export const reminderPreferenceRule: AdaptiveRule = {
     return {
       ruleKey: "reminder_preference",
       type: "reminder_suggestion",
-      title: "Reminder vorschlagen?",
+      title: "Erinnerung vorschlagen?",
       explanation:
         "Dieser Vorschlag basiert auf deinen zuletzt erstellten Aufgaben, bei denen du häufig eine Erinnerung gesetzt hast.",
       payload: { taskId: task.id, proposedReminderAt: proposed.toISOString() },

@@ -56,11 +56,11 @@ export function TransparencyPanel() {
       <CardContent className="space-y-2 p-5">
         <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Eye className="h-4 w-4 text-muted-foreground" />
-          Was die Engine gerade weiß
+          Was FluxPlan gerade berücksichtigt
         </div>
         <p className="text-xs text-muted-foreground">
-          Nur die folgenden Zahlen aus deinen letzten 7 Tagen fließen in die Heuristiken
-          ein. Keine externen Daten, keine Profilanalyse.
+          Nur diese Werte aus deinen letzten 7 Tagen werden dafür genutzt, Vorschläge
+          abzuwägen. Keine externen Daten, keine Profilanalyse.
         </p>
 
         {loading || !data ? (

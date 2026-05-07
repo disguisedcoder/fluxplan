@@ -49,8 +49,7 @@ export function CooldownTab({
                     </span>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Aktiv bis {formatDate(c.until)} · Regelschlüssel:{" "}
-                    <span className="font-mono">{c.key}</span>
+                    Aktiv bis {formatDate(c.until)}
                   </div>
                 </li>
               ))}
@@ -83,7 +82,7 @@ export function CooldownTab({
                     </span>
                   </div>
                   <div className="mt-0.5 text-xs text-muted-foreground">
-                    Regel: <span className="font-mono">{s.ruleKey}</span>
+                    Du hast diesen Vorschlag abgelehnt.
                   </div>
                 </li>
               ))}
@@ -101,7 +100,7 @@ export function CooldownTab({
           <ul className="space-y-1.5 text-sm text-muted-foreground">
             <li>· Pausierte Regeln werden weiterhin gelistet, nur eben ohne Aktion.</li>
             <li>· Du kannst Pausen jederzeit beenden – Regel manuell wieder aktivieren reicht.</li>
-            <li>· Verlauf bleibt unverändert. Cooldown verändert keine bestehenden Aufgaben.</li>
+            <li>· Dein Verlauf bleibt unverändert. Pausen ändern keine bestehenden Aufgaben.</li>
           </ul>
         </CardContent>
       </Card>

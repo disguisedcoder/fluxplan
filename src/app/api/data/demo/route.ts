@@ -26,8 +26,8 @@ async function ensureRules() {
       },
       {
         key: "reminder_preference",
-        name: "Reminder-Präferenz",
-        description: "Schlägt bei ähnlichen Aufgaben einen Reminder vor, wenn du das oft tust.",
+        name: "Erinnerungs-Präferenz",
+        description: "Schlägt bei ähnlichen Aufgaben eine Erinnerung vor, wenn du das oft tust.",
         enabled: true,
       },
       {

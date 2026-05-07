@@ -6,7 +6,7 @@ export const INTERVENTION_LEVELS = [
   {
     value: 0,
     label: "Aus",
-    desc: "Keine neuen Vorschläge durch die Heuristiken (Regeln werden nicht ausgelöst).",
+    desc: "Keine neuen Vorschläge (Regeln werden nicht ausgelöst).",
   },
   {
     value: 1,

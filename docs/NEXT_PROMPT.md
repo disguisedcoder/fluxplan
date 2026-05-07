@@ -14,7 +14,7 @@ Ziel dieses Prompts: FluxPlan in **einem Durchlauf** mockup-konform, bachelorarb
 3. Keine Black-Box. Jede Adaption: „Warum sehe ich das?“ + „Was passiert beim Annehmen?“ verständlich erklärt.
 4. Nutzerkontrolle: jede Suggestion hat **Annehmen / Nicht jetzt / Ablehnen / Rückgängig** + sichtbarer Verlauf.
 5. Wissenschaftliche Idee sichtbar: Transparenz, kontrollierte Adaptivität, Anpassungsverlauf, leichte Planung, gute FTUE.
-6. Inspiration: Microsoft To Do (Ruhe), Apple Erinnerungen (Reminder), Todoist (Struktur/Priorität), TickTick + Any.do (Tagesplanung). KEINE Funktionsüberladung. KEIN AI-Marketing.
+6. Inspiration: Microsoft To Do (Ruhe), Apple Erinnerungen, Todoist (Struktur/Priorität), TickTick + Any.do (Tagesplanung). KEINE Funktionsüberladung. KEIN AI-Marketing.
 7. Planung bleibt **leicht**: Week Strip + Tagescolumn + Mini-Kalender. KEIN voller Kalender.
 8. Evaluation einfach: pseudonymisiertes Logging + JSON Export reicht.
 9. Erklärbarkeit der Tech-Wahl: Next.js/TS/Prisma/Postgres/Railway/Docker-für-DB/Heuristiken statt KI.
@@ -106,9 +106,9 @@ Für JEDE Seite gilt: Loading State, Empty State, Fehler-Toast, Tastatur-/Screen
 - 3-Spalten-Layout (Desktop), gestapelt (Mobile):
   - **Fokusliste**: Top 3–5 Aufgaben mit Kategorie-Badge (Mockup zeigt „Studium“, „Research“, „Prototype“, „Review“). Zeile mit Checkbox + Titel + Zeitfenster („Heute - 09:00–10:30“).
   - Quick-Add Eingabefeld + „Anlegen“ Button am Ende der Spalte.
-  - **Heute im Blick** (Tagescolumn): Zeitstempel links, kleine Pill-Cards rechts: „10:30 Design-Review“, „13:00 Pause“, „16:00 QG-Notizen“. Reine Anzeige (aus Tasks mit Tagesdatum + Uhrzeit / oder Termin-Tasks).
+  - **Heute im Überblick** (Tagescolumn): Zeitstempel links, kleine Pill-Cards rechts: „10:30 Design-Review“, „13:00 Pause“, „16:00 QG-Notizen“. Reine Anzeige (aus Tasks mit Tagesdatum + Uhrzeit / oder Termin-Tasks).
   - **Ruhige Hinweise** (Empty/Pre-State): Hinweis, dass adaptive Vorschläge erst entstehen, wenn Muster auftreten.
-  - **Woche im Blick**: Mini-Monatskalender (markiert: heute fett, Wochenenden andersfarbig). Darunter Stats „6 Aufgaben“ / „2 Termine“ (offene + heute fällig).
+  - **Woche im Überblick**: Mini-Monatskalender (markiert: heute fett, Wochenenden andersfarbig). Darunter Stats „6 Aufgaben“ / „2 Termine“ (offene + heute fällig).
   - **Systemstatus**: 3 Pill-Tags („Keine Regel aktiv“ / „Undo verfügbar“ / „Transparenz sichtbar“).
 - Wenn adaptive Suggestion „start_view“ ODER „daily_focus“ ODER „view_preference“ aktiv ist, oben volle Breite eine **dezente Banner-Suggestion-Karte** (Mockup 08): „Du wechselst oft zur Kalenderansicht. Kompaktansicht rechts einblenden?“ mit Buttons `Ja` / `Später` und „Warum sehe ich das?“.
 - Akzeptanz: Today funktioniert auch wenn KEINE Suggestions vorhanden sind.
@@ -117,7 +117,7 @@ Für JEDE Seite gilt: Loading State, Empty State, Fehler-Toast, Tastatur-/Screen
 - Liste aller Tasks mit:
   - Suchfeld, Filter Status (offen/erledigt/archiv), Priorität, Kategorie/Listenname, „Heute / Überfällig / Diese Woche“.
   - Sortierung: Fälligkeit asc / Priorität desc / Erstellt desc.
-- TaskCard: Checkbox, Titel, kleine Sub-Zeile (Liste, Tag, Reminder-Icon falls gesetzt), Due-Badge.
+- TaskCard: Checkbox, Titel, kleine Sub-Zeile (Liste, Tag, Erinnerungs-Icon falls gesetzt), Due-Badge.
 - Empty State: „Noch keine Aufgaben“ + Primary „Neue Aufgabe“.
 - `filter_used` Event loggen, wenn Nutzer Filter wechselt.
 
@@ -136,9 +136,9 @@ Für JEDE Seite gilt: Loading State, Empty State, Fehler-Toast, Tastatur-/Screen
 - Progressive Disclosure:
   - Tabs „Einfach“ / „Details“.
   - Pflicht: Titel, Datum, Uhrzeit (optional), Liste/Kategorie.
-  - „Weitere Felder“ rechts als +Chips: Priorität, Reminder, Kategorie/Tag, Dauer, Notiz/Kontext.
-- **Adaptive Chips** unter dem Formular (kontextsensitiv): „Reminder 30 Min“, „Kategorie Research“, „Dauer 90 Min“. Bei Click in Form übernehmen, NIE automatisch.
-- **Sprachparsing/Microcopy** (Mockup 10): Eingabezeile „Donnerstag 14 Uhr Interviewleitfaden fertig machen“ → Button „Vorschläge prüfen“. Erkannte Felder erscheinen rechts (Titel, Datum, Uhrzeit, Reminder, Kategorie). Buttons „Übernehmen“ / „Manuell prüfen“. Microcopy-Karte: „Nicht automatisch / Nur auf Anfrage / Vor dem Speichern prüfen“.
+  - „Weitere Felder“ rechts als +Chips: Priorität, Erinnerung, Kategorie/Tag, Dauer, Notiz/Kontext.
+- **Adaptive Chips** unter dem Formular (kontextsensitiv): „Erinnerung 30 Min“, „Kategorie Research“, „Dauer 90 Min“. Bei Click in Form übernehmen, NIE automatisch.
+- **Sprachparsing/Microcopy** (Mockup 10): Eingabezeile „Donnerstag 14 Uhr Interviewleitfaden fertig machen“ → Button „Vorschläge prüfen“. Erkannte Felder erscheinen rechts (Titel, Datum, Uhrzeit, Erinnerung, Kategorie). Buttons „Übernehmen“ / „Manuell prüfen“. Microcopy-Karte: „Nicht automatisch / Nur auf Anfrage / Vor dem Speichern prüfen“.
 - Akzeptanz: Sprachparsing ist **deterministisch** (regex/heuristisch, KEINE echte KI). Es wird vom Nutzer immer bestätigt.
 
 ### 4.6 `/anpassungen` (Mockup 05 + 07 + 11)
@@ -189,7 +189,7 @@ Akzeptanz: Verlauf, Pause, Reaktivierung, Regel deaktivieren funktionieren End-t
 
 Pflicht (default enabled):
 1. **Fokusvorschlag am Tagesbeginn**: bei `/heute`-Open + ≥3 offene Aufgaben + ≥1 hoch/überfällig.
-2. **Reminder-Vorschlag**: bei neuer Aufgabe mit `dueDate` ohne `reminderAt`, wenn ≥2 Aufgaben in den letzten 10 mit Reminder erstellt wurden.
+2. **Erinnerungs-Vorschlag**: bei neuer Aufgabe mit `dueDate` ohne `reminderAt`, wenn ≥2 Aufgaben in den letzten 10 mit Erinnerung erstellt wurden.
 3. **Planungsansicht-Vorschlag**: ≥3 von 10 letzten View-Events sind `/kalender`.
 
 Optional (default DISABLED via Seed):
@@ -269,7 +269,7 @@ Neu:
 ## 10) Daten / Seed / Migration
 
 - Prisma Schema bleibt strukturell. Falls neue Preferences-Keys nötig, KEIN Schema-Change (UserPreference ist key-value).
-- Seed: 5–8 Beispielaufgaben über 7 Tage verteilt, mit Kategorien (Studium, Research, Prototype, Review, Apps, Eval, Text). 2 Aufgaben überfällig, 1 mit Reminder. 1 Beispiel-Suggestion `pending` (daily_focus).
+- Seed: 5–8 Beispielaufgaben über 7 Tage verteilt, mit Kategorien (Studium, Research, Prototype, Review, Apps, Eval, Text). 2 Aufgaben überfällig, 1 mit Erinnerung. 1 Beispiel-Suggestion `pending` (daily_focus).
 - Beim ersten User-Onboarding (kein `seenWelcome`-Pref): kein Auto-Seed, aber leere States sind freundlich.
 - Reset-Endpoint löscht entsprechende Tabellenzeilen für `userId`.
 

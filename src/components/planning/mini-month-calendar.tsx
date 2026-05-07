@@ -23,11 +23,14 @@ const MONTH_LABELS = [
 export type MiniMonthCalendarProps = {
   reference?: Date;
   highlightedDates?: Date[];
+  /** Map: local-midnight stamp (ms) -> number of tasks due that day. */
+  dayCountsByStamp?: Record<string, number>;
 };
 
 export function MiniMonthCalendar({
   reference = new Date(),
   highlightedDates = [],
+  dayCountsByStamp = {},
 }: MiniMonthCalendarProps) {
   /** Nur nach Mount setzen — sonst weicht „heute“ zwischen SSR- und Client-Zeitzone ab (Hydration). */
   const [todayStamp, setTodayStamp] = useState<number | null>(null);
@@ -74,6 +77,8 @@ export function MiniMonthCalendar({
 
   const month = reference.getMonth();
 
+  const MAX_DOTS = 5;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-sm">
@@ -100,12 +105,15 @@ export function MiniMonthCalendar({
           const isToday = todayStamp !== null && stamp === todayStamp;
           const isHighlighted = highlightSet.has(stamp);
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          const count = dayCountsByStamp[String(stamp)] ?? 0;
+          const dots = Math.min(count, MAX_DOTS);
+          const overflow = count > MAX_DOTS ? count - MAX_DOTS : 0;
 
           return (
             <div
               key={i}
               className={cn(
-                "mx-auto grid h-7 w-7 place-items-center rounded-full text-[12px]",
+                "mx-auto flex h-9 w-7 flex-col items-center justify-center gap-0.5 rounded-full text-[12px]",
                 !isCurrentMonth && "text-muted-foreground/40",
                 isCurrentMonth && isWeekend && !isToday && "text-rose-500/80",
                 isHighlighted && !isToday && "bg-primary/10 text-primary",
@@ -113,7 +121,37 @@ export function MiniMonthCalendar({
                   "bg-primary text-primary-foreground font-semibold shadow-sm",
               )}
             >
-              {d.getDate()}
+              <div className="leading-none">{d.getDate()}</div>
+              <div className="flex h-2 items-center gap-0.5">
+                {dots > 0
+                  ? Array.from({ length: dots }, (_, idx) => (
+                      <span
+                        key={idx}
+                        className={cn(
+                          "h-1 w-1 rounded-full",
+                          isToday
+                            ? "bg-primary-foreground/80"
+                            : isHighlighted
+                              ? "bg-primary/70"
+                              : "bg-muted-foreground/40",
+                        )}
+                        aria-hidden
+                      />
+                    ))
+                  : null}
+                {overflow > 0 ? (
+                  <span
+                    className={cn(
+                      "ml-0.5 text-[9px] leading-none tabular-nums",
+                      isToday ? "text-primary-foreground/90" : "text-muted-foreground",
+                    )}
+                    aria-label={`${count} Aufgaben`}
+                    title={`${count} Aufgaben`}
+                  >
+                    +{overflow}
+                  </span>
+                ) : null}
+              </div>
             </div>
           );
         })}

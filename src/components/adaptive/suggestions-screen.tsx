@@ -15,7 +15,7 @@ export type Preferences = Record<string, unknown>;
 const TABS = [
   { id: "adaptations", label: "Anpassungen", icon: Sparkles },
   { id: "personalization", label: "Personalisierung", icon: Sliders },
-  { id: "cooldown", label: "Cooldown", icon: ShieldOff },
+  { id: "cooldown", label: "Pausen", icon: ShieldOff },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];

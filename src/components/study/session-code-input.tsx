@@ -298,8 +298,8 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
                     Kalender und manuelle Aktionen bleiben unverändert.
                   </span>
                   <span className="block">
-                    Technisch wird dazu <span className="font-medium text-foreground">Adaptive Vorschläge aus</span>{" "}
-                    gesetzt (entspricht dem Master-Schalter unter Einstellungen).
+                    In den Einstellungen wird dafür der Schalter{" "}
+                    <span className="font-medium text-foreground">Vorschläge aus</span> gesetzt (Master-Schalter).
                   </span>
                 </DialogDescription>
               </DialogHeader>
@@ -320,12 +320,12 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
                 <DialogTitle>Adaptive Variante bestätigen</DialogTitle>
                 <DialogDescription className="space-y-2 text-sm text-muted-foreground">
                   <span className="block">
-                    Adaptive Vorschläge und Hinweise sind erlaubt. Lege die{" "}
-                    <span className="font-medium text-foreground">Eingriffsstufe</span> fest; sie bestimmt, wie streng die
-                    Heuristiken sein müssen, bevor etwas vorgeschlagen wird.
+                    Vorschläge und Hinweise sind erlaubt. Lege die{" "}
+                    <span className="font-medium text-foreground">Eingriffsstufe</span> fest; sie bestimmt, wie klar
+                    ein Muster sein muss, bevor FluxPlan etwas vorschlägt.
                   </span>
                   <span className="block">
-                    Beim Start werden <span className="font-medium text-foreground">Adaptive Vorschläge an</span> und
+                    Beim Start werden <span className="font-medium text-foreground">Vorschläge an</span> und
                     diese Stufe in den Einstellungen gespeichert.
                   </span>
                 </DialogDescription>

@@ -7,7 +7,7 @@ export default function KalenderPage() {
   return (
     <div>
       <PageHeader
-        title="Aufgaben & Kalender"
+        title="Kalender"
         subtitle="Liste und Zeitbezug greifen sichtbar ineinander. Konflikte werden markiert, nicht autonom aufgelöst."
         right={
           <Link href="/erstellen" className={buttonVariants()}>

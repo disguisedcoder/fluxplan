@@ -43,7 +43,7 @@ export function SuggestionCard({
           : action === "reject"
             ? "Vorschlag abgelehnt."
             : action === "snooze"
-              ? "Später."
+              ? "Vertagt."
               : "Rückgängig.",
       );
       onChanged();

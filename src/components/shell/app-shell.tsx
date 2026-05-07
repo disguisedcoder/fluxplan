@@ -43,7 +43,7 @@ const PRIMARY_NAV: NavItem[] = [
 ];
 
 const MOBILE_NAV: NavItem[] = [
-  { href: "/willkommen", label: "Info", icon: BookOpen },
+  { href: "/willkommen", label: "Willkommen", icon: BookOpen },
   { href: "/start", label: "Start", icon: Home },
   { href: "/heute", label: "Heute", icon: Sun },
   { href: "/aufgaben", label: "Aufgaben", icon: ListChecks },
@@ -250,7 +250,7 @@ function MobileAppMenu() {
               Willkommen
             </Link>
             <Link href="/start" className="rounded-lg border border-border/60 bg-card px-3 py-2 text-sm">
-              Start (Standardansicht)
+              Start (Startansicht)
             </Link>
             <Link href="/einstellungen" className="rounded-lg border border-border/60 bg-card px-3 py-2 text-sm">
               Einstellungen

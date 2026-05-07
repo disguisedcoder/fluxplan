@@ -113,7 +113,7 @@ export const viewPreferenceRule: AdaptiveRule = {
 
     const href = winner.t.href;
 
-    // Falls die Standardansicht bereits auf diese Route zeigt, keinen Vorschlag erzeugen.
+    // Falls die Startansicht bereits auf diese Route zeigt, keinen Vorschlag erzeugen.
     const startPref = await prisma.userPreference.findUnique({
       where: { userId_key: { userId: ctx.userId, key: "startView" } },
       select: { value: true },

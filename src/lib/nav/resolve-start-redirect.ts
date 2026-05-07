@@ -14,7 +14,7 @@ export function readSeenWelcomePref(value: unknown): boolean {
 }
 
 /**
- * Route `/start`: Einstieg in die gewählte Standardansicht (Heute, Kalender, …).
+ * Route `/start`: Einstieg in die gewählte Startansicht (Heute, Kalender, …).
  * Ohne Session → `/willkommen`.
  *
  * Wichtig: `startView` muss auch dann greifen, wenn `seenWelcome` (noch) nicht gesetzt ist,

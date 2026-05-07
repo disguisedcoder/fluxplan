@@ -62,10 +62,10 @@ export function PreferencesForm() {
         <CardContent className="space-y-4 p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold tracking-tight">Adaptive Vorschläge</div>
+              <div className="text-sm font-semibold tracking-tight">Vorschläge</div>
               <p className="text-xs text-muted-foreground">
-                Master-Schalter. Wenn aus, erscheinen keine Vorschlagskarten und kein
-                Banner. Verlauf bleibt sichtbar.
+                Master-Schalter. Wenn aus, erscheinen keine Vorschläge und kein Banner.
+                Der Verlauf bleibt sichtbar.
               </p>
             </div>
             <Switch
@@ -78,9 +78,9 @@ export function PreferencesForm() {
           <div className="space-y-2 border-t border-border/60 pt-4">
             <div className="text-sm font-semibold tracking-tight">Eingriffsstufe</div>
             <p className="text-xs text-muted-foreground">
-              Steuert die Sensitivität der Heuristiken. „Aus“ unterbindet neue Vorschläge auf
-              Engine-Ebene; der Schalter oben schaltet die gesamte adaptive Ebene inkl. Karten
-              und Banner ab (Verlauf bleibt sichtbar).
+              Steuert, wie streng FluxPlan sein muss, bevor es Vorschläge macht. „Aus“ unterbindet
+              neue Vorschläge; der Schalter oben blendet Vorschläge und Banner komplett aus
+              (der Verlauf bleibt sichtbar).
             </p>
             <InterventionLevelSlider
               value={level}
@@ -116,7 +116,7 @@ export function PreferencesForm() {
           <div>
             <div className="text-sm font-semibold tracking-tight">Demo-Setup</div>
             <p className="text-xs text-muted-foreground">
-              Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Trigger) und prüft die Heuristiken sofort.
+              Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Trigger) und prüft Vorschläge sofort.
             </p>
           </div>
           <DemoSeedButton onDone={load} />

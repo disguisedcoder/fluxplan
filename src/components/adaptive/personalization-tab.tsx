@@ -43,7 +43,7 @@ export function PersonalizationTab({
         body: JSON.stringify({ screen: "/anpassungen", metadata: { trigger: "manual" } }),
       });
       if (!res.ok) {
-        toast.error("Konnte Heuristiken nicht prüfen.");
+        toast.error("Konnte Vorschläge nicht prüfen.");
         return;
       }
       const data = (await res.json()) as { createdCount?: number };
@@ -144,7 +144,7 @@ export function PersonalizationTab({
             <div>
               <h3 className="text-sm font-semibold tracking-tight">Eingriffsstufe</h3>
               <p className="text-xs text-muted-foreground">
-                Gleiche Einstellung wie unter Einstellungen. Wenn „Adaptive Vorschläge“ dort
+                Gleiche Einstellung wie unter Einstellungen. Wenn „Vorschläge“ dort
                 aus ist, sind hier keine Änderungen möglich.
               </p>
             </div>
@@ -162,13 +162,13 @@ export function PersonalizationTab({
             <div className="min-w-0">
               <h3 className="text-sm font-semibold tracking-tight">Probelauf</h3>
               <p className="text-xs text-muted-foreground">
-                Heuristiken jetzt einmalig prüfen. Erzeugt nur dann Vorschläge,
-                wenn die Regeln sie für gerechtfertigt halten.
+                Vorschläge jetzt einmalig prüfen. Es werden nur dann Vorschläge erstellt,
+                wenn genügend klare Muster erkennbar sind.
               </p>
             </div>
             <Button onClick={evaluateNow} disabled={evaluating} variant="outline">
               <PlayCircle className="h-4 w-4" />
-              {evaluating ? "Prüfe …" : "Heuristiken jetzt prüfen"}
+              {evaluating ? "Prüfe …" : "Jetzt prüfen"}
             </Button>
           </CardContent>
         </Card>

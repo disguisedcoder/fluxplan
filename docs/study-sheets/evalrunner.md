@@ -10,7 +10,7 @@
 
 ## Die 10 Stationen (nur ausführen & beobachten)
 1–2. Orientierungs-Marker *(ohne Datum, klein)*  
-3–5. Drei **Reminder**-Kette *(Mittags-Rhythmus)*  
+3–5. Drei **Erinnerungen** *(Mittags-Rhythmus)*  
 6–7. Zwei **Blöcke zur gleichen Zeit** *(Konflikt)*  
 8. **Priorisierte** Aufgabe früh am Tag *(Fokus-Futter)*  
 9–10. Kleine Slots + Vorbereitung für **Export / Reset**

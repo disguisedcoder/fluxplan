@@ -1,6 +1,6 @@
 # FluxPlan – Dein Aufgaben-Sheet · Rolle **Familien-Captain**
 
-> Du bist heute die Person, die alles im Blick haben muss: Kita, Arzt, Geburtstag — und nebenbei noch der Einkauf. Kein Stress: Es geht darum, **mit der App zu spielen**, nicht um perfekte Planung.
+> Du bist heute die Person, die alles im Überblick haben muss: Kita, Arzt, Geburtstag — und nebenbei noch der Einkauf. Kein Stress: Es geht darum, **mit der App zu spielen**, nicht um perfekte Planung.
 
 ## Phase 0 — Einmalig, ganz am Anfang
 1. Pseudonym: **`F01`** (oder ein anderes **`Fxx`**).

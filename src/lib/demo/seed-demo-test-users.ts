@@ -16,9 +16,9 @@ export async function ensureAdaptiveRules(prisma: PrismaClient) {
       },
       {
         key: "reminder_preference",
-        name: "Reminder-Präferenz",
+        name: "Erinnerungs-Präferenz",
         description:
-          "Schlägt bei ähnlichen Aufgaben einen Reminder vor, wenn du das oft tust.",
+          "Schlägt bei ähnlichen Aufgaben eine Erinnerung vor, wenn du das oft tust.",
         enabled: true,
       },
       {

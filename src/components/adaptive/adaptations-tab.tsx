@@ -11,6 +11,18 @@ import { Button } from "@/components/ui/button";
 import type { AdaptiveSuggestion } from "./types";
 import { labelForStartHref, normalizeStartViewHref } from "@/lib/settings/start-view";
 
+const RULE_LABELS: Record<string, string> = {
+  view_preference: "Startansicht",
+  reminder_preference: "Erinnerungen",
+  daily_focus: "Fokus-Hinweis",
+  calendar_conflict: "Konflikte",
+  adaptive_task_creation: "Erstellen",
+};
+
+function ruleLabelFor(ruleKey: string) {
+  return RULE_LABELS[ruleKey] ?? "Vorschlag";
+}
+
 export function AdaptationsTab({
   suggestions,
   loading,
@@ -143,7 +155,7 @@ function SuggestionRow({
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{s.title}</div>
           <div className="mt-0.5 truncate text-xs text-muted-foreground">
-            {labelForStatus(s.status)} · Regel: {s.ruleKey}
+            {labelForStatus(s.status)} · {ruleLabelFor(s.ruleKey)}
           </div>
         </div>
       </button>
@@ -190,7 +202,7 @@ function DetailPanel({
           : action === "reject"
             ? "Vorschlag abgelehnt."
             : action === "snooze"
-              ? "Später erinnert."
+              ? "Vertagt."
               : "Rückgängig.",
       );
       onChanged();
@@ -236,7 +248,7 @@ function DetailPanel({
               {suggestion.title}
             </h2>
             <div className="mt-0.5 text-xs text-muted-foreground">
-              Regel: {suggestion.ruleKey} · erstellt {formatDate(suggestion.createdAt)}
+              {ruleLabelFor(suggestion.ruleKey)} · erstellt {formatDate(suggestion.createdAt)}
             </div>
           </div>
           <span
@@ -307,26 +319,29 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
     const href = normalizeStartViewHref(String(obj.suggestedStartView ?? "/heute"));
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Startansicht: <span className="font-medium text-foreground">{labelForStartHref(href)}</span>{" "}
-        <span className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{href}</span>
+        Deine Startansicht wird auf{" "}
+        <span className="font-medium text-foreground">{labelForStartHref(href)}</span> gesetzt.
       </div>
     );
   }
   if (type === "reminder_suggestion") {
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Erinnerung am{" "}
-        <span className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-          {String(obj.proposedReminderAt ?? "—")}
-        </span>{" "}
-        eintragen.
+        Für diese Aufgabe wird eine Erinnerung eingetragen. Du kannst sie jederzeit ändern oder entfernen.
+      </div>
+    );
+  }
+  if (type === "daily_focus") {
+    return (
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
+        Dieser Hinweis ändert keine Aufgabe. Er hilft nur beim Überblick.
       </div>
     );
   }
   return (
-    <pre className="overflow-x-auto rounded-md border border-border/60 bg-card px-3 py-2 text-xs text-muted-foreground">
-      {JSON.stringify(obj, null, 2)}
-    </pre>
+    <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
+      Nichts passiert automatisch: FluxPlan setzt nur dann etwas um, wenn du den Vorschlag annimmst.
+    </div>
   );
 }
 

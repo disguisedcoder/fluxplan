@@ -451,7 +451,13 @@ function UnplannedList({
                     >
                       Heute
                     </Button>
-                    <TaskFormDialog mode="edit" initial={t} triggerLabel="Planen" onSaved={() => {}} />
+                    <TaskFormDialog
+                      mode="edit"
+                      initial={t}
+                      triggerLabel="Planen"
+                      triggerSize="xs"
+                      onSaved={() => {}}
+                    />
                   </div>
                 </li>
               );
