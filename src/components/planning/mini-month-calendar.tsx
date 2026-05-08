@@ -81,6 +81,7 @@ export function MiniMonthCalendar({
 
   const month = reference.getMonth();
 
+  /** Ab 6 Aufgaben: eine kompakte Zahl-Marke statt Punkte+„+N“ — bleibt im gleichen „Punkt-/Pill“-Muster. */
   const MAX_DOTS = 5;
 
   return (
@@ -111,8 +112,9 @@ export function MiniMonthCalendar({
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const count = dayCountsByStamp[String(stamp)] ?? 0;
           const dayTasks = dayTasksByStamp[String(stamp)] ?? [];
-          const dots = Math.min(count, MAX_DOTS);
-          const overflow = count > MAX_DOTS ? count - MAX_DOTS : 0;
+          const useCountChip = count > MAX_DOTS;
+          const dotCount = useCountChip ? 0 : Math.min(count, MAX_DOTS);
+          const chipLabel = count > 99 ? "99+" : String(count);
           const dateLabel = d.toLocaleDateString(undefined, {
             weekday: "short",
             day: "2-digit",
@@ -122,7 +124,7 @@ export function MiniMonthCalendar({
           const cell = (
             <div
               className={cn(
-                "mx-auto flex h-10 w-8 flex-col items-center justify-start rounded-full text-[12px]",
+                "mx-auto flex h-10 w-8 min-w-0 flex-col items-center justify-start overflow-hidden rounded-full text-[12px]",
                 !isCurrentMonth && "text-muted-foreground/40",
                 isCurrentMonth && isWeekend && !isToday && "text-rose-500/80",
                 isHighlighted && !isToday && "bg-primary/10 text-primary",
@@ -133,35 +135,38 @@ export function MiniMonthCalendar({
                 {d.getDate()}
               </div>
               <div
-                className="flex h-2 w-full shrink-0 flex-nowrap items-center justify-center gap-px overflow-hidden px-0.5"
-                aria-hidden={dots === 0 && overflow === 0}
+                className="flex h-2.5 w-full min-w-0 shrink-0 items-center justify-center gap-px px-0.5"
+                aria-hidden={count === 0}
               >
-                {dots > 0
-                  ? Array.from({ length: dots }, (_, idx) => (
-                      <span
-                        key={idx}
-                        className={cn(
-                          "h-1 w-1 shrink-0 rounded-full",
-                          isToday
-                            ? "bg-primary-foreground/80"
-                            : isHighlighted
-                              ? "bg-primary/70"
-                              : "bg-muted-foreground/40",
-                        )}
-                      />
-                    ))
-                  : null}
-                {overflow > 0 ? (
+                {useCountChip ? (
                   <span
                     className={cn(
-                      "shrink-0 pl-px text-[8px] leading-none tabular-nums",
-                      isToday ? "text-primary-foreground/90" : "text-muted-foreground",
+                      "inline-flex h-3 min-w-[0.75rem] max-w-full shrink-0 items-center justify-center rounded-full px-0.5 text-[7px] font-semibold leading-none tabular-nums",
+                      isToday
+                        ? "bg-primary-foreground/25 text-primary-foreground"
+                        : isHighlighted
+                          ? "bg-primary/25 text-primary"
+                          : "bg-muted-foreground/30 text-muted-foreground",
                     )}
                     aria-label={`${count} Aufgaben`}
                     title={`${count} Aufgaben`}
                   >
-                    +{overflow}
+                    {chipLabel}
                   </span>
+                ) : dotCount > 0 ? (
+                  Array.from({ length: dotCount }, (_, idx) => (
+                    <span
+                      key={idx}
+                      className={cn(
+                        "h-1 w-1 shrink-0 rounded-full",
+                        isToday
+                          ? "bg-primary-foreground/80"
+                          : isHighlighted
+                            ? "bg-primary/70"
+                            : "bg-muted-foreground/40",
+                      )}
+                    />
+                  ))
                 ) : null}
               </div>
             </div>
