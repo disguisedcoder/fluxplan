@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, Clock, Plus, Tag, Type, X } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronUp, Clock, Plus, Tag, Type, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseTask, type ParsedTask } from "@/lib/parser/task-parser";
+import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
 
 type Priority = "low" | "medium" | "high";
 
@@ -49,11 +50,28 @@ export function ProgressiveTaskForm() {
   const [description, setDescription] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [optionalExpanded, setOptionalExpanded] = useState(true);
 
   const liveParse = useMemo<ParsedTask | null>(
     () => (naturalInput.trim().length > 1 ? parseTask(naturalInput) : null),
     [naturalInput],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/preferences", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { preferences?: Record<string, unknown> } | null) => {
+        if (cancelled || !data?.preferences) return;
+        if (readTaskFormOptionalFold(data.preferences.taskFormOptionalFold)) {
+          setOptionalExpanded(false);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!liveParse) return;
@@ -78,6 +96,11 @@ export function ProgressiveTaskForm() {
       setEstimatedMinutes(String(liveParse.estimatedMinutes));
       setActiveFields((s) => new Set(s).add("duration"));
     }
+    const opensOptional =
+      Boolean(liveParse.listName) ||
+      liveParse.tags.length > 0 ||
+      Boolean(liveParse.estimatedMinutes);
+    if (opensOptional) setOptionalExpanded(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [liveParse]);
 
@@ -234,33 +257,57 @@ export function ProgressiveTaskForm() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground">
-                Zusatzfelder bei Bedarf
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {OPTIONAL_FIELDS.map((f) => {
-                  const Icon = f.icon;
-                  const active = activeFields.has(f.key);
-                  return (
+            {optionalExpanded || activeFields.size > 0 ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs font-medium text-muted-foreground">Zusatzfelder bei Bedarf</div>
+                  {optionalExpanded && activeFields.size === 0 ? (
                     <button
-                      key={f.key}
                       type="button"
-                      onClick={() => toggleField(f.key)}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
-                        active
-                          ? "border-primary/40 bg-primary/10 text-primary"
-                          : "border-border/70 bg-card text-muted-foreground hover:bg-muted/40",
-                      )}
+                      onClick={() => setOptionalExpanded(false)}
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
                     >
-                      <Icon className="h-3.5 w-3.5" />
-                      {f.label}
+                      <ChevronUp className="h-3.5 w-3.5" />
+                      Einklappen
                     </button>
-                  );
-                })}
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {OPTIONAL_FIELDS.map((f) => {
+                    const Icon = f.icon;
+                    const active = activeFields.has(f.key);
+                    return (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => toggleField(f.key)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
+                          active
+                            ? "border-primary/40 bg-primary/10 text-primary"
+                            : "border-border/70 bg-card text-muted-foreground hover:bg-muted/40",
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setOptionalExpanded(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-muted/20 px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-border hover:bg-muted/35 hover:text-foreground"
+              >
+                <ChevronDown className="h-4 w-4 shrink-0" />
+                <span>
+                  Weitere Felder einblenden{" "}
+                  <span className="text-xs text-muted-foreground/90">(Kategorie, Tags, Dauer, …)</span>
+                </span>
+              </button>
+            )}
 
             {activeFields.has("list") ? (
               <div className="grid gap-1.5">

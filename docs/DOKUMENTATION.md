@@ -6,6 +6,9 @@ Dieses Dokument hat **drei** Hauptteile:
 2. **Technologie** – was hinter den Kulissen passiert, einfach erklärt. Ziel: Du kannst jeden Punkt im Code zeigen und in 1–2 Sätzen erklären.
 3. **Architektur & Projektentwicklung** – geplante vs. umgesetzte Architekturentscheidungen, Systemdiagramme (Mermaid) und eine **Chronik** von Feedback und Änderungen im Projektverlauf (für Bachelorarbeit/Abwehr im Verteidigungsgespräch).
 
+**Kompakter UI-Katalog** (Features, Trigger, sichtbare UI-Effekte, Baseline vs. Adaptive — für Leitung/Runner): [`UI-FEATURES-KATALOG.md`](UI-FEATURES-KATALOG.md).  
+Study Sheets für Probanden + Runner-Hinweise: [`study-sheets/README.md`](study-sheets/README.md).
+
 ---
 
 # Teil 1 · Anleitung
@@ -17,6 +20,8 @@ Dieses Dokument hat **drei** Hauptteile:
    ```bash
    docker compose up -d --build
    ```
+
+   Dabei startet auch der Service **`e2e`** und führt die **Playwright-Suite** einmal aus (nachdem `app` „healthy“ ist). Mit `-d` siehst du die Testausgabe nicht im Terminal — nachverfolgen mit `docker compose logs -f e2e`. Ergebnis-Exitcode: `docker wait "$(docker compose ps -q e2e)"` (kurz nach Ende des Laufs). Nur Tests wiederholen: `docker compose run --rm e2e`.
 
    Browser öffnen: `http://localhost:3000`.
 
@@ -31,7 +36,7 @@ Dieses Dokument hat **drei** Hauptteile:
 | Anlegen (klassisch) | `/aufgaben` → Knopf „Neue Aufgabe" |
 | Anlegen (mit Sprache) | `/erstellen` |
 | Schnell anlegen | `/heute` → Eingabezeile unter der To‑Do‑Liste |
-| Bearbeiten | Stift-Icon an jeder Aufgabe |
+| Bearbeiten | Stift-Icon an jeder Aufgabe (Dialog mit **denselben** Zusatzfeldern wie auf `/erstellen`: Kategorie, Tags, Dauer, Erinnerung, Beschreibung — per Chips aktivierbar) |
 | Erledigen | Häkchen anklicken |
 | Löschen | Mülleimer-Icon |
 | Suchen / Filtern | `/aufgaben` (Suche oben, Quick-Chips: Heute, Überfällig, Diese Woche, Ohne Datum) |
@@ -47,11 +52,13 @@ Du tippst frei deutsch und FluxPlan extrahiert daraus Datum, Zeit, Priorität, T
 
 Die geparsten Werte erscheinen als Chips. Du kannst sie jederzeit überschreiben oder zusätzliche Felder per Klick öffnen.
 
+**Eingeklappte Zusatzfelder:** Wenn die Präferenz **„Zusatzfelder eingeklappt“** aktiv ist (`taskFormOptionalFold`, siehe Einstellungen oder adaptiver Vorschlag „Zusatzfelder zunächst ausblenden?“), siehst du zuerst nur Titel, Datum, Uhrzeit und Priorität. Über **„Weitere Felder einblenden“** erscheinen die Chip-Leiste und die optionalen Eingaben wieder; der Parser klappt bei Bedarf automatisch auf (z. B. wenn `#Tags` erkannt werden).
+
 ## 1.3 Heute-Dashboard (`/heute`)
 
 - **To‑Do‑Liste**: Für heute zusammengestellte Aufgaben (überfällig, heute fällig, Priorität, dann Auffüller).
 - **Heute im Überblick**: Termine mit Uhrzeit als Mini-Agenda.
-- **Schnellzugriff**: Liste der Tastatur-Shortcuts (siehe 1.10).
+- **Schnellzugriff**: Liste der Tastatur-Shortcuts (siehe 1.13).
 - **Woche im Überblick**: Mini-Monatskalender mit Tagen, an denen Aufgaben fällig sind.
 - **Status**: Modus + Vorschlags-/Undo-Info (praktische Hinweise, keine „Deko“-Badges).
 
@@ -72,7 +79,8 @@ Drei Tabs:
 - **Aktive Vorschläge** links, Detailpanel rechts.
 - Pro Vorschlag: Titel, Erklärung, „Was passiert beim Annehmen", Buttons **Annehmen / Nicht jetzt / Ablehnen**.
 - **„Warum sehe ich das?"** öffnet die ausführliche Erklärung.
-- **Verlauf** zeigt vergangene Entscheidungen. Bei `accepted` gibt es **Rückgängig**.
+- **Verlauf** zeigt vergangene Entscheidungen. Bei `accepted` gibt es **Rückgängig** (soweit im Backend für den jeweiligen `type` umgesetzt).
+- **Visuelle Unterscheidung:** Jede Regel hat ein **eigenes Icon**, einen **farbigen linken Akzent** und ein **Kategorie-Badge** (z. B. „Überblick“ für Fokus, „Formular“ für Chip-Vorschläge, „Kompakt“ für Einklappen). Im Detail gibt es eine **Strapline** (ein Satz zur Art des Vorschlags), damit ähnlich klingende Texte („nichts passiert automatisch“ vs. „nur Hinweis“) nicht dasselbe „Look & Feel“ vortäuschen.
 
 ### Tab „Personalisierung"
 
@@ -92,32 +100,57 @@ Zeigt vor allen Tabs, welche Zahlen aus den letzten 7 Tagen in die Engine fließ
 
 ## 1.6 Heuristiken im Test
 
-Jede Regel reagiert auf einfache Muster. So kannst du jede gezielt auslösen:
+Jede Regel reagiert auf einfache Muster. Die Engine läuft u. a. nach **Navigation** (`view_changed` → `POST /api/adaptive/evaluate`), beim **Öffnen von `/heute`**, und nach **`POST /api/tasks`** (Create) mit `screen: "task_created"`. So kannst du Regeln gezielt auslösen:
 
-| Regel | Auslöser |
-| --- | --- |
-| `view_preference` | Wechsle 4× zwischen `/heute` und `/kalender` |
-| `reminder_preference` | Lege 3 Aufgaben mit Erinnerungszeit an |
-| `daily_focus` | Lege ≥ 4 Aufgaben für heute an |
-| `calendar_conflict` | Plane an einem Tag > 8 h Aufgaben (Summe `estimatedMinutes`) |
-| `adaptive_task_creation` | Lege 6 Aufgaben mit Datum + Erinnerung an |
+| Regel (`ruleKey`) | Suggestion-`type` (typisch) | Auslöser (vereinfacht) | Wirkung bei **Annehmen** |
+| --- | --- | --- | --- |
+| `view_preference` | `start_view` | Häufig zwischen zwei Ansichten wechseln (z. B. `/heute` ↔ `/kalender`; Details in Regelcode) | Startansicht (`startView`) speichern; optional Navigation |
+| `reminder_preference` | `reminder_suggestion` | Wiederholt ähnliche Aufgaben mit Erinnerung (siehe Regel) | `reminderAt` auf betroffener Aufgabe setzen |
+| `daily_focus` | `daily_focus` | Viele offene/heutige Aufgaben (Schwelle in Regel) | **Keine** Datenänderung — nur Transparenz / Zustimmung |
+| `calendar_conflict` | `calendar_conflict` | Neue Aufgabe; an einem Kalendertag sehr hohe Summe geschätzter Minuten | **Keine** automatische Verschiebung — Hinweis |
+| `adaptive_task_creation` | `task_form_chips` | Nach mehreren neuen Aufgaben: hoher Anteil mit Fälligkeit **und** Erinnerung (Schwellen abhängig von Eingriffsstufe) | Kein Pflicht-Feld im Formular; dokumentiert Zustimmung zum Konzept der Vorschlags-Chips |
+| `adaptive_optional_fold` | `task_form_optional_fold` | Nach mehreren Aufgaben: **geringer** Anteil mit Kategorie/Tags/Dauer/Erinnerung/Beschreibung; kein offener `task_form_chips`-Vorschlag | Präferenz `taskFormOptionalFold` = eingeklappte Zusatzfelder beim Anlegen/Bearbeiten |
 
-Alternativ: Tab Personalisierung → **Heuristiken jetzt prüfen**.
+**Hinweise:**
 
-## 1.7 Theme (Hell / Dunkel / System)
+- `adaptive_task_creation` und `adaptive_optional_fold` schließen sich inhaltlich aus, solange ein **Chip-Vorschlag** noch pending ist (Fold-Regel wartet dann).
+- Schwellen skalieren mit **Eingriffsstufe** und ggf. `DEMO_MODE` / `FP_*` Umgebungsvariablen (kürzere Snooze/Cooldown in Demos).
+
+Alternativ: Tab Personalisierung → **Heuristiken jetzt prüfen** (ruft die Engine mit gewähltem Screen auf).
+
+## 1.7 Baseline vs. Adaptive (was ist anders?)
+
+Die **Studienvariante** steckt in der Session (`baseline` vs. `adaptive`). Technisch nutzt dieselbe App **dieselbe Codebasis**; Unterschied ist **ob und wie** Vorschläge erzeugt und gezeigt werden.
+
+| Aspekt | Baseline | Adaptive |
+| --- | --- | --- |
+| **Neue Vorschläge** | Engine wird faktisch nicht genutzt bzw. Demo setzt `adaptive.enabled` oft auf `false` | `adaptive.enabled` true → Regeln dürfen pending Vorschläge anlegen |
+| **Banner auf `/heute`** | wird nicht geladen / nicht angezeigt | kann einen pending Vorschlag zeigen (Priorität u. a. `daily_focus`, `view_preference`) |
+| **`/anpassungen`** | Tabs nutzbar; **keine** frischen Trigger aus dem laufenden Alltag | aktive Vorschläge + Verlauf; Karten optisch nach Regelart getrennt |
+| **Kalender-Konflikte** | **Ja** — reine UI-Heuristik (Überlappung, Kapazität) | **Ja** — identisch; zusätzlich kann die Engine einen **Konflikt-Hinweis-Vorschlag** erzeugen |
+| **Formular `/erstellen` + Bearbeiten** | Volle manuelle Bedienung; **Einstellung** „Zusatzfelder eingeklappt“ wirkt trotzdem, wenn gesetzt | wie Baseline **plus** optionale Vorschläge (`task_form_chips`, `task_form_optional_fold`) |
+| **Logging** | gleiche Events möglich; weniger `suggestion_*` / `engine_evaluated` in der Praxis | mehr Einträge, sobald Proband mit Vorschlägen interagiert |
+
+**Kernaussage für die Arbeit:** Baseline liefert die **ruhige Produktivitäts-UI** ohne adaptive Schicht; Adaptive fügt **erklärbare, reversible Vorschläge** hinzu — ohne automatisches Umplanen.
+
+## 1.8 Einstellungen: Formular „Zusatzfelder“
+
+Unter `/einstellungen` gibt es die Karte **„Aufgabe anlegen: Zusatzfelder“** (Schalter). Sie speichert `taskFormOptionalFold` (`{ enabled: true|false }`) und wirkt auf **`/erstellen`** und den **Bearbeiten-Dialog** — unabhängig davon, ob die Session baseline oder adaptive ist. So können Probanden in der Baseline ebenfalls ein kompakteres Formular wählen, ohne dass die Engine beteiligt sein muss.
+
+## 1.9 Theme (Hell / Dunkel / System)
 
 - Sidebar oben rechts: kleiner Sonne/Mond-Knopf für schnellen Wechsel.
 - `/einstellungen → Darstellung`: drei Buttons **Hell**, **Dunkel**, **System**.
 - Standard ist **Hell**. Auswahl wird nur im Browser (`localStorage`) gespeichert, beeinflusst keine Studiendaten.
 
-## 1.8 Studienmodus, Pseudonym, Export, Reset
+## 1.10 Studienmodus, Pseudonym, Export, Reset
 
 - **Pseudonym**: `/einstellungen → Pseudonym & Session`. Frei wählbar, keine Klarnamen.
 - **Session-Code** (optional): zur Trennung mehrerer Test-Durchläufe pro Pseudonym.
 - **Export**: `/einstellungen → Export JSON` oder `Export CSV` (oder direkt `GET /api/export?format=json|csv`).
 - **Reset**: roter Knopf „Daten zurücksetzen" + Bestätigungsdialog. Löscht Aufgaben, Vorschläge, Logs und Präferenzen für das Pseudonym. Pseudonym selbst bleibt.
 
-## 1.9 Demo-Setup, Rollen & Study Sheets (druckfertig)
+## 1.11 Demo-Setup, Rollen & Study Sheets (druckfertig)
 
 FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lange Eingabe** direkt sinnvolle Daten bekommen.
 
@@ -205,7 +238,7 @@ Backend: `POST /api/data/reset-demo-users` mit Body `{ "confirm": "RESET_DEMO_US
 
 Technisch: `POST /api/study/logout`.
 
-## 1.10 Logging im Hintergrund (transparent)
+## 1.12 Logging im Hintergrund (transparent)
 
 Alle wichtigen Interaktionen werden mitgeschrieben (in `TaskInteraction` oder `EventLog`):
 
@@ -218,7 +251,7 @@ Alle wichtigen Interaktionen werden mitgeschrieben (in `TaskInteraction` oder `E
 
 Der Export liefert genau diese Tabellen — kein zusätzliches Tracking, kein externer Service.
 
-## 1.11 Tastatur-Shortcuts
+## 1.13 Tastatur-Shortcuts
 
 | Taste | Wirkung |
 | --- | --- |
@@ -308,7 +341,7 @@ In `src/lib/adaptive/`:
   - `adaptive.interventionLevel` (0–3, skaliert Schwellen)
   - `adaptive.cooldown.<ruleKey>` (Pausen nach Ablehnungen)
   - aktuelle 24-h-Snoozes aus den Suggestions
-- `rules/` — fünf eigenständige Dateien, eine pro Heuristik. Jede Datei exportiert ein `AdaptiveRule`-Objekt mit `key`, `name`, `description` und einer `evaluate(ctx)`-Funktion. Die Funktion gibt entweder einen `SuggestionDraft` oder `null` zurück.
+- `rules/` — **sechs** eigenständige Dateien (eine pro Heuristik): u. a. `adaptiveTaskCreationRule.ts`, `adaptiveOptionalFoldRule.ts`. Jede exportiert ein `AdaptiveRule`-Objekt mit `key`, `name`, `description` und `evaluate(ctx)` → `SuggestionDraft` oder `null`.
 
 ### Beispiel-Lebenszyklus eines Vorschlags
 
@@ -609,6 +642,12 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
   - **Fix:** Datei auf **eine** konsistente Implementierung reduziert (Rollen-Demo mit `getDemoRole`).  
 - **TypeScript-Strikte:** `eventLogMetadata` und `tags` (readonly vs. Prisma `string[]`) angepasst, damit `next build` / `tsc` zuverlässig grün sind.
 
+### Phase D – Adaptive Erweiterungen & Formular-Parität (Feature-Doku)
+
+- **Bearbeiten ≙ Erstellen:** `TaskFormDialog` unterstützt dieselben optionalen Felder und Payloads wie das progressive Formular (`PATCH` mit `listName`, `tags`, `reminderAt`, `estimatedMinutes`, …).  
+- **Regel `adaptive_optional_fold`:** Vorschlag `task_form_optional_fold` setzt die Präferenz `taskFormOptionalFold`; UI klappt Zusatzfelder auf `/erstellen` und im Bearbeiten-Dialog ein — jederzeit aufklappbar, manuell auch unter Einstellungen.  
+- **Vorschlags-UI:** `/anpassungen` differenziert Regeltypen visuell (Icon, Randfarbe, Kategorie-Badge, Strapline), um „Fokus“ vs. „Formular“ vs. „Kompakt“ erkennbar zu machen.
+
 ### Wie du das in der Thesis formulieren kannst (Vorschlag)
 
 - **Architektur:** „Wir wählen einen monolithischen Next.js-Prototyp mit Prisma/Postgres, weil Erklärbarkeit und Evaluation im Vordergrund stehen.“  
@@ -619,11 +658,17 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 
 ## Anhang A · Wichtige Befehle
 
+**Deployment:** Ein **Online-Hosting** (z. B. Railway) ist für die Arbeit **nicht zwingend**, wenn du lokal mit Docker + E2E arbeitest und die Studie am Rechner/Labor fährst. Siehe [`README.md`](../README.md) Abschnitt „Railway / Online-Deployment (optional)“.
+
 ```bash
 # Lokal entwickeln (Docker empfohlen)
 docker compose up -d --build
 docker compose logs -f app
+docker compose logs e2e   # Playwright-Ausgabe (läuft einmal nach App-Start)
 docker compose down
+
+# Nur E2E erneut (App/DB laufen)
+docker compose run --rm e2e
 
 # Prisma
 npm run prisma:generate

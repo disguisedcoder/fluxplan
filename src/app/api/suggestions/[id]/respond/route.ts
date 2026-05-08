@@ -126,6 +126,15 @@ async function applySuggestion(
     }
     return;
   }
+
+  if (s.type === "task_form_optional_fold") {
+    await prisma.userPreference.upsert({
+      where: { userId_key: { userId, key: "taskFormOptionalFold" } },
+      update: { value: { enabled: true } },
+      create: { userId, key: "taskFormOptionalFold", value: { enabled: true } },
+    });
+    return;
+  }
 }
 
 async function undoSuggestion(userId: string, s: { type: string; payload: unknown }) {
@@ -144,6 +153,11 @@ async function undoSuggestion(userId: string, s: { type: string; payload: unknow
     if (taskId) {
       await prisma.task.update({ where: { id: taskId }, data: { reminderAt: null } });
     }
+    return;
+  }
+
+  if (s.type === "task_form_optional_fold") {
+    await prisma.userPreference.deleteMany({ where: { userId, key: "taskFormOptionalFold" } });
     return;
   }
 }

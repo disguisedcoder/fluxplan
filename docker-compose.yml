@@ -25,6 +25,16 @@ services:
       STUDY_MODE_ENABLED: "true"
       DATABASE_URL: postgresql://fluxplan:fluxplan@db:5432/fluxplan?schema=public
       FLUXPLAN_ADMIN_PSEUDONYMS: admin
+      # Hosts often inject HTTP(S)_PROXY; empty + NO_PROXY avoids wrong TLS to internal services.
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      NO_PROXY: "localhost,127.0.0.1,app,db"
+      # Demo-friendly adaptive delays inside the app (Snooze/Cooldown) for E2E
+      DEMO_MODE: "true"
+      FP_SNOOZE_MS: "60000"
+      FP_COOLDOWN_WINDOW_MS: "60000"
+      FP_COOLDOWN_DURATION_MS: "60000"
     ports:
       - "3000:3000"
     depends_on:
@@ -34,7 +44,59 @@ services:
       - .:/app
       - /app/node_modules
     command: ["node","scripts/docker-start-dev.mjs"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+  # Playwright E2E gegen den laufenden `app`-Service. Startet automatisch nach App-Healthcheck,
+  # läuft einmal durch und beendet sich (restart: "no"). Bei `docker compose up -d --build`
+  # werden DB + App + E2E gestartet; Logs: `docker compose logs e2e`.
+  # Erneuter Lauf ohne vollen Stack-Neuaufbau: `docker compose run --rm e2e`
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.59.1-noble
+    # Share app’s network namespace so Playwright hits Next on 127.0.0.1:3000 (avoids Docker DNS/proxy TLS quirks with hostname `app`).
+    network_mode: "service:app"
+    restart: "no"
+    user: root
+    working_dir: /app
+    environment:
+      CI: "true"
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_SKIP_WEB_SERVER: "1"
+      # Prevent inherited host proxies from sending Docker-internal HTTP via TLS MITM (ERR_SSL_PROTOCOL_ERROR).
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      NO_PROXY: "*"
+      DEMO_MODE: "true"
+      FP_SNOOZE_MS: "60000"
+      FP_COOLDOWN_WINDOW_MS: "60000"
+      FP_COOLDOWN_DURATION_MS: "60000"
+    volumes:
+      - .:/app
+      - e2e_node_modules:/app/node_modules
+    depends_on:
+      app:
+        condition: service_healthy
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        npm ci
+        npx playwright install chromium
+        npm run test:e2e:ci
 
 volumes:
   fluxplan_db:
+  e2e_node_modules:
 

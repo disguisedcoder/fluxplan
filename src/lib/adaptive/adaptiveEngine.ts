@@ -7,6 +7,7 @@ import { reminderPreferenceRule } from "./rules/reminderPreferenceRule";
 import { dailyFocusRule } from "./rules/dailyFocusRule";
 import { calendarConflictRule } from "./rules/calendarConflictRule";
 import { adaptiveTaskCreationRule } from "./rules/adaptiveTaskCreationRule";
+import { adaptiveOptionalFoldRule } from "./rules/adaptiveOptionalFoldRule";
 import { isRulePaused, loadEngineConfig } from "./engineConfig";
 
 const rules: AdaptiveRule[] = [
@@ -15,6 +16,7 @@ const rules: AdaptiveRule[] = [
   dailyFocusRule,
   calendarConflictRule,
   adaptiveTaskCreationRule,
+  adaptiveOptionalFoldRule,
 ];
 
 export async function runAdaptiveEngine(ctx: AdaptiveContext) {

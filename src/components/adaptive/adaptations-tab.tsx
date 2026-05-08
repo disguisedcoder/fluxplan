@@ -3,13 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Clock, HelpCircle, Sparkles, Undo2, X } from "lucide-react";
+import { Check, Clock, HelpCircle, Undo2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { AdaptiveSuggestion } from "./types";
 import { labelForStartHref, normalizeStartViewHref } from "@/lib/settings/start-view";
+import {
+  getSuggestionVisualMeta,
+  suggestionAccentBorderClass,
+  suggestionCategoryPillClass,
+  suggestionIconWrapClass,
+  suggestionStraplineClass,
+} from "./suggestion-visuals";
 
 const RULE_LABELS: Record<string, string> = {
   view_preference: "Startansicht",
@@ -17,6 +24,7 @@ const RULE_LABELS: Record<string, string> = {
   daily_focus: "Fokus-Hinweis",
   calendar_conflict: "Konflikte",
   adaptive_task_creation: "Erstellen",
+  adaptive_optional_fold: "Formular kompakt",
 };
 
 function ruleLabelFor(ruleKey: string) {
@@ -132,30 +140,44 @@ function SuggestionRow({
   active: boolean;
   onSelect: () => void;
 }) {
+  const meta = getSuggestionVisualMeta(s.ruleKey);
+  const RowIcon = meta.Icon;
   return (
     <li>
       <button
         type="button"
         onClick={onSelect}
         className={cn(
-          "flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
+          "flex w-full items-start gap-3 rounded-xl border-b border-l-4 border-r border-t py-2.5 pl-2 pr-3 text-left transition-colors",
+          suggestionAccentBorderClass(meta.accent),
           active
-            ? "border-primary/40 bg-primary/[0.06]"
-            : "border-border/60 bg-card hover:bg-muted/30",
+            ? "border-b-primary/40 border-r-primary/40 border-t-primary/40 bg-primary/[0.06]"
+            : "border-b-border/60 border-r-border/60 border-t-border/60 bg-card hover:bg-muted/30",
         )}
       >
         <div
           className={cn(
             "mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg",
-            active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+            suggestionIconWrapClass(meta.accent, active),
           )}
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <RowIcon className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{s.title}</div>
-          <div className="mt-0.5 truncate text-xs text-muted-foreground">
-            {labelForStatus(s.status)} · {ruleLabelFor(s.ruleKey)}
+          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+            <span
+              className={cn(
+                "shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                suggestionCategoryPillClass(meta.accent),
+              )}
+            >
+              {meta.categoryShort}
+            </span>
+            <span className="text-muted-foreground/80">·</span>
+            <span className="truncate">
+              {labelForStatus(s.status)} · {ruleLabelFor(s.ruleKey)}
+            </span>
           </div>
         </div>
       </button>
@@ -235,31 +257,64 @@ function DetailPanel({
   }
 
   const isPending = suggestion.status === "pending";
+  const meta = getSuggestionVisualMeta(suggestion.ruleKey);
+  const HeaderIcon = meta.Icon;
 
   return (
-    <Card className="fp-card">
+    <Card
+      className={cn("fp-card overflow-hidden border-l-4", suggestionAccentBorderClass(meta.accent))}
+    >
       <CardContent className="space-y-5 p-6">
         <header className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              {labelForStatus(suggestion.status)}
-            </div>
-            <h2 className="mt-1 text-lg font-semibold tracking-tight">
-              {suggestion.title}
-            </h2>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {ruleLabelFor(suggestion.ruleKey)} · erstellt {formatDate(suggestion.createdAt)}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                className={cn(
+                  "grid h-9 w-9 shrink-0 place-items-center rounded-lg",
+                  suggestionIconWrapClass(meta.accent, true),
+                )}
+              >
+                <HeaderIcon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {labelForStatus(suggestion.status)}
+                </div>
+                <h2 className="mt-1 text-lg font-semibold tracking-tight">{suggestion.title}</h2>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                      suggestionCategoryPillClass(meta.accent),
+                    )}
+                  >
+                    {meta.categoryShort}
+                  </span>
+                  <span>
+                    {ruleLabelFor(suggestion.ruleKey)} · erstellt {formatDate(suggestion.createdAt)}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <span
             className={cn(
-              "rounded-full border px-2.5 py-0.5 text-[11px] capitalize",
+              "shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] capitalize",
               statusBadgeClass(suggestion.status),
             )}
           >
             {labelForStatus(suggestion.status)}
           </span>
         </header>
+
+        <p
+          className={cn(
+            "rounded-lg border px-3 py-2.5 text-sm leading-snug",
+            suggestionStraplineClass(meta.accent),
+          )}
+        >
+          {meta.strapline}
+        </p>
 
         <section className="space-y-2 rounded-xl border border-border/60 bg-card/60 p-4">
           <button
@@ -335,6 +390,33 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
         Dieser Hinweis ändert keine Aufgabe. Er hilft nur beim Überblick.
+      </div>
+    );
+  }
+  if (type === "task_form_chips") {
+    return (
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
+        Beim Annehmen wird keine bestehende Aufgabe geändert. FluxPlan darf dir beim{" "}
+        <span className="font-medium text-foreground">Erstellen</span> passende Zusatzfelder als
+        Vorschlags-Chips anbieten – du entscheidest weiterhin pro Aufgabe.
+      </div>
+    );
+  }
+  if (type === "task_form_optional_fold") {
+    return (
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
+        Beim Annehmen wird die Einstellung{" "}
+        <span className="font-medium text-foreground">Zusatzfelder eingeklappt</span> gespeichert.
+        Unter <span className="font-medium text-foreground">Einstellungen</span> kannst du das jederzeit
+        wieder ändern; bestehende Aufgaben werden nicht angepasst.
+      </div>
+    );
+  }
+  if (type === "calendar_conflict") {
+    return (
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
+        FluxPlan verschiebt keine Termine oder Aufgaben. Der Hinweis dient nur der Einordnung der
+        geschätzten Dauer an diesem Tag.
       </div>
     );
   }

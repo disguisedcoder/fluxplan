@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Clock, Sparkles, X } from "lucide-react";
+import { Check, Clock, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +15,13 @@ import { MiniMonthCalendar } from "./mini-month-calendar";
 import type { Task } from "@/components/tasks/types";
 import type { AdaptiveSuggestion } from "@/components/adaptive/types";
 import { ExplanationPopover } from "@/components/adaptive/explanation-popover";
+import {
+  getSuggestionVisualMeta,
+  suggestionAccentBorderClass,
+  suggestionCategoryPillClass,
+  suggestionIconWrapClass,
+  suggestionStraplineClass,
+} from "@/components/adaptive/suggestion-visuals";
 import { cn } from "@/lib/utils";
 import {
   categoryBadgeClass,
@@ -153,9 +160,17 @@ function TodaySuggestionBanner({
   onChanged: () => void;
 }) {
   const router = useRouter();
-  /** Regeln ohne applySuggestion-Zweig: nur Transparenz / Logging, keine Datenänderung. */
+  /** Regeln ohne persistierte Datenänderung in applySuggestion (Zustimmung / Hinweis). */
   const isInformationalOnly =
-    suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus";
+    suggestion.ruleKey === "daily_focus" ||
+    suggestion.type === "daily_focus" ||
+    suggestion.ruleKey === "calendar_conflict" ||
+    suggestion.type === "calendar_conflict" ||
+    suggestion.ruleKey === "adaptive_task_creation" ||
+    suggestion.type === "task_form_chips";
+
+  const meta = getSuggestionVisualMeta(suggestion.ruleKey);
+  const BannerIcon = meta.Icon;
 
   const seenLogged = useRef(false);
 
@@ -207,26 +222,71 @@ function TodaySuggestionBanner({
   }
 
   return (
-    <Card className="fp-card border-primary/20 bg-primary/[0.04]">
+    <Card
+      className={cn(
+        "fp-card overflow-hidden border-y border-r border-primary/15 bg-primary/[0.03] border-l-4",
+        suggestionAccentBorderClass(meta.accent),
+      )}
+    >
       <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
+          <div className="flex items-start gap-2">
+            <div
+              className={cn(
+                "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg",
+                suggestionIconWrapClass(meta.accent, true),
+              )}
+            >
+              <BannerIcon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <div className="truncate text-sm font-semibold tracking-tight">
-                {suggestion.title}
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                    suggestionCategoryPillClass(meta.accent),
+                  )}
+                >
+                  {meta.categoryShort}
+                </span>
               </div>
-              <div className="truncate text-xs text-muted-foreground">
-                {suggestion.explanation}
-              </div>
-              {isInformationalOnly ? (
+              <div className="mt-1 truncate text-sm font-semibold tracking-tight">{suggestion.title}</div>
+              <p
+                className={cn(
+                  "mt-2 max-w-xl rounded-md border px-2.5 py-1.5 text-xs leading-relaxed",
+                  suggestionStraplineClass(meta.accent),
+                )}
+              >
+                {meta.strapline}
+              </p>
+              <div className="mt-2 truncate text-xs text-muted-foreground">{suggestion.explanation}</div>
+              {suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus" ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
                   Die <span className="font-medium text-foreground">To‑Do‑Liste</span> darunter kommt aus deinen offenen
                   Aufgaben (überfällig, heute fällig, hohe Priorität, sonst Auffüller). Dieser Hinweis{" "}
                   <span className="font-medium text-foreground">ändert keine Aufgaben</span> — „Verstanden“ bestätigt
                   nur den Hinweis (z. B. für die Studienauswertung) und blendet ihn aus.
+                </div>
+              ) : null}
+              {suggestion.ruleKey === "adaptive_task_creation" || suggestion.type === "task_form_chips" ? (
+                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  Unter <span className="font-medium text-foreground">Neue Aufgabe</span> kann FluxPlan dir passende
+                  Zusatzfelder als Chips vorschlagen. „Verstanden“ speichert nur die Zustimmung zu diesem Konzept —
+                  bestehende Aufgaben bleiben unverändert.
+                </div>
+              ) : null}
+              {suggestion.ruleKey === "calendar_conflict" || suggestion.type === "calendar_conflict" ? (
+                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  FluxPlan verschiebt keine Termine. „Verstanden“ bestätigt nur, dass du den Hinweis gesehen hast.
+                </div>
+              ) : null}
+              {suggestion.ruleKey === "adaptive_optional_fold" ||
+              suggestion.type === "task_form_optional_fold" ? (
+                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  Mit <span className="font-medium text-foreground">Ja</span> wird gespeichert, dass der Bereich{" "}
+                  <span className="font-medium text-foreground">Zusatzfelder</span> beim Anlegen zunächst
+                  eingeklappt ist. Du kannst ihn jederzeit aufklappen; unter{" "}
+                  <span className="font-medium text-foreground">Einstellungen</span> lässt sich das zurücksetzen.
                 </div>
               ) : null}
               {suggestion.type === "start_view" ? (

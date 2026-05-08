@@ -1,5 +1,7 @@
 # FluxPlan – Adaptive Engine & UX/Naming Notes (zum Nachlesen)
 
+Für eine **UI-zentrierte** Übersicht (was Nutzer sehen, Trigger, Baseline vs. Adaptive): [`UI-FEATURES-KATALOG.md`](UI-FEATURES-KATALOG.md).
+
 Dieses Dokument sammelt **konkret aus dem Code**:
 
 - **Welche adaptiven Features es gibt** (Regeln/Heuristiken)
@@ -13,21 +15,22 @@ Dieses Dokument sammelt **konkret aus dem Code**:
 
 ## 1) Adaptive Features: Wieviele, wo, was genau?
 
-### 1.1 Anzahl: 5 Regeln in der Engine
+### 1.1 Anzahl: 6 Regeln in der Engine
 
-Die Engine führt **5 Regeln** aus, fest verdrahtet in:
+Die Engine führt **6 Regeln** aus, fest verdrahtet in:
 
 - `src/lib/adaptive/adaptiveEngine.ts` (Array `rules`)
 
-Aktive Keys:
+Aktive Keys (Reihenfolge = Ausführungsreihenfolge):
 
 - `view_preference`
 - `reminder_preference`
 - `daily_focus`
 - `calendar_conflict`
 - `adaptive_task_creation`
+- `adaptive_optional_fold`
 
-> Ob eine Regel aktiv ist, hängt zusätzlich von DB-Flags in `AdaptiveRule` ab (per API toggelbar) und vom Master-/Level-Config.
+> Ob eine Regel aktiv ist, hängt zusätzlich von DB-Flags in `AdaptiveRule` ab (per API toggelbar) und vom Master-/Level-Config. Neue Regeln müssen in `ensureAdaptiveRules` / Seed / Demo-`ensureRules` stehen, sonst fehlt der FK in `AdaptiveSuggestion`.
 
 ### 1.2 Master-Schalter + Intervention-Level + Pausenlogik
 
@@ -43,8 +46,8 @@ Mechaniken:
   - Wenn `false`: Engine erzeugt **keine** Suggestions (`runAdaptiveEngine` logged `adaptive_disabled`).
 - **Intervention-Level**: Preference `adaptive.interventionLevel` (0–3)
   - `0`: Engine effektiv aus (über `isRulePaused`).
-- **Snooze Pause**: wenn eine Suggestion `snoozed` ist, gilt die Rule **24h als pausiert** (aus `loadEngineConfig`).
-- **Reject Cooldown**: wenn innerhalb 14 Tagen >= 2 Rejects für dieselbe Rule auftreten:
+- **Snooze Pause**: wenn eine Suggestion `snoozed` ist, gilt die Rule für ein konfigurierbares Fenster als pausiert (Standard **24 h**, in `DEMO_MODE` typisch **10 min** — `FP_SNOOZE_MS` in `engineConfig.ts`).
+- **Reject Cooldown**: wenn innerhalb des Cooldown-Fensters >= 2 Rejects für dieselbe Rule auftreten (Standard **14 Tage**, in Demo verkürzbar über `FP_COOLDOWN_*`):
   - setzt Preference `rule.cooldown.<ruleKey>` bis +14 Tage
   - Implementierung: `maybeApplyCooldownAfterReject()` in `engineConfig.ts`
 - **Spam-Prevention (Pending Dupe)**: pro `(userId, ruleKey, type)` wird kein zweiter `pending` Suggestion angelegt:
@@ -65,9 +68,10 @@ Actions:
 
 **Wichtig (Undo-Reality-Check):**
 
-- “Echte” Daten-Reversion ist aktuell nur implementiert für:
-  - Suggestion `type === "start_view"`
-  - Suggestion `type === "reminder_suggestion"`
+- “Echte” Daten-Reversion / Preference-Reset ist implementiert für:
+  - `type === "start_view"` → löscht `startView`
+  - `type === "reminder_suggestion"` → setzt `Task.reminderAt = null`
+  - `type === "task_form_optional_fold"` → löscht `UserPreference` `taskFormOptionalFold`
 - Für alle anderen Types: `undo` markiert primär Status `undone` + Logging, ohne dass Daten zwingend zurückgesetzt werden.
 
 ---
@@ -132,18 +136,48 @@ Praktische Wirkung:
 - UI markiert Konflikte immer (Overlaps) – unabhängig davon, ob Engine etwas vorschlägt.
 - Engine-Regel kann zusätzlich Suggestions erzeugen (Details siehe Regeldatei).
 
-### 2.5 `adaptive_task_creation` → adaptives Formular / “Chips”
+### 2.5 `adaptive_task_creation` → Vorschlags-Chips (hohe Nutzung Fälligkeit + Erinnerung)
 
 Quellen:
 
 - Regel: `src/lib/adaptive/rules/adaptiveTaskCreationRule.ts`
-- Formular (progressiv): `src/components/tasks/progressive-task-form.tsx`
+- Formular: `src/components/tasks/progressive-task-form.tsx`
 - Parser: `src/lib/parser/task-parser.ts`
 
 Praktische Wirkung:
 
-- Das sichtbare progressive Formular ist bereits “ruhig/progressiv” ohne Engine (Chips via UI + Parser).
-- Engine-Regel kann zusätzlich Suggestions erzeugen (Details siehe Regeldatei).
+- Das Formular ist **ohne Engine** schon progressiv (Nutzer aktiviert Zusatzfelder per Chips; Parser füllt bei Bedarf).
+- Die Regel feuert nach **`screen: "task_created"`**, wenn in den letzten Aufgaben **Fälligkeit** und **Erinnerung** überdurchschnittlich oft gesetzt sind (exakte Schwellen + Sample-Größe abhängig von `thresholdMultiplier` / Eingriffsstufe).
+- Suggestion-`type`: **`task_form_chips`**. **Accept** in `applySuggestion`: *kein* zusätzlicher Zweig — es wird keine neue UserPreference aus diesem Type geschrieben (Studie/Transparenz: Zustimmung zum Konzept; Umsetzung bleibt beim bestehenden Formular).
+- **Baseline:** diese Suggestion entsteht praktisch nicht (Engine aus / keine Evaluations).
+
+### 2.6 `adaptive_optional_fold` → Zusatzfelder standardmäßig einklappen (seltene Nutzung)
+
+Quellen:
+
+- Regel: `src/lib/adaptive/rules/adaptiveOptionalFoldRule.ts`
+- Präferenz lesen: `src/lib/settings/task-form-optional-fold.ts` (`readTaskFormOptionalFold`)
+- UI: `progressive-task-form.tsx`, `task-form-dialog.tsx`; Schalter: `preferences-form.tsx`
+- Apply/Undo: `src/app/api/suggestions/[id]/respond/route.ts`
+
+Praktische Wirkung:
+
+- Feuert nach **`screen: "task_created"`**, wenn in den letzten Aufgaben **Kategorie, Tags, Dauer, Erinnerung oder Beschreibung** nur selten vorkommen (Anteil „reiche“ Optionalfelder unter einer Schwelle; Sample-Größe skaliert mit Eingriffsstufe).
+- Kein Vorschlag, wenn **`taskFormOptionalFold` schon aktiv**, ein **`task_form_chips`**-Vorschlag noch **pending** ist, oder bereits ein **`task_form_optional_fold`** pending ist.
+- Suggestion-`type`: **`task_form_optional_fold`**.
+- **Accept:** `UserPreference` **`taskFormOptionalFold`** = `{ enabled: true }` → Formular zeigt zunächst nur Kernfelder; **„Weitere Felder einblenden“** klappt auf.
+- **Undo:** Preference-Eintrag wird gelöscht.
+- **Baseline:** Regel kann in Daten **nicht** ausgelöst werden, wenn keine `task_created`-Evaluations laufen; die **Einstellung** (Schalter) wirkt in Baseline trotzdem — reine UX-Präferenz ohne Vorschlag.
+
+### 2.7 UI: Vorschläge unterscheidbar machen
+
+Quellen:
+
+- `src/components/adaptive/suggestion-visuals.ts` — `getSuggestionVisualMeta(ruleKey)` (Icon, Akzentfarbe, Badge-Text, Strapline)
+- `src/components/adaptive/adaptations-tab.tsx` — Liste + Detailpanel mit linkem Rand, Badge, Strapline-Band
+- `src/components/planning/today-dashboard.tsx` — Banner nutzt dieselbe Metadaten-Schicht
+
+Zweck: Gleiche Button-Leiste („Annehmen / Nicht jetzt / Ablehnen“) darf **nicht** suggerieren, dass alle Vorschläge dieselbe *Art* von Wirkung haben — daher visuelle Kodierung pro `ruleKey`.
 
 ---
 
@@ -222,11 +256,27 @@ Empfehlung:
 
 - Rolle `evalrunner` ist am ehesten dafür gebaut, Suggestion-Lifecycle + Konflikte schnell sichtbar zu machen.
 
+**`adaptive_optional_fold` auslösen (ohne Zufall):**
+
+- Viele Aufgaben **ohne** `listName`, **ohne** Tags, **ohne** `estimatedMinutes`, **ohne** `reminderAt`, **ohne** `description` anlegen (per API oder UI), bis die Mindestanzahl in der Regel erreicht ist; kein offener `task_form_chips`-Vorschlag.
+- Danach eine weitere Aufgabe erstellen → `task_created` Evaluation.
+
 ### 4.2 “Ohne Demo” schnell sichtbar: ping-pong + Heute reload
 
 - Starte Session (Adaptive)
 - Öffne `/heute` (triggert evaluate + Banner load)
 - Wechsle 4–5x zwischen `/heute` und `/kalender` oder `/aufgaben` (triggert `view_changed` → Engine)
+
+---
+
+## 4.3 Kurz: Baseline vs. Adaptive (Engine-Sicht)
+
+| | Baseline | Adaptive |
+| --- | --- | --- |
+| `runAdaptiveEngine` | wird oft nicht aufgerufen bzw. bricht sofort ab (`adaptive_disabled`) | läuft bei `evaluate`, `view_changed`, `task_created`, … |
+| Neue `AdaptiveSuggestion` | praktisch keine | ja, wenn Regeln + Schwellen passen |
+| `task_form_chips` / `task_form_optional_fold` | nein | ja (nach Mustern) |
+| `taskFormOptionalFold` (manuell unter Einstellungen) | **ja**, reine Präferenz | **ja**, zusätzlich zu Vorschlägen möglich |
 
 ---
 

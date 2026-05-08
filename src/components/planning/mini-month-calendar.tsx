@@ -122,35 +122,39 @@ export function MiniMonthCalendar({
           const cell = (
             <div
               className={cn(
-                "mx-auto flex h-9 w-7 flex-col items-center justify-center gap-0.5 rounded-full text-[12px]",
+                "mx-auto flex h-10 w-8 flex-col items-center justify-start rounded-full text-[12px]",
                 !isCurrentMonth && "text-muted-foreground/40",
                 isCurrentMonth && isWeekend && !isToday && "text-rose-500/80",
                 isHighlighted && !isToday && "bg-primary/10 text-primary",
                 isToday && "bg-primary text-primary-foreground font-semibold shadow-sm",
               )}
             >
-              <div className="leading-none">{d.getDate()}</div>
-              <div className="flex h-2 items-center gap-0.5">
+              <div className="flex h-[1.125rem] w-full shrink-0 items-center justify-center leading-none tabular-nums">
+                {d.getDate()}
+              </div>
+              <div
+                className="flex h-2 w-full shrink-0 flex-nowrap items-center justify-center gap-px overflow-hidden px-0.5"
+                aria-hidden={dots === 0 && overflow === 0}
+              >
                 {dots > 0
                   ? Array.from({ length: dots }, (_, idx) => (
                       <span
                         key={idx}
                         className={cn(
-                          "h-1 w-1 rounded-full",
+                          "h-1 w-1 shrink-0 rounded-full",
                           isToday
                             ? "bg-primary-foreground/80"
                             : isHighlighted
                               ? "bg-primary/70"
                               : "bg-muted-foreground/40",
                         )}
-                        aria-hidden
                       />
                     ))
                   : null}
                 {overflow > 0 ? (
                   <span
                     className={cn(
-                      "ml-0.5 text-[9px] leading-none tabular-nums",
+                      "shrink-0 pl-px text-[8px] leading-none tabular-nums",
                       isToday ? "text-primary-foreground/90" : "text-muted-foreground",
                     )}
                     aria-label={`${count} Aufgaben`}
@@ -164,14 +168,14 @@ export function MiniMonthCalendar({
           );
 
           return (
-            <div key={i}>
+            <div key={i} className="flex justify-center">
               {count > 0 ? (
                 <Popover>
                   <PopoverTrigger
                     render={
                       <button
                         type="button"
-                        className="block"
+                        className="flex justify-center p-0"
                         aria-label={`${dateLabel}: ${count} Aufgaben`}
                         title={`${dateLabel}: ${count} Aufgaben`}
                       />

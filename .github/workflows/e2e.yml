@@ -1,0 +1,56 @@
+name: e2e
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: ["main", "master"]
+  pull_request: {}
+
+jobs:
+  playwright:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+      DEMO_MODE: "true"
+      # Speed up time-based demo behaviors in CI (10 minutes)
+      FP_SNOOZE_MS: "600000"
+      FP_COOLDOWN_WINDOW_MS: "600000"
+      FP_COOLDOWN_DURATION_MS: "600000"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Start services and run E2E (e2e service in compose)
+        run: |
+          docker compose up -d --build
+          E2E_ID=$(docker compose ps -q e2e | head -n 1)
+          if [ -z "$E2E_ID" ]; then echo "e2e container not found"; exit 1; fi
+          docker wait "$E2E_ID"
+          exit $(docker inspect "$E2E_ID" --format='{{.State.ExitCode}}')
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+
+      - name: Upload test results (traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results
+

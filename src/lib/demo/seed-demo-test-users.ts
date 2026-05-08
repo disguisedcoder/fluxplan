@@ -42,6 +42,13 @@ export async function ensureAdaptiveRules(prisma: PrismaClient) {
           "Hält das Formular zuerst einfach und schlägt Zusatzfelder als Chips vor.",
         enabled: true,
       },
+      {
+        key: "adaptive_optional_fold",
+        name: "Formular: Zusatzfelder einklappen",
+        description:
+          "Klappt selten genutzte Zusatzfelder beim Anlegen zunächst ein (jederzeit ausklappbar).",
+        enabled: true,
+      },
     ],
     skipDuplicates: true,
   });

@@ -2,6 +2,21 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 
 const DEFAULT_LEVEL = 2;
+const DEMO_MODE = process.env.DEMO_MODE === "true";
+
+function msFromEnv(key: string): number | null {
+  const raw = process.env[key];
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+const SNOOZE_MS =
+  msFromEnv("FP_SNOOZE_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : 24 * 60 * 60 * 1000);
+const COOLDOWN_WINDOW_MS =
+  msFromEnv("FP_COOLDOWN_WINDOW_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : 14 * 24 * 60 * 60 * 1000);
+const COOLDOWN_DURATION_MS =
+  msFromEnv("FP_COOLDOWN_DURATION_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : 14 * 24 * 60 * 60 * 1000);
 
 export type EngineConfig = {
   adaptiveEnabled: boolean;
@@ -31,17 +46,17 @@ export async function loadEngineConfig(userId: string): Promise<EngineConfig> {
     }
   }
 
-  // Snooze: if a suggestion was snoozed within last 24h, treat that rule as paused for 24h.
-  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  // Snooze: if a suggestion was snoozed within last window, pause that rule for the configured duration.
+  const snoozeWindowStart = new Date(Date.now() - SNOOZE_MS);
   const snoozed = await prisma.adaptiveSuggestion.findMany({
-    where: { userId, status: "snoozed", respondedAt: { gte: dayAgo } },
+    where: { userId, status: "snoozed", respondedAt: { gte: snoozeWindowStart } },
     select: { ruleKey: true, respondedAt: true },
     orderBy: { respondedAt: "desc" },
   });
   const snoozeByRuleKey: Record<string, Date> = {};
   for (const s of snoozed) {
     if (!s.respondedAt) continue;
-    const until = new Date(s.respondedAt.getTime() + 24 * 60 * 60 * 1000);
+    const until = new Date(s.respondedAt.getTime() + SNOOZE_MS);
     if (!snoozeByRuleKey[s.ruleKey] || snoozeByRuleKey[s.ruleKey] < until) {
       snoozeByRuleKey[s.ruleKey] = until;
     }
@@ -85,7 +100,7 @@ export async function maybeApplyCooldownAfterReject(
   userId: string,
   ruleKey: string,
 ): Promise<{ until: Date } | null> {
-  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const since = new Date(Date.now() - COOLDOWN_WINDOW_MS);
   const recentRejects = await prisma.adaptiveSuggestion.count({
     where: {
       userId,
@@ -97,7 +112,7 @@ export async function maybeApplyCooldownAfterReject(
 
   if (recentRejects < 2) return null;
 
-  const until = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const until = new Date(Date.now() + COOLDOWN_DURATION_MS);
   const value = { until: until.toISOString() };
   await prisma.userPreference.upsert({
     where: { userId_key: { userId, key: `rule.cooldown.${ruleKey}` } },

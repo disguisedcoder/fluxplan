@@ -78,11 +78,29 @@ export async function POST(req: Request) {
   } catch (e: unknown) {
     if (isHttpError(e) && e.status === 401)
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (isDbUnavailableError(e)) {
+      return NextResponse.json(
+        { error: "db_unavailable", hint: "PostgreSQL/DATABASE_URL nicht erreichbar. Starte z. B. `docker compose up -d`." },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
 
 function prefPrimitive(v: boolean | number): Prisma.InputJsonValue {
   return { value: v } as Prisma.InputJsonValue;
+}
+
+function isDbUnavailableError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const any = e as { name?: unknown; message?: unknown };
+  const name = typeof any.name === "string" ? any.name : "";
+  const msg = typeof any.message === "string" ? any.message : "";
+  return (
+    name.includes("PrismaClientInitializationError") ||
+    msg.includes("Can't reach database server") ||
+    msg.includes("ECONNREFUSED")
+  );
 }
 

@@ -151,11 +151,13 @@ export function evalrunnerRole(now = new Date()): DemoRoleDefinition {
     label: "Eval-Runner",
     description: "Kleines, reproduzierbares Set für Suggestion-Lifecycle, Konflikte, Export & Reset.",
     tasks: [...tasks],
+    // view_preference needs ≥4 hits to one VIEW_TARGETS route at intervention level 2 (threshold 4).
     viewEvents: [
       { from: "/heute", to: "/kalender" },
       { from: "/kalender", to: "/heute" },
       { from: "/heute", to: "/kalender" },
       { from: "/kalender", to: "/heute" },
+      { from: "/heute", to: "/kalender" },
       { from: "/heute", to: "/kalender" },
     ],
     preferences: [

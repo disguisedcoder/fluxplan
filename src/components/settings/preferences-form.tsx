@@ -16,6 +16,7 @@ import {
   readPreferenceBool,
   clampInterventionLevel,
 } from "@/lib/settings/intervention-levels";
+import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
 
 type Preferences = Record<string, unknown>;
 
@@ -55,6 +56,7 @@ export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
 
   const adaptiveEnabled = readPreferenceBool(prefs["adaptive.enabled"], true);
   const level = readInterventionLevel(prefs["adaptive.interventionLevel"], 2);
+  const taskFormFoldOptional = readTaskFormOptionalFold(prefs["taskFormOptionalFold"]);
 
   return (
     <div className="space-y-4">
@@ -65,6 +67,25 @@ export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
         busy={busy}
         onUpdate={update}
       />
+
+      <Card className="fp-card">
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold tracking-tight">Aufgabe anlegen: Zusatzfelder</div>
+              <p className="text-xs text-muted-foreground">
+                Kategorie, Tags, Dauer, Erinnerung und Beschreibung zunächst einklappen. Ein Klick blendet sie
+                wieder ein – unabhängig von adaptiven Vorschlägen.
+              </p>
+            </div>
+            <Switch
+              checked={taskFormFoldOptional}
+              disabled={busy}
+              onCheckedChange={(v) => update("taskFormOptionalFold", { enabled: Boolean(v) })}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="fp-card">
         <CardContent className="space-y-3 p-5">
