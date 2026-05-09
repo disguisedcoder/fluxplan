@@ -1,12 +1,45 @@
 import { prisma } from "@/lib/db/prisma";
+import type { TaskFormChipKey } from "@/lib/settings/task-form-chips";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
+
+function usesRichOptional(t: {
+  listName: string | null;
+  tags: string[];
+  estimatedMinutes: number | null;
+  reminderAt: Date | null;
+  description: string | null;
+}) {
+  return (
+    Boolean(t.listName?.trim()) ||
+    (t.tags?.length ?? 0) > 0 ||
+    t.estimatedMinutes != null ||
+    t.reminderAt != null ||
+    Boolean(t.description?.trim())
+  );
+}
+
+function chipKeysFromTask(t: {
+  listName: string | null;
+  tags: string[];
+  estimatedMinutes: number | null;
+  reminderAt: Date | null;
+  description: string | null;
+}): TaskFormChipKey[] {
+  const keys: TaskFormChipKey[] = [];
+  if (t.listName?.trim()) keys.push("list");
+  if ((t.tags?.length ?? 0) > 0) keys.push("tags");
+  if (t.estimatedMinutes != null) keys.push("duration");
+  if (t.reminderAt != null) keys.push("reminder");
+  if (t.description?.trim()) keys.push("description");
+  return keys;
+}
 
 export const adaptiveTaskCreationRule: AdaptiveRule = {
   key: "adaptive_task_creation",
   name: "Adaptives Aufgabenformular",
   description:
-    "Hält das Formular zuerst einfach und schlägt Zusatzfelder als Chips vor.",
+    "Erkennt, welche Zusatzfelder du oft nutzt, und schlägt sie als Chips beim Anlegen vor (nach mehreren Aufgaben).",
   async evaluate(ctx) {
     if (ctx.screen !== "task_created") return null;
 
@@ -16,37 +49,85 @@ export const adaptiveTaskCreationRule: AdaptiveRule = {
     });
     if (existing) return null;
 
+    const isGuest = Boolean(ctx.isGuestStudyUser);
+    const mult = ctx.config ? thresholdMultiplier(ctx.config) : 1;
+
+    const selectOptional = {
+      listName: true,
+      tags: true,
+      estimatedMinutes: true,
+      reminderAt: true,
+      description: true,
+    } as const;
+
+    if (isGuest) {
+      const recentGuest = await prisma.task.findMany({
+        where: { userId: ctx.userId },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        select: selectOptional,
+      });
+      const richTask = recentGuest.find(usesRichOptional);
+      if (!richTask) return null;
+      const chipKeys = chipKeysFromTask(richTask);
+      if (chipKeys.length === 0) return null;
+      return {
+        ruleKey: "adaptive_task_creation",
+        type: "task_form_chips",
+        title: "Felder schneller hinzufügen?",
+        explanation:
+          "Als Gast: FluxPlan schlägt die Zusatzfelder vor, die du zuletzt genutzt hast. Du kannst das übernehmen oder ablehnen.",
+        payload: { chipKeys, signal: { guest: true, sampleSize: recentGuest.length } },
+      };
+    }
+
+    const baseSample = 6;
+    const minN = Math.max(5, Math.ceil(baseSample * mult));
     const recent = await prisma.task.findMany({
       where: { userId: ctx.userId },
       orderBy: { createdAt: "desc" },
-      take: 8,
-      select: { dueDate: true, reminderAt: true, priority: true },
+      take: 12,
+      select: { ...selectOptional, dueDate: true },
     });
+    if (recent.length < minN) return null;
 
-    const baseSample = 6;
-    const mult = ctx.config ? thresholdMultiplier(ctx.config) : 1;
-    if (recent.length < Math.max(4, Math.ceil(baseSample * mult))) return null;
+    const n = recent.length;
+    const rate = (pred: (t: (typeof recent)[number]) => boolean) => recent.filter(pred).length / n;
 
-    const dueUsage = recent.filter((t) => t.dueDate != null).length / recent.length;
-    const reminderUsage = recent.filter((t) => t.reminderAt != null).length / recent.length;
+    const chipKeys: TaskFormChipKey[] = [];
+    const tList = Math.min(0.92, 0.34 * mult);
+    const tTags = Math.min(0.92, 0.28 * mult);
+    const tDur = Math.min(0.92, 0.3 * mult);
+    const tRem = Math.min(0.92, 0.32 * mult);
+    const tDesc = Math.min(0.92, 0.26 * mult);
 
-    const dueThreshold = Math.min(0.95, 0.7 * mult);
-    const reminderThreshold = Math.min(0.85, 0.4 * mult);
+    if (rate((t) => Boolean(t.listName?.trim())) >= tList) chipKeys.push("list");
+    if (rate((t) => (t.tags?.length ?? 0) > 0) >= tTags) chipKeys.push("tags");
+    if (rate((t) => t.estimatedMinutes != null) >= tDur) chipKeys.push("duration");
+    if (rate((t) => t.reminderAt != null) >= tRem) chipKeys.push("reminder");
+    if (rate((t) => Boolean(t.description?.trim())) >= tDesc) chipKeys.push("description");
 
-    const chips: string[] = [];
-    if (dueUsage >= dueThreshold) chips.push("dueDate");
-    if (reminderUsage >= reminderThreshold) chips.push("reminderAt");
-
-    if (chips.length === 0) return null;
+    if (chipKeys.length === 0) return null;
 
     return {
       ruleKey: "adaptive_task_creation",
       type: "task_form_chips",
       title: "Felder schneller hinzufügen?",
       explanation:
-        "Dieser Vorschlag erscheint, weil du in letzter Zeit häufig zusätzliche Felder nutzt. FluxPlan kann sie als kurze Vorschlags-Chips anzeigen – du behältst die Kontrolle.",
-      payload: { suggestedChips: chips, signal: { dueUsage, reminderUsage, sampleSize: recent.length } },
+        "Dieser Vorschlag erscheint, weil du in letzter Zeit bestimmte Zusatzfelder oft nutzt. FluxPlan kann sie als Chips vorschlagen – du behältst die Kontrolle.",
+      payload: {
+        chipKeys,
+        signal: {
+          sampleSize: n,
+          rates: {
+            list: rate((t) => Boolean(t.listName?.trim())),
+            tags: rate((t) => (t.tags?.length ?? 0) > 0),
+            duration: rate((t) => t.estimatedMinutes != null),
+            reminder: rate((t) => t.reminderAt != null),
+            description: rate((t) => Boolean(t.description?.trim())),
+          },
+        },
+      },
     };
   },
 };
-

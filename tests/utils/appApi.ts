@@ -29,7 +29,9 @@ export async function listSuggestions(api: APIRequestContext, status?: string) {
   const url = status ? `/api/suggestions?status=${encodeURIComponent(status)}` : "/api/suggestions";
   const res = await api.get(url);
   if (!res.ok()) throw new Error(`listSuggestions failed: ${res.status()} ${await res.text()}`);
-  return res.json() as Promise<{ suggestions: Array<{ id: string; ruleKey: string; status: string }> }>;
+  return res.json() as Promise<{
+    suggestions: Array<{ id: string; ruleKey: string; type: string; status: string }>;
+  }>;
 }
 
 export async function respondSuggestion(api: APIRequestContext, id: string, action: "accept" | "reject" | "snooze" | "undo") {

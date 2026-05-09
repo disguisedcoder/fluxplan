@@ -52,7 +52,7 @@ Alte englische Pfade (`/today`, `/tasks`, `/planning`, `/adaptive`, `/settings`,
 | `POST /api/interactions` · `POST /api/events` | Interaktions- und Event-Logging |
 
 ## Adaptive Engine
-- **6 Regeln**: `view_preference`, `reminder_preference`, `daily_focus`, `calendar_conflict`, `adaptive_task_creation`, `adaptive_optional_fold`.
+- **7 Regeln**: `view_preference`, `reminder_preference`, `daily_focus`, `calendar_conflict`, `adaptive_task_creation`, `adaptive_optional_fold`, `adaptive_optional_unfold`.
 - **Master-Toggle** (`adaptive.enabled`) deaktiviert die gesamte Engine.
 - **Eingriffsstufe** 0–3 skaliert die Trigger-Schwellen jeder Regel.
 - **Snooze** (standardmäßig 24 h, in `DEMO_MODE` verkürzbar): vertagte Vorschläge pausieren dieselbe Regel für dieses Fenster.

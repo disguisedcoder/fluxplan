@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+/** Prefer IPv4 loopback: on some Windows setups `localhost` resolves to ::1 while the dev server listens on IPv4 only. */
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 const isCI = !!process.env.CI;
 /** Set when the app is already running (e.g. `app` service in docker-compose). */
 const skipWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER === "true" || process.env.PLAYWRIGHT_SKIP_WEB_SERVER === "1";
@@ -10,13 +11,14 @@ const disableChromiumProxy =
 
 export default defineConfig({
   testDir: "./tests",
-  timeout: 60_000,
+  /** Docker E2E + Next dev can exceed 60s when a step waits on network + retries. */
+  timeout: isCI ? 120_000 : 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  // Keep DB load predictable (avoid flakiness / crashes).
-  workers: isCI ? 2 : 2,
+  // Single worker in CI: shared Postgres + many session resets; parallel runs were flaky (timeouts, closed pages).
+  workers: isCI ? 1 : 2,
   reporter: [
     ["line"],
     ["html", { open: "never" }],

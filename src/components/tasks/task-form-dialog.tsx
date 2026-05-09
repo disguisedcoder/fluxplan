@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Task } from "./types";
+import { TaskDeleteControl } from "./task-delete-control";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
+import { readAdaptiveTaskFormChips } from "@/lib/settings/task-form-chips";
+import { TaskScheduleOverlapHint } from "@/components/tasks/task-schedule-overlap-hint";
 
 type Priority = "low" | "medium" | "high";
 
@@ -127,6 +130,15 @@ function TaskFormDialogBody({
         if (readTaskFormOptionalFold(data.preferences.taskFormOptionalFold)) {
           setOptionalExpanded(false);
         }
+        const chipPref = readAdaptiveTaskFormChips(data.preferences["adaptive.taskFormChips"]);
+        if (chipPref.enabled && chipPref.chipKeys.length > 0) {
+          setActiveFields((prev) => {
+            const n = new Set(prev);
+            for (const k of chipPref.chipKeys) n.add(k);
+            return n;
+          });
+          setOptionalExpanded(true);
+        }
       })
       .catch(() => {});
     return () => {
@@ -136,6 +148,11 @@ function TaskFormDialogBody({
   }, [mode, initial?.id]);
 
   const canSubmit = useMemo(() => title.trim().length > 0 && !submitting, [title, submitting]);
+
+  const taskForDelete = useMemo((): Task | null => {
+    if (mode !== "edit" || !initial) return null;
+    return { ...initial, title: title.trim() || initial.title };
+  }, [mode, initial, title]);
 
   function toggleField(key: FieldKey) {
     setActiveFields((prev) => {
@@ -236,6 +253,15 @@ function TaskFormDialogBody({
             </Select>
           </div>
         </div>
+
+        <TaskScheduleOverlapHint
+          date={date}
+          time={time}
+          estimatedMinutes={
+            activeFields.has("duration") && estimatedMinutes ? Number(estimatedMinutes) : null
+          }
+          excludeTaskId={mode === "edit" ? initial?.id : undefined}
+        />
 
         {optionalExpanded || activeFields.size > 0 ? (
           <div className="space-y-2">
@@ -375,13 +401,28 @@ function TaskFormDialogBody({
           </div>
         ) : null}
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
-            Abbrechen
-          </Button>
-          <Button onClick={submit} disabled={!canSubmit}>
-            Speichern
-          </Button>
+        <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-h-8">
+            {taskForDelete ? (
+              <TaskDeleteControl
+                task={taskForDelete}
+                trigger="text"
+                disabled={submitting}
+                onDeleted={() => {
+                  setOpen(false);
+                  onSaved?.();
+                }}
+              />
+            ) : null}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
+              Abbrechen
+            </Button>
+            <Button onClick={submit} disabled={!canSubmit}>
+              Speichern
+            </Button>
+          </div>
         </div>
       </div>
     </>

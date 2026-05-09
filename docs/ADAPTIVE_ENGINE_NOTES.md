@@ -15,9 +15,9 @@ Dieses Dokument sammelt **konkret aus dem Code**:
 
 ## 1) Adaptive Features: Wieviele, wo, was genau?
 
-### 1.1 Anzahl: 6 Regeln in der Engine
+### 1.1 Anzahl: 7 Regeln in der Engine
 
-Die Engine führt **6 Regeln** aus, fest verdrahtet in:
+Die Engine führt **7 Regeln** aus, fest verdrahtet in:
 
 - `src/lib/adaptive/adaptiveEngine.ts` (Array `rules`)
 
@@ -29,6 +29,7 @@ Aktive Keys (Reihenfolge = Ausführungsreihenfolge):
 - `calendar_conflict`
 - `adaptive_task_creation`
 - `adaptive_optional_fold`
+- `adaptive_optional_unfold`
 
 > Ob eine Regel aktiv ist, hängt zusätzlich von DB-Flags in `AdaptiveRule` ab (per API toggelbar) und vom Master-/Level-Config. Neue Regeln müssen in `ensureAdaptiveRules` / Seed / Demo-`ensureRules` stehen, sonst fehlt der FK in `AdaptiveSuggestion`.
 
@@ -46,7 +47,8 @@ Mechaniken:
   - Wenn `false`: Engine erzeugt **keine** Suggestions (`runAdaptiveEngine` logged `adaptive_disabled`).
 - **Intervention-Level**: Preference `adaptive.interventionLevel` (0–3)
   - `0`: Engine effektiv aus (über `isRulePaused`).
-- **Snooze Pause**: wenn eine Suggestion `snoozed` ist, gilt die Rule für ein konfigurierbares Fenster als pausiert (Standard **24 h**, in `DEMO_MODE` typisch **10 min** — `FP_SNOOZE_MS` in `engineConfig.ts`).
+- **Snooze Pause (generisch):** wenn eine Suggestion `snoozed` ist, gilt die Rule für ein konfigurierbares Fenster als pausiert (Standard **24 h**, in `DEMO_MODE` typisch **10 min** — `FP_SNOOZE_MS` in `engineConfig.ts`). **`reminder_preference` ist ausgenommen** (eigene Pause über Preferences, siehe unten).
+- **Erinnerungs-Vorschlag vertagt:** `POST …/respond` mit `snooze` bei `reminder_preference` setzt `adaptive.reminderSuggestionSnoozeUntil` (lokaler Kalendertag + **N** Tage; **N** aus `adaptive.reminderSnoozeDays`, Standard **3**, UI: Personalisierung). Die Regel `reminder_preference` wertet `until` aus und erzeugt bis dahin **keine** neuen Vorschläge.
 - **Reject Cooldown**: wenn innerhalb des Cooldown-Fensters >= 2 Rejects für dieselbe Rule auftreten (Standard **14 Tage**, in Demo verkürzbar über `FP_COOLDOWN_*`):
   - setzt Preference `rule.cooldown.<ruleKey>` bis +14 Tage
   - Implementierung: `maybeApplyCooldownAfterReject()` in `engineConfig.ts`
@@ -70,8 +72,10 @@ Actions:
 
 - “Echte” Daten-Reversion / Preference-Reset ist implementiert für:
   - `type === "start_view"` → löscht `startView`
-  - `type === "reminder_suggestion"` → setzt `Task.reminderAt = null`
+  - `type === "reminder_suggestion"` → setzt `Task.reminderAt = null` (löscht auch `adaptive.reminderSuggestionSnoozeUntil`)
+  - `type === "task_form_chips"` → löscht `UserPreference` `adaptive.taskFormChips`
   - `type === "task_form_optional_fold"` → löscht `UserPreference` `taskFormOptionalFold`
+  - `type === "task_form_optional_unfold"` → setzt `taskFormOptionalFold` wieder `{ enabled: true }` (Rückkehr zum eingeklappten Zustand nach Undo eines Ausklapp-Vorschlags)
 - Für alle anderen Types: `undo` markiert primär Status `undone` + Logging, ohne dass Daten zwingend zurückgesetzt werden.
 
 ---
@@ -115,7 +119,7 @@ Praktische Wirkung:
 Quellen:
 
 - Regel: `src/lib/adaptive/rules/dailyFocusRule.ts`
-- Banner/UX: `src/components/planning/today-dashboard.tsx`
+- Banner/UX: `src/components/adaptive/pending-suggestion-banner.tsx` (global)
 
 Praktische Wirkung:
 
@@ -136,19 +140,20 @@ Praktische Wirkung:
 - UI markiert Konflikte immer (Overlaps) – unabhängig davon, ob Engine etwas vorschlägt.
 - Engine-Regel kann zusätzlich Suggestions erzeugen (Details siehe Regeldatei).
 
-### 2.5 `adaptive_task_creation` → Vorschlags-Chips (hohe Nutzung Fälligkeit + Erinnerung)
+### 2.5 `adaptive_task_creation` → Vorschlags-Chips (Muster in optionalen Feldern)
 
 Quellen:
 
 - Regel: `src/lib/adaptive/rules/adaptiveTaskCreationRule.ts`
-- Formular: `src/components/tasks/progressive-task-form.tsx`
+- Formular: `src/components/tasks/progressive-task-form.tsx`, `task-form-dialog.tsx`
+- Preference lesen: `src/lib/settings/task-form-chips.ts` (`adaptive.taskFormChips`)
 - Parser: `src/lib/parser/task-parser.ts`
 
 Praktische Wirkung:
 
 - Das Formular ist **ohne Engine** schon progressiv (Nutzer aktiviert Zusatzfelder per Chips; Parser füllt bei Bedarf).
-- Die Regel feuert nach **`screen: "task_created"`**, wenn in den letzten Aufgaben **Fälligkeit** und **Erinnerung** überdurchschnittlich oft gesetzt sind (exakte Schwellen + Sample-Größe abhängig von `thresholdMultiplier` / Eingriffsstufe).
-- Suggestion-`type`: **`task_form_chips`**. **Accept** in `applySuggestion`: *kein* zusätzlicher Zweig — es wird keine neue UserPreference aus diesem Type geschrieben (Studie/Transparenz: Zustimmung zum Konzept; Umsetzung bleibt beim bestehenden Formular).
+- Die Regel feuert nach **`screen: "task_created"`**, wenn in den letzten Aufgaben **optionale Felder** (Kategorie, Tags, Dauer, Erinnerung, Beschreibung) über Schwellen hinweg **häufig** genutzt werden (Details + Sample-Größe in der Regeldatei; `thresholdMultiplier` / Eingriffsstufe). **Gast-Pseudonyme** `G` + Ziffer: Muster aus der zuletzt „reichen“ Aufgabe.
+- Suggestion-`type`: **`task_form_chips`**, Payload u. a. `chipKeys`. **Accept** in `applySuggestion`: upsert **`adaptive.taskFormChips`** `{ enabled: true, chipKeys }` — Formular blendet diese Chips beim Laden ein.
 - **Baseline:** diese Suggestion entsteht praktisch nicht (Engine aus / keine Evaluations).
 
 ### 2.6 `adaptive_optional_fold` → Zusatzfelder standardmäßig einklappen (seltene Nutzung)
@@ -169,15 +174,37 @@ Praktische Wirkung:
 - **Undo:** Preference-Eintrag wird gelöscht.
 - **Baseline:** Regel kann in Daten **nicht** ausgelöst werden, wenn keine `task_created`-Evaluations laufen; die **Einstellung** (Schalter) wirkt in Baseline trotzdem — reine UX-Präferenz ohne Vorschlag.
 
-### 2.7 UI: Vorschläge unterscheidbar machen
+### 2.7 `adaptive_optional_unfold` → Zusatzfelder wieder ausklappen
+
+Quellen:
+
+- Regel: `src/lib/adaptive/rules/adaptiveOptionalUnfoldRule.ts`
+- Apply/Undo: `src/app/api/suggestions/[id]/respond/route.ts`
+
+Praktische Wirkung:
+
+- Nur sinnvoll, wenn **`taskFormOptionalFold` bereits aktiv** ist und die Nutzung optionaler Felder wieder **steigt** (Anteil „reiche“ Aufgaben über Schwelle; Gast: letzte Aufgabe nutzt wieder Optionalfelder).
+- Kein paralleller **`task_form_chips`**-Vorschlag pending.
+- Suggestion-`type`: **`task_form_optional_unfold`**. **Accept:** löscht die Preference `taskFormOptionalFold`. **Undo:** setzt Einklappen wieder (`enabled: true`).
+
+### 2.8 UI: Vorschläge unterscheidbar machen
 
 Quellen:
 
 - `src/components/adaptive/suggestion-visuals.ts` — `getSuggestionVisualMeta(ruleKey)` (Icon, Akzentfarbe, Badge-Text, Strapline)
 - `src/components/adaptive/adaptations-tab.tsx` — Liste + Detailpanel mit linkem Rand, Badge, Strapline-Band
-- `src/components/planning/today-dashboard.tsx` — Banner nutzt dieselbe Metadaten-Schicht
+- `src/components/adaptive/pending-suggestion-banner.tsx` — globales Banner nutzt dieselbe Metadaten-Schicht
 
 Zweck: Gleiche Button-Leiste („Annehmen / Nicht jetzt / Ablehnen“) darf **nicht** suggerieren, dass alle Vorschläge dieselbe *Art* von Wirkung haben — daher visuelle Kodierung pro `ruleKey`.
+
+### 2.9 Zeitliche Überlappung beim Erstellen (nicht Engine)
+
+Quellen:
+
+- `src/lib/planning/task-time-overlap.ts` — `inferOverlapHintDurationMinutes`, `overlappingOpenTasksForDraft`
+- `src/components/tasks/task-schedule-overlap-hint.tsx` — eingebunden in `progressive-task-form.tsx` und `task-form-dialog.tsx`
+
+Hinweis: **reine Client-Warnung** bei Datum+Uhrzeit; kein Blockieren des Speicherns. Fehlende Dauern: Herleitung aus offenen Aufgaben (siehe Katalog §3.5); **Kalender-Raster** (`week-planner.tsx`) nutzt weiterhin **45 min**-Fallback.
 
 ---
 
@@ -195,16 +222,16 @@ Body:
 { "screen": "/heute", "taskId": null, "metadata": { "trigger": "manual" } }
 ```
 
-### 3.2 Heute-Mount Trigger (Banner + Evaluate)
+### 3.2 Globales Banner + Evaluate (Hauptseiten)
 
 Quelle:
 
-- `src/components/planning/today-dashboard.tsx`
+- `src/components/shell/app-shell.tsx` + `src/components/adaptive/pending-suggestion-banner.tsx`
 
-Beim Mount:
+Bei **Adaptive** (nicht Baseline), sobald der Nutzer eine Hauptseite besucht (**nicht** `/anpassungen`, nicht `/` ohne Shell):
 
-- `POST /api/adaptive/evaluate` mit `{ screen: "/heute" }`
-- `GET /api/suggestions?status=pending` und Auswahl einer “preferred” Suggestion für Banner
+- `POST /api/adaptive/evaluate` mit `{ screen: <pathname> }`
+- `GET /api/suggestions?status=pending` und Auswahl einer „preferred“ Suggestion (wie zuvor auf `/heute`: u. a. `daily_focus`, `view_preference`)
 
 ### 3.3 Navigation/View-Change Trigger (opportunistisch)
 
@@ -261,11 +288,11 @@ Empfehlung:
 - Viele Aufgaben **ohne** `listName`, **ohne** Tags, **ohne** `estimatedMinutes`, **ohne** `reminderAt`, **ohne** `description` anlegen (per API oder UI), bis die Mindestanzahl in der Regel erreicht ist; kein offener `task_form_chips`-Vorschlag.
 - Danach eine weitere Aufgabe erstellen → `task_created` Evaluation.
 
-### 4.2 “Ohne Demo” schnell sichtbar: ping-pong + Heute reload
+### 4.2 “Ohne Demo” schnell sichtbar: ping-pong + Seitenwechsel
 
 - Starte Session (Adaptive)
-- Öffne `/heute` (triggert evaluate + Banner load)
-- Wechsle 4–5x zwischen `/heute` und `/kalender` oder `/aufgaben` (triggert `view_changed` → Engine)
+- Öffne z. B. `/heute` oder `/aufgaben` (Banner-Outlet triggert `evaluate` + lädt pending)
+- Wechsle 4–5x zwischen `/heute`, `/kalender` und `/aufgaben` (triggert `view_changed` → Engine; Banner aktualisiert sich)
 
 ---
 
@@ -275,7 +302,8 @@ Empfehlung:
 | --- | --- | --- |
 | `runAdaptiveEngine` | wird oft nicht aufgerufen bzw. bricht sofort ab (`adaptive_disabled`) | läuft bei `evaluate`, `view_changed`, `task_created`, … |
 | Neue `AdaptiveSuggestion` | praktisch keine | ja, wenn Regeln + Schwellen passen |
-| `task_form_chips` / `task_form_optional_fold` | nein | ja (nach Mustern) |
+| `task_form_chips` / `task_form_optional_fold` / `task_form_optional_unfold` | nein | ja (nach Mustern) |
+| Gast `G`+Ziffer (`isGuestStudyUser`) | — | lockerere Schwellen / verkürzte Muster in mehreren Regeln |
 | `taskFormOptionalFold` (manuell unter Einstellungen) | **ja**, reine Präferenz | **ja**, zusätzlich zu Vorschlägen möglich |
 
 ---

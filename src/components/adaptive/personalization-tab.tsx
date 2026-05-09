@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PlayCircle } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { AdaptiveRule } from "./types";
 import type { Preferences } from "./suggestions-screen";
 import { InterventionLevelSlider } from "@/components/settings/intervention-level-slider";
@@ -16,6 +17,12 @@ import {
   readPreferenceBool,
   clampInterventionLevel,
 } from "@/lib/settings/intervention-levels";
+import {
+  readReminderSnoozeDaysPref,
+  readReminderSuggestionSnoozeUntil,
+  REMINDER_SNOOZE_DAYS_PREF_KEY,
+  REMINDER_SNOOZE_UNTIL_PREF_KEY,
+} from "@/lib/settings/reminder-snooze";
 
 export function PersonalizationTab({
   rules,
@@ -139,6 +146,8 @@ export function PersonalizationTab({
           </CardContent>
         </Card>
 
+        <ReminderSnoozePrefsCard preferences={preferences} onChanged={onChanged} />
+
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">
             <div>
@@ -203,6 +212,94 @@ export function PersonalizationTab({
         </Card>
       </div>
     </div>
+  );
+}
+
+function ReminderSnoozePrefsCard({
+  preferences,
+  onChanged,
+}: {
+  preferences: Preferences;
+  onChanged: () => void;
+}) {
+  const days = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
+  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
+  const [draft, setDraft] = useState(String(days));
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setDraft(String(readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY])));
+  }, [preferences]);
+
+  async function saveDays() {
+    const n = Math.min(30, Math.max(1, Math.round(Number(draft))));
+    if (!Number.isFinite(n)) {
+      toast.error("Bitte eine Zahl zwischen 1 und 30 eingeben.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: REMINDER_SNOOZE_DAYS_PREF_KEY, value: n }),
+      });
+      if (!res.ok) {
+        toast.error("Konnte Einstellung nicht speichern.");
+        return;
+      }
+      toast.success("Intervall gespeichert.");
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const untilLabel =
+    until && until.getTime() > Date.now()
+      ? until.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
+      : null;
+
+  return (
+    <Card className="fp-card">
+      <CardContent className="space-y-3 p-5">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">Erinnerungs-Vorschläge vertagen</h3>
+          <p className="text-xs text-muted-foreground">
+            Wenn du bei einem Erinnerungs-Vorschlag „Nicht jetzt“ wählst, fragt FluxPlan erst wieder nach Ablauf
+            dieser Frist.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="grid gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="rem-snooze-days">
+              Tage bis zum nächsten Vorschlag
+            </label>
+            <Input
+              id="rem-snooze-days"
+              type="number"
+              min={1}
+              max={30}
+              className="w-24"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              disabled={busy}
+            />
+          </div>
+          <Button type="button" variant="secondary" size="sm" onClick={() => void saveDays()} disabled={busy}>
+            Speichern
+          </Button>
+        </div>
+        {untilLabel ? (
+          <p className="text-xs text-muted-foreground">
+            Aktuell aktiv: nächste Erinnerungs-Vorschläge frühestens ab{" "}
+            <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Kein Vertagen aktiv — Vorschläge können wieder erscheinen.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

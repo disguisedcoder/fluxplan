@@ -8,11 +8,13 @@ test("@ui create task via natural language parser and verify tokens + creation",
   await expect(page.getByRole("heading", { level: 1, name: "Neue Aufgabe" })).toBeVisible();
 
   const title = `PW Parser ${Date.now()}`;
-  await page.getByLabel("Sprachfeld (optional)").fill(`${title} morgen 9 Uhr 60 min #recherche !hoch`);
+  const natural = page.getByLabel("Sprachfeld (optional)");
+  await expect(natural).toBeVisible();
+  await natural.fill(`${title} morgen 9 Uhr 60 min #recherche !hoch`);
 
   // Parser shows tokens as chips (`kind: value` — see task-parser ParsedToken.kind)
-  await expect(page.getByText(/date:/i)).toBeVisible();
-  await expect(page.getByText(/time:/i)).toBeVisible();
+  await expect(page.getByText(/date:/i)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/time:/i)).toBeVisible({ timeout: 30_000 });
 
   // Title input should be filled
   await expect(page.getByLabel("Titel")).toHaveValue(title);

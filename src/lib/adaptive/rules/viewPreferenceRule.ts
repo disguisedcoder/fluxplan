@@ -7,11 +7,16 @@ const SAMPLE = 24;
 
 type ViewTarget = {
   id: string;
-  href: "/kalender" | "/aufgaben" | "/erstellen";
+  href: "/heute" | "/kalender" | "/aufgaben" | "/erstellen";
   match: (to: string) => boolean;
 };
 
 const VIEW_TARGETS: ViewTarget[] = [
+  {
+    id: "today",
+    href: "/heute",
+    match: (to) => to === "/heute" || to === "/today",
+  },
   {
     id: "calendar",
     href: "/kalender",
@@ -37,6 +42,8 @@ function extractTo(metadata: unknown): string | null {
 
 function titleFor(href: ViewTarget["href"]): string {
   switch (href) {
+    case "/heute":
+      return "„Heute“ als Startansicht?";
     case "/kalender":
       return "Kalender als Startansicht?";
     case "/aufgaben":
@@ -50,11 +57,13 @@ function titleFor(href: ViewTarget["href"]): string {
 
 function explanationFor(href: ViewTarget["href"], count: number, sampleSize: number): string {
   const where =
-    href === "/kalender"
-      ? "Kalender oder Planungsansicht"
-      : href === "/aufgaben"
-        ? "Aufgabenliste"
-        : "die Seite „Erstellen“";
+    href === "/heute"
+      ? "„Heute“"
+      : href === "/kalender"
+        ? "Kalender oder Planungsansicht"
+        : href === "/aufgaben"
+          ? "Aufgabenliste"
+          : "die Seite „Erstellen“";
   return `Dieser Vorschlag erscheint, weil du in den letzten ${sampleSize} registrierten Ansichten ${count}× zu ${where} gewechselt bist — häufiger als zu den anderen vorgeschlagenen Bereichen.`;
 }
 

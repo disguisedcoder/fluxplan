@@ -11,9 +11,9 @@ Dieses Dokument beschreibt **was in der UI sichtbar ist**, **welche Aktionen die
 
 | Bereich | Baseline | Adaptive |
 | --- | --- | --- |
-| **`/heute`** | Kein Vorschlags-Banner oben | Banner möglich (pending Vorschlag, Priorität u. a. Fokus/Startansicht/Formular) |
+| **`/heute` und andere Hauptseiten** | Kein adaptives Vorschlags-Banner | **Adaptive:** Banner oben im Inhaltsbereich möglich (pending Vorschlag; Priorität u. a. `daily_focus`, `view_preference`); **nicht** unter `/anpassungen` (dort nur Tabs) |
 | **`/anpassungen`** | Tabs nutzbar; kaum neue pending Vorschläge | Liste „Aktive Vorschläge“ + Detail mit **farbigem Rand, Icon, Kategorie-Badge, Strapline** |
-| **`/erstellen` / Bearbeiten** | Gleiche Grundfunktionen; optional Schalter „Zusatzfelder eingeklappt“ unter Einstellungen | Wie Baseline **plus** ggf. Vorschläge aus der Engine (Chips-Hinweis, Einklappen-Hinweis) |
+| **`/erstellen` / Bearbeiten** | Gleiche Grundfunktionen; optional Schalter „Zusatzfelder eingeklappt“ unter Einstellungen | Wie Baseline **plus** ggf. Vorschläge aus der Engine; **Hinweis** bei möglicher **zeitlicher Überschneidung** am gewählten Tag (nur Warnung, kein Blockieren; Dauer-Herleitung siehe §3.5) |
 | **Kalender „überlappt“** (Chips im Raster) | **Zeit-Überlappung** am Tag | **Identisch** in Baseline und Adaptive — **kein** Unterschied |
 | **Vorschlag „Planungskonflikt“** (`calendar_conflict`) | — | **Nur Adaptive:** Text-Vorschlag (8 h Tageslast beim Anlegen); **ändert das Raster nicht** |
 | **Einstellungen** | Master-Toggle Adaptiv oft aus (Demo) | Vorschläge + Eingriffsstufe aktiv steuerbar |
@@ -35,6 +35,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | **Export JSON/CSV** | `/einstellungen` | Button | Download |
 | **Daten zurücksetzen** | `/einstellungen` | Roter Bereich + Bestätigung | Tasks, Vorschläge, Logs, Prefs des Pseudonyms weg |
 | **Admin: Demo-Testuser** | `/einstellungen` nur Admin-Pseudonym | Bestätigung `RESET_DEMO_USERS` | Nur F01–E05 Nutzer in DB zurückgesetzt |
+| **Adaptives Vorschlags-Banner** (nur Adaptive) | Hauptseiten unter `AppShell` (außer `/anpassungen`, `/`) | Navigation: `view_changed` + Evaluate; Banner-Mount lädt pending | Karte mit Ja / Nicht jetzt / Ablehnen; Logging `suggestion_seen` / `why_clicked` mit aktuellem Pfad als `screen` |
 
 ---
 
@@ -51,13 +52,13 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 
 | UI-Bereich | Trigger | Sichtbare Wirkung |
 | --- | --- | --- |
-| **Fokusliste (To‑Do)** | Lädt `GET /api/tasks?status=open` | Liste überfällig → heute → Priorität → Auffüller; Checkbox erledigt mit Bestätigung |
+| **Fokusliste (To‑Do)** | Lädt `GET /api/tasks?status=open` | Liste **nach Kalendertag** überfällig → heute fällig → undatierte Auffüller (bis 5 Einträge); Checkbox erledigt mit Bestätigung. **Zeilenoptik:** überfällig = dezenter rosa Rand/Hintergrund + Metatext „Überfällig · …“ (Fälligkeitsdatum, optional Uhrzeit); heute fällig = amber Rand/Hintergrund + „Heute fällig · …“; ohne Datum = neutral wie bisher (`today-dashboard.tsx`, `focusListDuePresentation`) |
 | **„Gerade erledigt“** | Task auf erledigt | Kurze Liste mit „Rückgängig“-Button |
 | **Quick-Add** | Eingabe + Absenden | Neue Aufgabe erscheint nach Reload in Liste |
 | **Agenda „Heute im Überblick“** | Tasks mit Uhrzeit heute | Zeitleiste |
 | **„Woche im Überblick“** (Mini-Monat) | `MiniMonthCalendar` | Monatsraster; **Tage mit Aufgaben: Punkte unter der Zahl** (feste Zeilenhöhe); Klick öffnet Popover mit Titeln |
 | **Status-Zeilen** | Baseline/Adaptive | Textzeilen zu Modus / Vorschlag verfügbar |
-| **Vorschlags-Banner** (nur sinnvoll Adaptive) | Mount: `evaluate` + `GET /api/suggestions`; bevorzugt `daily_focus`, `view_preference` | Karte oben: Titel, Erklärung, **Ja / Nicht jetzt / Ablehnen**, „Warum?“; je nach Typ zusätzlicher Erklärtext (z. B. Fokus vs. Startansicht vs. Formular) |
+| **Vorschlags-Banner** | — | **Entfällt:** Banner liegt **global** in der App-Shell (siehe §2), nicht mehr nur auf dieser Seite |
 
 ### 3.3 `/aufgaben`
 
@@ -76,7 +77,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | UI | Trigger | Sichtbare Wirkung |
 | --- | --- | --- |
 | Wochenraster | Tasks mit `dueDate` | Chips pro Slot |
-| **Konflikt-Markierung („überlappt“)** | Zwei (oder mehr) Aufgaben **überlappen sich in der Zeit** am selben Tag (Raster 8–19 Uhr; Dauer aus `estimatedMinutes` oder Fallback **45 min**) | Hervorhebung am Chip (z. B. Ring); **gleich in Baseline und Adaptive** — hängt **nicht** von der Session-Variante ab |
+| **Konflikt-Markierung („überlappt“)** | Zwei (oder mehr) Aufgaben **überlappen sich in der Zeit** am selben Tag (Wochenraster: voller Tag sichtbar; Dauer aus `estimatedMinutes` oder Fallback **45 min** im Code `week-planner.tsx`) | Hervorhebung am Chip (z. B. Ring); **gleich in Baseline und Adaptive** — hängt **nicht** von der Session-Variante ab |
 | Ungeplante Aufgaben | Tasks ohne Datum | Rechte Spalte; Aktionen Planen/Heute |
 | **Neue Aufgabe** | CTA | Weiterleitung `/erstellen` o. ä. |
 
@@ -91,6 +92,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | **Zusatzfelder** | Chips „Kategorie / Tags / …“ | Felder erscheinen nur wenn Chip aktiv |
 | **Eingeklappt** | Präferenz `taskFormOptionalFold` oder Vorschlag angenommen | Statt Chip-Leiste: **„Weitere Felder einblenden“**; Parser mit Tags etc. klappt automatisch auf |
 | **Einklappen** | Klick wenn keine aktiven Zusatz-Chips | Chip-Leiste verbirgt sich wieder |
+| **Überlappungs-Hinweis** (Datum + Uhrzeit gesetzt) | Client vergleicht mit `GET /api/tasks?status=open` | Gelber Hinweis, wenn Zeitfenster sich mit anderer Aufgabe **am selben Kalendertag** schneidet; **Speichern bleibt möglich**. Fehlende Dauer: siehe `inferOverlapHintDurationMinutes` in `task-time-overlap.ts` (zuletzt angelegte Aufgabe mit Dauer → häufigster Wert → **60 min**); andere Aufgaben ohne Dauer nutzen dieselbe Herleitung. **Kalender-Raster** nutzt weiterhin **45 min**-Fallback. |
 | Absenden | Button | Toast, Redirect zu `/aufgaben` |
 
 ### 3.6 `/anpassungen`
@@ -99,7 +101,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | --- | --- | --- |
 | Transparenz-Panel | `GET /api/insights` | Zahlen der letzten 7 Tage |
 | Tab **Anpassungen** | — | Links Liste pending/historisch; rechts **Detailkarte** mit farbigem linken Rand, Icon, Badge, Strapline, „Warum?“, „Was passiert beim Annehmen“, Buttons |
-| Tab **Personalisierung** | — | Regeln an/aus, Eingriffsstufe, Probelauf „Heuristiken prüfen“ |
+| Tab **Personalisierung** | — | Regeln an/aus, Eingriffsstufe, **Erinnerungs-Vorschläge vertagen** (Tage bis zum nächsten Vorschlag nach „Nicht jetzt“, Standard 3), Probelauf „Heuristiken prüfen“ |
 | Tab **Cooldown** | Prefs + History | Regeln mit Abklingzeit |
 
 ### 3.7 `/einstellungen`
@@ -118,18 +120,19 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 
 Die Engine wird u. a. getriggert durch:
 
-- `POST /api/adaptive/evaluate` (manuell Tab Personalisierung, oder `/heute`-Mount, …)
+- `POST /api/adaptive/evaluate` (manuell Tab Personalisierung, oder beim **Seitenwechsel** über das globale Banner-Outlet mit `screen: pathname`, …)
 - `POST /api/interactions` mit `view_changed` nach Navigation (App-Shell)
 - **`POST /api/tasks`** nach erfolgreichem Anlegen (`screen: "task_created"`)
 
 | `ruleKey` | Typischer `type` | Typische Auslöser (vereinfacht) | Wo sieht man es? | Was ändert sich sichtbar? |
 | --- | --- | --- | --- | --- |
-| `view_preference` | `start_view` | Häufig zwischen Ansichten wechseln | Banner `/heute`, `/anpassungen` | **Annehmen:** Startansicht gespeichert; ggf. Sprung zur neuen Startseite; Sidebar „Start“ zeigt neue Zielseite |
-| `reminder_preference` | `reminder_suggestion` | Wiederholtes Muster mit Erinnerungen | `/anpassungen` | **Annehmen:** Erinnerungszeit an konkreter Aufgabe in DB; in UI in Aufgaben/Kalender sichtbar |
-| `daily_focus` | `daily_focus` | Viele relevante offene/heutige Aufgaben | Banner `/heute`, `/anpassungen` | Nur Hinweis; Fokusliste weiter aus Tasks berechnet. Button oft **„Verstanden“** |
+| `view_preference` | `start_view` | Häufig zwischen Ansichten wechseln | Banner (Hauptseiten), `/anpassungen` | **Annehmen:** Startansicht gespeichert; ggf. Sprung zur neuen Startseite; Sidebar „Start“ zeigt neue Zielseite |
+| `reminder_preference` | `reminder_suggestion` | Wiederholtes Muster mit Erinnerungen | `/anpassungen`, ggf. Banner | **Annehmen:** Erinnerungszeit an konkreter Aufgabe in DB; in UI in Aufgaben/Kalender sichtbar. **Nicht jetzt:** Pause bis konfiguriertes Datum (Personalisierung → Tage; Preference `adaptive.reminderSuggestionSnoozeUntil`). **Hinweis:** Die Fokusliste auf `/heute` stuft nach **Fälligkeitsdatum** (`dueDate`) ein und hebt **überfällig / heute fällig** optisch hervor — **unabhängig** davon, ob eine Erinnerung gesetzt ist |
+| `daily_focus` | `daily_focus` | Viele relevante offene/heutige Aufgaben | Banner, `/anpassungen` | Nur Hinweis; Fokusliste weiter aus Tasks berechnet. Button oft **„Verstanden“** |
 | `calendar_conflict` | `calendar_conflict` | Nach **task_created**: Summe `estimatedMinutes` der **offenen** Aufgaben an diesem Tag **≥ 8 h** (nicht = Überlappung im Raster) | `/anpassungen`, ggf. Banner | Nur **Vorschlagstext**; **keine** zusätzliche Markierung im Wochenraster |
-| `adaptive_task_creation` | `task_form_chips` | Viele neue Aufgaben mit Datum **und** Erinnerung (Schwelle) | `/anpassungen`, ggf. Banner | Vorschlag „Felder schneller…“; **kein** Pflichtfeld im Formular — Zustimmung dokumentiert |
-| `adaptive_optional_fold` | `task_form_optional_fold` | Viele Aufgaben **ohne** Kategorie/Tags/Dauer/Erinnerung/Beschreibung; kein offener Chip-Vorschlag | `/anpassungen`, ggf. Banner | **Annehmen:** unter Einstellungen erscheint logisch „Zusatzfelder“ an; auf `/erstellen` und im Bearbeiten-Dialog **eingeklappte** Zusatzfelder bis „einblenden“ |
+| `adaptive_task_creation` | `task_form_chips` | Nach mehreren Aufgaben: Muster in **optionalen** Feldern (Kategorie, Tags, Dauer, Erinnerung, Beschreibung); Gast (`G`+Ziffer): letzte „reiche“ Aufgabe | `/anpassungen`, ggf. Banner | **Annehmen:** Preference `adaptive.taskFormChips` → vorgemerkte Chips auf `/erstellen` und im Bearbeiten-Dialog |
+| `adaptive_optional_fold` | `task_form_optional_fold` | Wenig Nutzung optionaler Felder; kein offener Chip-Vorschlag; Gast: zwei minimale Aufgaben hintereinander | `/anpassungen`, ggf. Banner | **Annehmen:** `taskFormOptionalFold` — Zusatzfelder eingeklappt |
+| `adaptive_optional_unfold` | `task_form_optional_unfold` | Zusatzfelder eingeklappt, Nutzung optionaler Felder wieder hoch; Gast: letzte Aufgabe nutzt wieder Optionalfelder | `/anpassungen`, ggf. Banner | **Annehmen:** Einklappen-Preference entfernt — Zusatzfelder wieder standardmäßig sichtbar |
 
 **Visuelle Unterscheidung** der Vorschläge in `/anpassungen`: jedes `ruleKey` hat eigenes **Icon**, **Randfarbe**, **Kategorie-Badge** (z. B. Überblick, Formular, Kompakt) und eine **Strapline** unter der Überschrift — damit „ähnlicher Text“ nicht wie derselbe Vorschlag wirkt.
 
@@ -140,8 +143,9 @@ Die Engine wird u. a. getriggert durch:
 | Thema | Klarstellung |
 | --- | --- |
 | Konflikte im Kalender (orange / „überlappt“) | Nur **Überlappung** zweier Zeitfenster (`week-planner`); **gleich in Baseline und Adaptive**. Die Regel **`calendar_conflict`** ist **zusätzlich** (8 h Tageslast) und nur ein **Hinweis** unter Anpassungen — **kein** extra Pixel im Raster |
-| Fokusliste | **Nicht** vom `daily_focus`-Payload gesteuert; Hinweis ist informational |
-| Chip-Vorschlag vs. Einklappen | Schließen sich aus, solange ein **`task_form_chips`** noch **pending** ist |
+| Fokusliste | **Nicht** vom `daily_focus`-Payload gesteuert; Hinweis ist informational. Reihenfolge und **Farbkennung** folgen **Fälligkeitsdatum** (Kalender überfällig / heute), nicht dem adaptiven Erinnerungs-Vorschlag allein |
+| Chip-Vorschlag vs. Einklappen | **`adaptive_optional_fold`** wartet, solange ein **`task_form_chips`** noch **pending** ist |
+| Gast-Pseudonym `G01`, `G02`, … | In der Engine **lockerere Schwellen** / verkürzte Muster (`isGuestStudyUser`) |
 | Baseline + eingeklappte Felder | Schalter **„Zusatzfelder“** in Einstellungen wirkt **ohne** Engine |
 
 ---
@@ -150,8 +154,10 @@ Die Engine wird u. a. getriggert durch:
 
 | Thema | Pfad |
 | --- | --- |
+| Heute: Fokusliste (Buckets + Zeilenfarben) | `src/components/planning/today-dashboard.tsx` |
 | Mini-Monat (Punkte, Ausrichtung) | `src/components/planning/mini-month-calendar.tsx` |
-| Heute-Banner | `src/components/planning/today-dashboard.tsx` |
+| Globales Vorschlags-Banner | `src/components/adaptive/pending-suggestion-banner.tsx`, `src/components/shell/app-shell.tsx` |
+| Überlappung Erstellen/Bearbeiten | `src/lib/planning/task-time-overlap.ts`, `src/components/tasks/task-schedule-overlap-hint.tsx` |
 | Vorschlags-Metadaten (Farben/Icons) | `src/components/adaptive/suggestion-visuals.ts` |
 | Anpassungen-Detail | `src/components/adaptive/adaptations-tab.tsx` |
 | Formular Erstellen | `src/components/tasks/progressive-task-form.tsx` |
@@ -162,4 +168,4 @@ Die Engine wird u. a. getriggert durch:
 
 ## 7. Versionhinweis
 
-Stand: Beschreibung deckt u. a. **6 adaptive Regeln**, **paritätes Bearbeiten-Formular**, **optional eingeklappte Zusatzfelder**, **visuell differenzierte Vorschlagskarten** und **Mini-Kalender-Layout mit fester Ziffernhöhe** ab. Bei größeren UI-Änderungen dieses Dokument mitpflegen.
+Stand: Beschreibung deckt u. a. **7 adaptive Regeln**, **globales Vorschlags-Banner**, **Überlappungs-Hinweis beim Erstellen**, **paritätes Bearbeiten-Formular**, **optional eingeklappte Zusatzfelder**, **visuell differenzierte Vorschlagskarten**, **Fokusliste mit Kennzeichnung überfällig vs. heute fällig** und **Mini-Kalender-Layout mit fester Ziffernhöhe** ab. Bei größeren UI-Änderungen dieses Dokument mitpflegen.

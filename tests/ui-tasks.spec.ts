@@ -37,9 +37,19 @@ test("@ui tasks search + complete + reopen + delete", async ({ page, baseURL }) 
     expect(open.tasks.length).toBeGreaterThanOrEqual(1);
   }, { timeoutMs: 15_000, intervalMs: 500, message: "task should reopen" });
 
-  // Delete via UI (handles confirm dialog)
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "Löschen" }).click();
+  // Reopen happens outside the page; TasksScreen only refetches when `queryString` changes.
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
+  await page.getByPlaceholder("Aufgaben durchsuchen…").fill(title);
+  await expect(page.getByText(title)).toBeVisible();
+
+  // Delete via UI: in-app confirmation dialog (CRUD); pin CompactTaskRow (avoid matching wide ancestor divs).
+  const taskRow = page
+    .locator("div.flex.items-center.gap-3.px-4.py-3")
+    .filter({ has: page.getByLabel(`Aufgabe ${title} erledigen`, { exact: true }) });
+  await taskRow.locator("[data-fp-delete-trigger]").click();
+  await expect(page.getByTestId("fp-task-delete-dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Endgültig löschen" }).click();
 
   await expectEventually(async () => {
     const open = await listTasks(api, { status: "open", q: title });

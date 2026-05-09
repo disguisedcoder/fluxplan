@@ -1,5 +1,14 @@
 import type { LucideIcon } from "lucide-react";
-import { Bell, CalendarClock, Focus, Home, PanelBottomClose, Sparkles, Wand2 } from "lucide-react";
+import {
+  Bell,
+  CalendarClock,
+  ChevronsUpDown,
+  Focus,
+  Home,
+  PanelBottomClose,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 
 export type SuggestionAccent = "sky" | "violet" | "amber" | "rose";
 
@@ -27,7 +36,7 @@ export function getSuggestionVisualMeta(ruleKey: string): SuggestionVisualMeta {
         accent: "sky",
         categoryShort: "Überblick",
         strapline:
-          "Reiner Fokus-Hinweis: keine Aufgabe wird geändert, du behältst den Überblick.",
+          "Keine Aufgabenänderung: nach Annehmen hebt die To-Do-Liste überfällige und heute fällige Zeilen rot hervor.",
       };
     case "adaptive_task_creation":
       return {
@@ -44,6 +53,14 @@ export function getSuggestionVisualMeta(ruleKey: string): SuggestionVisualMeta {
         categoryShort: "Kompakt",
         strapline:
           "Blendet den Zusatzfelder-Bereich beim Anlegen zunächst ein – alles bleibt einen Klick entfernt.",
+      };
+    case "adaptive_optional_unfold":
+      return {
+        Icon: ChevronsUpDown,
+        accent: "sky",
+        categoryShort: "Formular",
+        strapline:
+          "Schlägt vor, eingeklappte Zusatzfelder wieder sichtbar zu machen — du behältst die Kontrolle.",
       };
     case "calendar_conflict":
       return {

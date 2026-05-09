@@ -8,6 +8,28 @@ import {
 } from "./utils/appApi";
 import { expectEventuallyToBeTruthy } from "./utils/expectEventually";
 
+test("@adaptive view_preference after repeated view_changed to same route", async ({ page, baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
+
+  for (let i = 0; i < 12; i += 1) {
+    const r = await api.post("/api/interactions", {
+      data: { type: "view_changed", screen: "/aufgaben", metadata: { to: "/aufgaben" } },
+    });
+    if (!r.ok()) throw new Error(`view_changed interaction failed: ${r.status()} ${await r.text()}`);
+  }
+
+  const viewPref = await expectEventuallyToBeTruthy(async () => {
+    const pending = await listSuggestions(api, "pending");
+    return pending.suggestions.find((s) => s.ruleKey === "view_preference") ?? null;
+  }, { timeoutMs: 20_000, intervalMs: 500, message: "view_preference pending after navigations" });
+  expect(viewPref.ruleKey).toBe("view_preference");
+
+  await respondSuggestion(api, viewPref.id, "snooze");
+
+  await api.dispose();
+});
+
 test("@adaptive rules daily_focus + view_preference are triggerable", async ({ page, baseURL }) => {
   if (!baseURL) throw new Error("baseURL is required");
   const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
@@ -104,6 +126,32 @@ test("@adaptive rule adaptive_task_creation can be triggered with repeated task 
 
   // Clean up: avoid piling up pending suggestions that could interfere with other tests.
   await respondSuggestion(api, chips.id, "snooze");
+
+  await api.dispose();
+});
+
+test("@adaptive rule adaptive_optional_fold after many minimal task_created events", async ({ page, baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
+
+  const pendingChips = await listSuggestions(api, "pending");
+  const chips = pendingChips.suggestions.find((s) => s.ruleKey === "adaptive_task_creation");
+  if (chips) await respondSuggestion(api, chips.id, "snooze");
+
+  for (let i = 0; i < 8; i += 1) {
+    await createTask(api, {
+      title: `PW_FOLD_MIN_${Date.now()}_${i}`,
+      priority: "low",
+    });
+  }
+
+  const fold = await expectEventuallyToBeTruthy(async () => {
+    const pending = await listSuggestions(api, "pending");
+    return pending.suggestions.find((s) => s.ruleKey === "adaptive_optional_fold") ?? null;
+  }, { timeoutMs: 30_000, intervalMs: 1_000, message: "adaptive_optional_fold pending" });
+  expect(fold.ruleKey).toBe("adaptive_optional_fold");
+
+  await respondSuggestion(api, fold.id, "snooze");
 
   await api.dispose();
 });

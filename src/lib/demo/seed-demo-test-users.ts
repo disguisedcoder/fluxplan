@@ -49,6 +49,13 @@ export async function ensureAdaptiveRules(prisma: PrismaClient) {
           "Klappt selten genutzte Zusatzfelder beim Anlegen zunächst ein (jederzeit ausklappbar).",
         enabled: true,
       },
+      {
+        key: "adaptive_optional_unfold",
+        name: "Formular: Zusatzfelder wieder ausklappen",
+        description:
+          "Schlägt vor, eingeklappte Zusatzfelder wieder sichtbar zu machen, wenn sie wieder häufig genutzt werden.",
+        enabled: true,
+      },
     ],
     skipDuplicates: true,
   });

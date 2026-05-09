@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExplanationPopover } from "./explanation-popover";
+import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 
 export function SuggestionCard({
   suggestion,
@@ -47,6 +48,12 @@ export function SuggestionCard({
               : "Rückgängig.",
       );
       onChanged();
+      if (
+        (action === "accept" || action === "undo") &&
+        (suggestion.type === "daily_focus" || suggestion.ruleKey === "daily_focus")
+      ) {
+        notifyFluxplanPreferencesChanged();
+      }
     } finally {
       setBusy(false);
     }

@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { parseTask, type ParsedTask } from "@/lib/parser/task-parser";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
+import { readAdaptiveTaskFormChips } from "@/lib/settings/task-form-chips";
+import { TaskScheduleOverlapHint } from "@/components/tasks/task-schedule-overlap-hint";
 
 type Priority = "low" | "medium" | "high";
 
@@ -65,6 +67,15 @@ export function ProgressiveTaskForm() {
         if (cancelled || !data?.preferences) return;
         if (readTaskFormOptionalFold(data.preferences.taskFormOptionalFold)) {
           setOptionalExpanded(false);
+        }
+        const chipPref = readAdaptiveTaskFormChips(data.preferences["adaptive.taskFormChips"]);
+        if (chipPref.enabled && chipPref.chipKeys.length > 0) {
+          setActiveFields((prev) => {
+            const n = new Set(prev);
+            for (const k of chipPref.chipKeys) n.add(k);
+            return n;
+          });
+          setOptionalExpanded(true);
         }
       })
       .catch(() => {});
@@ -256,6 +267,16 @@ export function ProgressiveTaskForm() {
                 </Select>
               </div>
             </div>
+
+            <TaskScheduleOverlapHint
+              date={date}
+              time={time}
+              estimatedMinutes={
+                activeFields.has("duration") && estimatedMinutes
+                  ? Number(estimatedMinutes)
+                  : null
+              }
+            />
 
             {optionalExpanded || activeFields.size > 0 ? (
               <div className="space-y-2">

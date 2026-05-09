@@ -17,6 +17,7 @@ import {
   suggestionIconWrapClass,
   suggestionStraplineClass,
 } from "./suggestion-visuals";
+import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 
 const RULE_LABELS: Record<string, string> = {
   view_preference: "Startansicht",
@@ -25,6 +26,7 @@ const RULE_LABELS: Record<string, string> = {
   calendar_conflict: "Konflikte",
   adaptive_task_creation: "Erstellen",
   adaptive_optional_fold: "Formular kompakt",
+  adaptive_optional_unfold: "Formular ausgeklappt",
 };
 
 function ruleLabelFor(ruleKey: string) {
@@ -237,6 +239,12 @@ function DetailPanel({
         router.push(normalizeStartViewHref(raw));
         router.refresh();
       }
+      if (
+        (action === "accept" || action === "undo") &&
+        (suggestion!.type === "daily_focus" || suggestion!.ruleKey === "daily_focus")
+      ) {
+        notifyFluxplanPreferencesChanged();
+      }
     } finally {
       setBusy(false);
     }
@@ -381,24 +389,38 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
   }
   if (type === "reminder_suggestion") {
     return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Für diese Aufgabe wird eine Erinnerung eingetragen. Du kannst sie jederzeit ändern oder entfernen.
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
+        <p>Für diese Aufgabe wird eine Erinnerung eingetragen. Du kannst sie jederzeit ändern oder entfernen.</p>
+        <p className="text-xs text-muted-foreground">
+          „Nicht jetzt“ vertagt neue Erinnerungs-Vorschläge um die unter Personalisierung eingestellte Anzahl
+          Tage (Standard 3).
+        </p>
       </div>
     );
   }
   if (type === "daily_focus") {
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Dieser Hinweis ändert keine Aufgabe. Er hilft nur beim Überblick.
+        Es werden keine Aufgaben geändert. In der To-Do-Liste auf „Heute“ werden überfällige und heute fällige
+        Einträge danach rot hervorgehoben; ohne Annahme bleiben dieselben Einträge sichtbar, aber ohne rote
+        Kennzeichnung.
       </div>
     );
   }
   if (type === "task_form_chips") {
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Beim Annehmen wird keine bestehende Aufgabe geändert. FluxPlan darf dir beim{" "}
-        <span className="font-medium text-foreground">Erstellen</span> passende Zusatzfelder als
-        Vorschlags-Chips anbieten – du entscheidest weiterhin pro Aufgabe.
+        Beim Annehmen werden die vorgeschlagenen Zusatzfelder als aktive Chips gespeichert (unter
+        „Erstellen“ / Bearbeiten sichtbar). Bestehende Aufgaben werden nicht geändert; du entscheidest
+        weiterhin pro neuer Aufgabe.
+      </div>
+    );
+  }
+  if (type === "task_form_optional_unfold") {
+    return (
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
+        Beim Annehmen wird die Einstellung <span className="font-medium text-foreground">Zusatzfelder eingeklappt</span>{" "}
+        zurückgenommen — der Bereich ist beim Anlegen wieder standardmäßig offen.
       </div>
     );
   }

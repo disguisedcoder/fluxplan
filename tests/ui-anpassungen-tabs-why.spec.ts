@@ -4,12 +4,11 @@ import { evaluateAdaptive, exportJson, listSuggestions } from "./utils/appApi";
 import { expectEventuallyToBeTruthy } from "./utils/expectEventually";
 
 test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", async ({ page, baseURL }) => {
-  const suggestionsLoaded = page.waitForResponse(
-    (res) => res.url().includes("/api/suggestions") && res.request().method() === "GET" && res.ok(),
-  );
   await page.goto("/anpassungen");
   await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
-  await suggestionsLoaded;
+  // SuggestionsScreen loads suggestions + rules in parallel; wait for list UI (not raw fetch — avoids race with test timeout).
+  const pendingCard = page.locator(".fp-card").filter({ hasText: "Aktive Vorschläge" });
+  await expect(pendingCard.getByText("Lade …")).toBeHidden({ timeout: 60_000 });
 
   const tablist = page.getByRole("tablist", { name: "Adaptions-Tabs" });
   // Tabs exist (scoped: avoids any future duplicate tab roles elsewhere)

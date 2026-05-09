@@ -100,20 +100,22 @@ Zeigt vor allen Tabs, welche Zahlen aus den letzten 7 Tagen in die Engine fließ
 
 ## 1.6 Heuristiken im Test
 
-Jede Regel reagiert auf einfache Muster. Die Engine läuft u. a. nach **Navigation** (`view_changed` → `POST /api/adaptive/evaluate`), beim **Öffnen von `/heute`**, und nach **`POST /api/tasks`** (Create) mit `screen: "task_created"`. So kannst du Regeln gezielt auslösen:
+Jede Regel reagiert auf einfache Muster. Die Engine läuft u. a. nach **Navigation** (`view_changed` → `POST /api/adaptive/evaluate`), zusätzlich beim **Seitenwechsel** über das **globale Vorschlags-Banner** (erneuter `evaluate` mit aktuellem Pfad), und nach **`POST /api/tasks`** (Create) mit `screen: "task_created"`. So kannst du Regeln gezielt auslösen:
 
 | Regel (`ruleKey`) | Suggestion-`type` (typisch) | Auslöser (vereinfacht) | Wirkung bei **Annehmen** |
 | --- | --- | --- | --- |
 | `view_preference` | `start_view` | Häufig zwischen zwei Ansichten wechseln (z. B. `/heute` ↔ `/kalender`; Details in Regelcode) | Startansicht (`startView`) speichern; optional Navigation |
-| `reminder_preference` | `reminder_suggestion` | Wiederholt ähnliche Aufgaben mit Erinnerung (siehe Regel) | `reminderAt` auf betroffener Aufgabe setzen |
+| `reminder_preference` | `reminder_suggestion` | Wiederholt ähnliche Aufgaben mit Erinnerung (siehe Regel); Gast-Pseudonym `G`+Ziffer: lockerer | `reminderAt` auf betroffener Aufgabe setzen; Snooze-Pause siehe Preference `adaptive.reminderSuggestionSnoozeUntil` |
 | `daily_focus` | `daily_focus` | Viele offene/heutige Aufgaben (Schwelle in Regel) | **Keine** Datenänderung — nur Transparenz / Zustimmung |
 | `calendar_conflict` | `calendar_conflict` | Neue Aufgabe; an einem Kalendertag sehr hohe Summe geschätzter Minuten | **Keine** automatische Verschiebung — Hinweis |
-| `adaptive_task_creation` | `task_form_chips` | Nach mehreren neuen Aufgaben: hoher Anteil mit Fälligkeit **und** Erinnerung (Schwellen abhängig von Eingriffsstufe) | Kein Pflicht-Feld im Formular; dokumentiert Zustimmung zum Konzept der Vorschlags-Chips |
-| `adaptive_optional_fold` | `task_form_optional_fold` | Nach mehreren Aufgaben: **geringer** Anteil mit Kategorie/Tags/Dauer/Erinnerung/Beschreibung; kein offener `task_form_chips`-Vorschlag | Präferenz `taskFormOptionalFold` = eingeklappte Zusatzfelder beim Anlegen/Bearbeiten |
+| `adaptive_task_creation` | `task_form_chips` | Nach mehreren Aufgaben: Muster in **optionalen** Feldern (Schwellen/Eingriffsstufe); Gast: letzte Aufgabe mit Zusatzfeldern | Preference `adaptive.taskFormChips` (`enabled`, `chipKeys`) — vorgemerkte Chips im Formular |
+| `adaptive_optional_fold` | `task_form_optional_fold` | Nach mehreren Aufgaben: **geringer** Anteil mit Kategorie/Tags/Dauer/Erinnerung/Beschreibung; kein offener `task_form_chips`-Vorschlag; Gast: zwei minimale Aufgaben | Präferenz `taskFormOptionalFold` = eingeklappte Zusatzfelder beim Anlegen/Bearbeiten |
+| `adaptive_optional_unfold` | `task_form_optional_unfold` | `taskFormOptionalFold` aktiv und wieder **hohe** Nutzung optionaler Felder; Gast: letzte Aufgabe nutzt wieder Optionalfelder | Preference `taskFormOptionalFold` entfernen — Zusatzfelder wieder ausgeklappt |
 
 **Hinweise:**
 
 - `adaptive_task_creation` und `adaptive_optional_fold` schließen sich inhaltlich aus, solange ein **Chip-Vorschlag** noch pending ist (Fold-Regel wartet dann).
+- **Erinnerung „Nicht jetzt“:** keine generische 24h-Regel-Snooze für `reminder_preference`; stattdessen **kalendertagbasierte** Pause (`adaptive.reminderSuggestionSnoozeUntil`), Länge in Tagen unter Personalisierung (`adaptive.reminderSnoozeDays`, Standard 3).
 - Schwellen skalieren mit **Eingriffsstufe** und ggf. `DEMO_MODE` / `FP_*` Umgebungsvariablen (kürzere Snooze/Cooldown in Demos).
 
 Alternativ: Tab Personalisierung → **Heuristiken jetzt prüfen** (ruft die Engine mit gewähltem Screen auf).
@@ -125,10 +127,10 @@ Die **Studienvariante** steckt in der Session (`baseline` vs. `adaptive`). Techn
 | Aspekt | Baseline | Adaptive |
 | --- | --- | --- |
 | **Neue Vorschläge** | Engine wird faktisch nicht genutzt bzw. Demo setzt `adaptive.enabled` oft auf `false` | `adaptive.enabled` true → Regeln dürfen pending Vorschläge anlegen |
-| **Banner auf `/heute`** | wird nicht geladen / nicht angezeigt | kann einen pending Vorschlag zeigen (Priorität u. a. `daily_focus`, `view_preference`) |
+| **Vorschlags-Banner** | wird nicht geladen / nicht angezeigt | **Global** auf Hauptseiten (außer `/anpassungen`); kann einen pending Vorschlag zeigen (Priorität u. a. `daily_focus`, `view_preference`) |
 | **`/anpassungen`** | Tabs nutzbar; **keine** frischen Trigger aus dem laufenden Alltag | aktive Vorschläge + Verlauf; Karten optisch nach Regelart getrennt |
 | **Kalender-Konflikte** | **Ja** — reine UI-Heuristik (Überlappung, Kapazität) | **Ja** — identisch; zusätzlich kann die Engine einen **Konflikt-Hinweis-Vorschlag** erzeugen |
-| **Formular `/erstellen` + Bearbeiten** | Volle manuelle Bedienung; **Einstellung** „Zusatzfelder eingeklappt“ wirkt trotzdem, wenn gesetzt | wie Baseline **plus** optionale Vorschläge (`task_form_chips`, `task_form_optional_fold`) |
+| **Formular `/erstellen` + Bearbeiten** | Volle manuelle Bedienung; **Einstellung** „Zusatzfelder eingeklappt“ wirkt trotzdem, wenn gesetzt | wie Baseline **plus** optionale Vorschläge (`task_form_chips`, `task_form_optional_fold`, `task_form_optional_unfold`); **Hinweis** bei möglicher Zeit-Überschneidung (Warnung, kein Block; Logik `task-time-overlap.ts`) |
 | **Logging** | gleiche Events möglich; weniger `suggestion_*` / `engine_evaluated` in der Praxis | mehr Einträge, sobald Proband mit Vorschlägen interagiert |
 
 **Kernaussage für die Arbeit:** Baseline liefert die **ruhige Produktivitäts-UI** ohne adaptive Schicht; Adaptive fügt **erklärbare, reversible Vorschläge** hinzu — ohne automatisches Umplanen.
@@ -341,7 +343,7 @@ In `src/lib/adaptive/`:
   - `adaptive.interventionLevel` (0–3, skaliert Schwellen)
   - `adaptive.cooldown.<ruleKey>` (Pausen nach Ablehnungen)
   - aktuelle 24-h-Snoozes aus den Suggestions
-- `rules/` — **sechs** eigenständige Dateien (eine pro Heuristik): u. a. `adaptiveTaskCreationRule.ts`, `adaptiveOptionalFoldRule.ts`. Jede exportiert ein `AdaptiveRule`-Objekt mit `key`, `name`, `description` und `evaluate(ctx)` → `SuggestionDraft` oder `null`.
+- `rules/` — **sieben** eigenständige Dateien (eine pro Heuristik): u. a. `adaptiveTaskCreationRule.ts`, `adaptiveOptionalFoldRule.ts`, `adaptiveOptionalUnfoldRule.ts`. Jede exportiert ein `AdaptiveRule`-Objekt mit `key`, `name`, `description` und `evaluate(ctx)` → `SuggestionDraft` oder `null`.
 
 ### Beispiel-Lebenszyklus eines Vorschlags
 
@@ -646,6 +648,10 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 
 - **Bearbeiten ≙ Erstellen:** `TaskFormDialog` unterstützt dieselben optionalen Felder und Payloads wie das progressive Formular (`PATCH` mit `listName`, `tags`, `reminderAt`, `estimatedMinutes`, …).  
 - **Regel `adaptive_optional_fold`:** Vorschlag `task_form_optional_fold` setzt die Präferenz `taskFormOptionalFold`; UI klappt Zusatzfelder auf `/erstellen` und im Bearbeiten-Dialog ein — jederzeit aufklappbar, manuell auch unter Einstellungen.  
+- **Regel `adaptive_optional_unfold`:** schlägt vor, `taskFormOptionalFold` zurückzunehmen, wenn Optionalfelder wieder häufig genutzt werden.  
+- **Regel `adaptive_task_creation`:** **Accept** persistiert `adaptive.taskFormChips` (vorgemerkte Chip-Felder); **Undo** löscht die Preference.  
+- **Globales Vorschlags-Banner:** `AppShell` + `pending-suggestion-banner.tsx` (nicht unter `/anpassungen`).  
+- **Überlappungs-Hinweis beim Anlegen/Bearbeiten:** `task-schedule-overlap-hint.tsx` + `task-time-overlap.ts` (Warnung, kein Block).  
 - **Vorschlags-UI:** `/anpassungen` differenziert Regeltypen visuell (Icon, Randfarbe, Kategorie-Badge, Strapline), um „Fokus“ vs. „Formular“ vs. „Kompakt“ erkennbar zu machen.
 
 ### Wie du das in der Thesis formulieren kannst (Vorschlag)

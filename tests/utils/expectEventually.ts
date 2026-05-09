@@ -13,7 +13,6 @@ export async function expectEventually(
   const start = Date.now();
   let lastError: unknown;
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       await fn();

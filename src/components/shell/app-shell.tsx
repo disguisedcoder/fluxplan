@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PendingAdaptiveSuggestionBanner } from "@/components/adaptive/pending-suggestion-banner";
 import { useEffect, useState } from "react";
 import {
   BookOpen,
@@ -59,7 +60,7 @@ type Me = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const [me, setMe] = useState<Me | null>(null);
   const [compactSidebar, setCompactSidebar] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -117,6 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
         <main className="min-w-0 px-4 pb-24 pt-6 md:px-12 md:pb-10 md:pt-10 2xl:px-16">
           <div className="mx-auto w-full max-w-none">
+            <PendingAdaptiveSuggestionBanner pathname={pathname} me={me} />
             {children}
           </div>
         </main>
@@ -305,6 +307,17 @@ function MobileBottomNav({ pathname, isBaseline }: { pathname: string; isBaselin
 function useLogViewChange(pathname: string) {
   useEffect(() => {
     if (!pathname) return;
+    // TaskInteraction + Engine (view_preference zählt view_changed hier)
+    fetch("/api/interactions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        type: "view_changed",
+        screen: pathname,
+        metadata: { to: pathname },
+      }),
+    }).catch(() => {});
+    // EventLog bleibt für Export / Studien-Zähler (viewChangedCount)
     fetch("/api/events", {
       method: "POST",
       headers: { "content-type": "application/json" },

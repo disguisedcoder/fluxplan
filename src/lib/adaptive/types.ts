@@ -6,6 +6,8 @@ export type AdaptiveContext = {
   taskId?: string | null;
   metadata?: Record<string, unknown>;
   config?: EngineConfig;
+  /** Pseudonyme `G01`, `G02`, … (Gast-Studysession): lockerere Schwellen. */
+  isGuestStudyUser?: boolean;
 };
 
 export type SuggestionDraft = {

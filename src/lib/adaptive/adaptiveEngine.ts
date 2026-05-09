@@ -8,7 +8,20 @@ import { dailyFocusRule } from "./rules/dailyFocusRule";
 import { calendarConflictRule } from "./rules/calendarConflictRule";
 import { adaptiveTaskCreationRule } from "./rules/adaptiveTaskCreationRule";
 import { adaptiveOptionalFoldRule } from "./rules/adaptiveOptionalFoldRule";
+import { adaptiveOptionalUnfoldRule } from "./rules/adaptiveOptionalUnfoldRule";
 import { isRulePaused, loadEngineConfig } from "./engineConfig";
+import { hasAcceptedOrRejectedSuggestionToday } from "./suggestionDayThrottle";
+
+/** Nach Annehmen/Ablehnen am selben Kalendertag kein neuer Pending-Vorschlag (Snooze ausgenommen). */
+const THROTTLE_BY_DAY_RULE_KEYS = new Set([
+  "view_preference",
+  "reminder_preference",
+  "daily_focus",
+  "calendar_conflict",
+  "adaptive_task_creation",
+  "adaptive_optional_fold",
+  "adaptive_optional_unfold",
+]);
 
 const rules: AdaptiveRule[] = [
   viewPreferenceRule,
@@ -17,6 +30,7 @@ const rules: AdaptiveRule[] = [
   calendarConflictRule,
   adaptiveTaskCreationRule,
   adaptiveOptionalFoldRule,
+  adaptiveOptionalUnfoldRule,
 ];
 
 export async function runAdaptiveEngine(ctx: AdaptiveContext) {
@@ -26,6 +40,12 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
     return { createdCount: 0 };
   }
 
+  const userRow = await prisma.user.findUnique({
+    where: { id: ctx.userId },
+    select: { pseudonym: true },
+  });
+  const isGuestStudyUser = /^G\d+$/i.test(userRow?.pseudonym ?? "");
+
   const enabled = await prisma.adaptiveRule.findMany({
     where: { enabled: true },
     select: { key: true },
@@ -33,7 +53,7 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
   const enabledKeys = new Set(enabled.map((r) => r.key));
 
   const created: SuggestionDraft[] = [];
-  const ctxWithConfig: AdaptiveContext = { ...ctx, config };
+  const ctxWithConfig: AdaptiveContext = { ...ctx, config, isGuestStudyUser };
 
   for (const rule of rules) {
     if (!enabledKeys.has(rule.key)) continue;
@@ -47,6 +67,13 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
       select: { id: true },
     });
     if (dup) continue;
+
+    if (
+      THROTTLE_BY_DAY_RULE_KEYS.has(draft.ruleKey) &&
+      (await hasAcceptedOrRejectedSuggestionToday(ctx.userId, draft.ruleKey))
+    ) {
+      continue;
+    }
 
     await prisma.adaptiveSuggestion.create({
       data: {

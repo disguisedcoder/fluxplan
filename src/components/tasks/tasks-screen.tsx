@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TaskDeleteControl } from "./task-delete-control";
 import { TaskCard } from "./task-card";
 import type { Task } from "./types";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -611,23 +612,6 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
     }
   }
 
-  async function remove() {
-    const ok = window.confirm(`Aufgabe wirklich löschen?\n\n„${task.title}“`);
-    if (!ok) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        toast.error("Konnte Aufgabe nicht löschen.");
-        return;
-      }
-      toast.success("Aufgabe gelöscht.");
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <Checkbox
@@ -648,15 +632,7 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
       </div>
       <div className="ml-auto flex items-center gap-1">
         <TaskFormDialog mode="edit" initial={task} triggerLabel="Bearbeiten" onSaved={onChanged} />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={remove}
-          disabled={busy}
-          aria-label="Löschen"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        <TaskDeleteControl task={task} onDeleted={onChanged} disabled={busy} />
       </div>
     </div>
   );

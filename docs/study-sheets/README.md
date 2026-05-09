@@ -20,3 +20,5 @@ Die Texte **nennen keine Bedingung** (z. B. Baseline vs. anderes) und **verraten
 - **Moderation & Runner-Ablauf:** Checkliste, Druckempfehlung, Verweis auf Trigger: [`MODERATION-UND-RUNNER.md`](MODERATION-UND-RUNNER.md)
 
 Die drei Probanden-Sheets bleiben unverändert „blind“; technische und moderationsspezifische Infos liegen nur in diesen beiden Dokumenten.
+
+**Leitung (Changelog):** Wenn sich die App-Oberfläche ändert (z. B. Vorschlags-Banner, Formularhinweise), reicht es meist, **`UI-FEATURES-KATALOG.md`** und **`MODERATION-UND-RUNNER.md`** anzupassen. Die **Probanden-Fließtexte** (`familienplanner.md` / `taskplanner.md` / `evalrunner.md`) müssen nur geändert werden, wenn sich der **Ablauf** oder die **Anzahl Schritte** bewusst ändert — nicht bei jedem UI-Detail.

@@ -49,7 +49,12 @@ export async function loadEngineConfig(userId: string): Promise<EngineConfig> {
   // Snooze: if a suggestion was snoozed within last window, pause that rule for the configured duration.
   const snoozeWindowStart = new Date(Date.now() - SNOOZE_MS);
   const snoozed = await prisma.adaptiveSuggestion.findMany({
-    where: { userId, status: "snoozed", respondedAt: { gte: snoozeWindowStart } },
+    where: {
+      userId,
+      status: "snoozed",
+      respondedAt: { gte: snoozeWindowStart },
+      ruleKey: { not: "reminder_preference" },
+    },
     select: { ruleKey: true, respondedAt: true },
     orderBy: { respondedAt: "desc" },
   });

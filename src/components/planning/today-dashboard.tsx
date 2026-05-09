@@ -1,10 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Clock, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,15 +11,6 @@ import { PageHeader } from "@/components/shell/page-header";
 import { QuickAddInput } from "@/components/tasks/quick-add-input";
 import { MiniMonthCalendar } from "./mini-month-calendar";
 import type { Task } from "@/components/tasks/types";
-import type { AdaptiveSuggestion } from "@/components/adaptive/types";
-import { ExplanationPopover } from "@/components/adaptive/explanation-popover";
-import {
-  getSuggestionVisualMeta,
-  suggestionAccentBorderClass,
-  suggestionCategoryPillClass,
-  suggestionIconWrapClass,
-  suggestionStraplineClass,
-} from "@/components/adaptive/suggestion-visuals";
 import { cn } from "@/lib/utils";
 import {
   categoryBadgeClass,
@@ -29,70 +18,56 @@ import {
   pickPrimaryCategory,
 } from "@/lib/ui/category";
 import { isSameLocalDay, startOfLocalDay } from "./date";
-import { normalizeStartViewHref } from "@/lib/settings/start-view";
+import {
+  DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY,
+  readDailyFocusListHighlightPref,
+} from "@/lib/settings/daily-focus-list-highlight";
+import { FLUXPLAN_PREFERENCES_CHANGED } from "@/lib/ui/preferences-sync";
 
 type TaskWithDue = Task & { dueAt?: Date };
 
 export function TodayDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pendingSuggestion, setPendingSuggestion] = useState<AdaptiveSuggestion | null>(null);
   const [justCompleted, setJustCompleted] = useState<Task[]>([]);
   const [isBaseline, setIsBaseline] = useState(false);
+  const [dailyFocusListHighlight, setDailyFocusListHighlight] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/tasks?status=open", { cache: "no-store" });
-      const data = await res.json();
+      const [tasksRes, prefRes] = await Promise.all([
+        fetch("/api/tasks?status=open", { cache: "no-store" }),
+        fetch("/api/preferences", { cache: "no-store" }),
+      ]);
+      const data = await tasksRes.json();
       setTasks(data.tasks ?? []);
+      if (prefRes.ok) {
+        const prefJson = await prefRes.json();
+        const prefs = prefJson.preferences ?? {};
+        setDailyFocusListHighlight(readDailyFocusListHighlightPref(prefs[DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY]));
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const loadPendingSuggestion = useCallback(async () => {
-    const res = await fetch("/api/suggestions?status=pending", { cache: "no-store" });
-    if (!res.ok) {
-      setPendingSuggestion(null);
-      return;
-    }
-    const data = await res.json();
-    const suggestions = (data.suggestions ?? []) as AdaptiveSuggestion[];
-    const preferred = suggestions.find(
-      (s) =>
-        s.ruleKey === "daily_focus" ||
-        s.ruleKey === "view_preference" ||
-        s.type === "start_view",
-    );
-    setPendingSuggestion(preferred ?? suggestions[0] ?? null);
-  }, []);
-
   useEffect(() => {
     load();
-    // Baseline: keine Vorschläge laden, keine Evaluate-Calls starten (normale App bleibt voll nutzbar).
     fetch("/api/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((me: { session?: { variant?: string | null } | null }) => {
-        const baseline = me?.session?.variant === "baseline";
-        setIsBaseline(baseline);
-        if (baseline) return;
-        fetch("/api/adaptive/evaluate", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ screen: "/heute" }),
-        }).catch(() => {});
-        loadPendingSuggestion().catch(() => {});
+        setIsBaseline(me?.session?.variant === "baseline");
       })
-      .catch(() => {
-        setIsBaseline(false);
-        fetch("/api/adaptive/evaluate", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ screen: "/heute" }),
-        }).catch(() => {});
-        loadPendingSuggestion().catch(() => {});
-      });
-  }, [load, loadPendingSuggestion]);
+      .catch(() => setIsBaseline(false));
+  }, [load]);
+
+  useEffect(() => {
+    const onPrefs = () => {
+      load();
+    };
+    window.addEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
+    return () => window.removeEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
+  }, [load]);
 
   const { focus, agenda, dueTodayCount, openCount, highlightedDates, dayCountsByStamp, dayTasksByStamp } = useMemo(
     () => deriveTodayBuckets(tasks),
@@ -111,23 +86,12 @@ export function TodayDashboard() {
         }
       />
 
-      {!isBaseline && pendingSuggestion ? (
-        <div className="mb-6">
-          <TodaySuggestionBanner
-            suggestion={pendingSuggestion}
-            onChanged={() => {
-              loadPendingSuggestion().catch(() => {});
-              load().catch(() => {});
-            }}
-          />
-        </div>
-      ) : null}
-
       <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr_1fr]">
         <FocusListCard
           tasks={focus}
           justCompleted={justCompleted}
           loading={loading}
+          emphasizeDueRows={dailyFocusListHighlight}
           onChanged={load}
           onJustCompletedChange={setJustCompleted}
         />
@@ -145,193 +109,10 @@ export function TodayDashboard() {
             openCount={openCount}
             dueTodayCount={dueTodayCount}
           />
-          <SystemStatusCard isBaseline={isBaseline} hasSuggestion={Boolean(pendingSuggestion)} />
+          <SystemStatusCard isBaseline={isBaseline} />
         </div>
       </div>
     </div>
-  );
-}
-
-function TodaySuggestionBanner({
-  suggestion,
-  onChanged,
-}: {
-  suggestion: AdaptiveSuggestion;
-  onChanged: () => void;
-}) {
-  const router = useRouter();
-  /** Regeln ohne persistierte Datenänderung in applySuggestion (Zustimmung / Hinweis). */
-  const isInformationalOnly =
-    suggestion.ruleKey === "daily_focus" ||
-    suggestion.type === "daily_focus" ||
-    suggestion.ruleKey === "calendar_conflict" ||
-    suggestion.type === "calendar_conflict" ||
-    suggestion.ruleKey === "adaptive_task_creation" ||
-    suggestion.type === "task_form_chips";
-
-  const meta = getSuggestionVisualMeta(suggestion.ruleKey);
-  const BannerIcon = meta.Icon;
-
-  const seenLogged = useRef(false);
-
-  useEffect(() => {
-    if (seenLogged.current) return;
-    seenLogged.current = true;
-    fetch("/api/events", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        eventType: "suggestion_seen",
-        screen: "/heute",
-        metadata: { suggestionId: suggestion.id, ruleKey: suggestion.ruleKey },
-      }),
-    }).catch(() => {});
-  }, [suggestion.id, suggestion.ruleKey]);
-
-  async function respond(action: "accept" | "reject" | "snooze") {
-    const res = await fetch(`/api/suggestions/${suggestion.id}/respond`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    if (!res.ok) {
-      toast.error("Aktion fehlgeschlagen.");
-      return;
-    }
-    toast.success(
-      action === "accept"
-        ? isInformationalOnly
-          ? "Notiert."
-          : suggestion.type === "start_view"
-            ? "Startansicht gespeichert."
-            : "Übernommen."
-        : action === "snooze"
-          ? "Vertagt."
-          : "Abgelehnt.",
-    );
-    onChanged();
-    if (action === "accept" && suggestion.type === "start_view") {
-      const p =
-        suggestion.payload && typeof suggestion.payload === "object"
-          ? (suggestion.payload as Record<string, unknown>)
-          : {};
-      const raw = typeof p.suggestedStartView === "string" ? p.suggestedStartView : "/heute";
-      router.push(normalizeStartViewHref(raw));
-      router.refresh();
-    }
-  }
-
-  return (
-    <Card
-      className={cn(
-        "fp-card overflow-hidden border-y border-r border-primary/15 bg-primary/[0.03] border-l-4",
-        suggestionAccentBorderClass(meta.accent),
-      )}
-    >
-      <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-start gap-2">
-            <div
-              className={cn(
-                "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                suggestionIconWrapClass(meta.accent, true),
-              )}
-            >
-              <BannerIcon className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                    suggestionCategoryPillClass(meta.accent),
-                  )}
-                >
-                  {meta.categoryShort}
-                </span>
-              </div>
-              <div className="mt-1 truncate text-sm font-semibold tracking-tight">{suggestion.title}</div>
-              <p
-                className={cn(
-                  "mt-2 max-w-xl rounded-md border px-2.5 py-1.5 text-xs leading-relaxed",
-                  suggestionStraplineClass(meta.accent),
-                )}
-              >
-                {meta.strapline}
-              </p>
-              <div className="mt-2 truncate text-xs text-muted-foreground">{suggestion.explanation}</div>
-              {suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Die <span className="font-medium text-foreground">To‑Do‑Liste</span> darunter kommt aus deinen offenen
-                  Aufgaben (überfällig, heute fällig, hohe Priorität, sonst Auffüller). Dieser Hinweis{" "}
-                  <span className="font-medium text-foreground">ändert keine Aufgaben</span> — „Verstanden“ bestätigt
-                  nur den Hinweis (z. B. für die Studienauswertung) und blendet ihn aus.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "adaptive_task_creation" || suggestion.type === "task_form_chips" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Unter <span className="font-medium text-foreground">Neue Aufgabe</span> kann FluxPlan dir passende
-                  Zusatzfelder als Chips vorschlagen. „Verstanden“ speichert nur die Zustimmung zu diesem Konzept —
-                  bestehende Aufgaben bleiben unverändert.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "calendar_conflict" || suggestion.type === "calendar_conflict" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  FluxPlan verschiebt keine Termine. „Verstanden“ bestätigt nur, dass du den Hinweis gesehen hast.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "adaptive_optional_fold" ||
-              suggestion.type === "task_form_optional_fold" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Mit <span className="font-medium text-foreground">Ja</span> wird gespeichert, dass der Bereich{" "}
-                  <span className="font-medium text-foreground">Zusatzfelder</span> beim Anlegen zunächst
-                  eingeklappt ist. Du kannst ihn jederzeit aufklappen; unter{" "}
-                  <span className="font-medium text-foreground">Einstellungen</span> lässt sich das zurücksetzen.
-                </div>
-              ) : null}
-              {suggestion.type === "start_view" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Mit <span className="font-medium text-foreground">Ja</span> wird deine{" "}
-                  <span className="font-medium text-foreground">Startansicht</span> gespeichert und du springst
-                  sofort dorthin. In der Sidebar öffnet <span className="font-medium text-foreground">Start</span> ab
-                  dann genau diese Seite (Heute, Kalender, …). Tour und Prinzipien bleiben unter{" "}
-                  <span className="font-medium text-foreground">Willkommen</span> erreichbar.
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => respond("accept")} className="gap-2">
-            <Check className="h-4 w-4" />
-            {isInformationalOnly ? "Verstanden" : "Ja"}
-          </Button>
-          <Button variant="outline" onClick={() => respond("snooze")} className="gap-2">
-            <Clock className="h-4 w-4" />
-            Nicht jetzt
-          </Button>
-          <Button variant="ghost" onClick={() => respond("reject")} className="gap-2">
-            <X className="h-4 w-4" />
-            Ablehnen
-          </Button>
-          <ExplanationPopover
-            explanation={suggestion.explanation}
-            onOpen={() => {
-              fetch("/api/events", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                  eventType: "why_clicked",
-                  screen: "/heute",
-                  metadata: { suggestionId: suggestion.id, ruleKey: suggestion.ruleKey },
-                }),
-              }).catch(() => {});
-            }}
-          />
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -339,12 +120,14 @@ function FocusListCard({
   tasks,
   justCompleted,
   loading,
+  emphasizeDueRows,
   onChanged,
   onJustCompletedChange,
 }: {
   tasks: TaskWithDue[];
   justCompleted: Task[];
   loading: boolean;
+  emphasizeDueRows: boolean;
   onChanged: () => void;
   onJustCompletedChange: React.Dispatch<React.SetStateAction<Task[]>>;
 }) {
@@ -361,7 +144,8 @@ function FocusListCard({
           </Link>
         </div>
         <div className="text-xs text-muted-foreground">
-          Für heute zusammengestellt (überfällig, heute fällig, Priorität, dann Auffüller).
+          Überfällige und heute fällige Aufgaben stehen vorn; nach angenommenem Fokus-Hinweis sind sie in der Liste rot
+          markiert, sonst neutral.
         </div>
 
         {loading ? (
@@ -376,6 +160,7 @@ function FocusListCard({
               <FocusListItem
                 key={t.id}
                 task={t}
+                emphasizeDueRows={emphasizeDueRows}
                 onChanged={onChanged}
                 onJustCompleted={(doneTask) => {
                   onJustCompletedChange((prev) => {
@@ -436,26 +221,94 @@ function FocusListCard({
   );
 }
 
+const FOCUS_ROW_OVERDUE_EMPHASIS =
+  "border-rose-500/45 bg-rose-500/[0.06] dark:border-rose-500/35 dark:bg-rose-950/30";
+
+function focusListDuePresentation(task: TaskWithDue, emphasizeDueRows: boolean) {
+  const now = new Date();
+  const startToday = startOfLocalDay(now);
+
+  if (!task.dueAt) {
+    return {
+      meta: task.listName ?? "ohne Uhrzeit",
+      metaClassName: "text-muted-foreground",
+      rowClassName: "border-border/60 bg-card",
+    } as const;
+  }
+
+  const d = task.dueAt;
+  const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+
+  if (d.getTime() < startToday.getTime()) {
+    const dateStr = d.toLocaleDateString([], {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const meta = hasTime
+      ? `Überfällig · ${dateStr} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+      : `Überfällig · ${dateStr}`;
+    if (!emphasizeDueRows) {
+      return {
+        meta,
+        metaClassName: "text-muted-foreground",
+        rowClassName: "border-border/60 bg-card",
+      } as const;
+    }
+    return {
+      meta,
+      metaClassName: "font-medium text-destructive",
+      rowClassName: FOCUS_ROW_OVERDUE_EMPHASIS,
+    } as const;
+  }
+
+  if (isSameLocalDay(d, now)) {
+    const meta = hasTime
+      ? `Heute fällig · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+      : "Heute fällig · ganztägig";
+    if (!emphasizeDueRows) {
+      return {
+        meta,
+        metaClassName: "text-muted-foreground",
+        rowClassName: "border-border/60 bg-card",
+      } as const;
+    }
+    return {
+      meta,
+      metaClassName: "font-medium text-destructive",
+      rowClassName: FOCUS_ROW_OVERDUE_EMPHASIS,
+    } as const;
+  }
+
+  const dateStr = d.toLocaleDateString([], {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+  const meta = hasTime
+    ? `Fällig ${dateStr} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+    : `Fällig ${dateStr}`;
+  return {
+    meta,
+    metaClassName: "text-muted-foreground",
+    rowClassName: "border-border/60 bg-card",
+  } as const;
+}
+
 function FocusListItem({
   task,
+  emphasizeDueRows,
   onChanged,
   onJustCompleted,
 }: {
   task: TaskWithDue;
+  emphasizeDueRows: boolean;
   onChanged: () => void;
   onJustCompleted: (t: Task) => void;
 }) {
   const category = pickPrimaryCategory(task);
   const tone = categoryToneFor(category);
-  const meta = (() => {
-    if (task.dueAt) {
-      return `Heute · ${task.dueAt.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-    }
-    return task.listName ?? "ohne Uhrzeit";
-  })();
+  const { meta, metaClassName, rowClassName } = focusListDuePresentation(task, emphasizeDueRows);
 
   async function toggleDone(next: boolean) {
     if (next) {
@@ -472,7 +325,12 @@ function FocusListItem({
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3">
+    <li
+      className={cn(
+        "flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
+        rowClassName,
+      )}
+    >
       <Checkbox
         checked={task.status === "done"}
         onCheckedChange={(v) => toggleDone(Boolean(v))}
@@ -480,7 +338,7 @@ function FocusListItem({
       />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{task.title}</div>
-        <div className="truncate text-xs text-muted-foreground">{meta}</div>
+        <div className={cn("truncate text-xs", metaClassName)}>{meta}</div>
       </div>
       {category ? (
         <span
@@ -609,13 +467,27 @@ function WeekGlanceCard({
   );
 }
 
-function SystemStatusCard({
-  isBaseline,
-  hasSuggestion,
-}: {
-  isBaseline: boolean;
-  hasSuggestion: boolean;
-}) {
+function SystemStatusCard({ isBaseline }: { isBaseline: boolean }) {
+  const [hasSuggestion, setHasSuggestion] = useState(false);
+
+  useEffect(() => {
+    if (isBaseline) {
+      setHasSuggestion(false);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/suggestions?status=pending", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { suggestions?: unknown[] } | null) => {
+        if (cancelled || !data?.suggestions) return;
+        setHasSuggestion(data.suggestions.length > 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isBaseline]);
+
   const STATUS = [
     {
       label: isBaseline ? "Modus: Baseline (ohne Vorschläge)" : "Modus: Adaptive",

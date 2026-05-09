@@ -133,6 +133,9 @@ export function WeekPlanner() {
             loading={loading}
             busyId={busyId}
             onPlanToday={(taskId) => planTaskAt(taskId, defaultPlanTime(new Date()))}
+            onTaskSaved={() => {
+              load().catch(() => {});
+            }}
           />
           {conflicts.size > 0 ? (
             <ConflictDetailsCard
@@ -400,11 +403,13 @@ function UnplannedList({
   loading,
   busyId,
   onPlanToday,
+  onTaskSaved,
 }: {
   unplanned: Task[];
   loading: boolean;
   busyId: string | null;
   onPlanToday: (id: string) => void;
+  onTaskSaved?: () => void;
 }) {
   return (
     <Card className="fp-card">
@@ -456,7 +461,7 @@ function UnplannedList({
                       initial={t}
                       triggerLabel="Planen"
                       triggerSize="xs"
-                      onSaved={() => {}}
+                      onSaved={() => onTaskSaved?.()}
                     />
                   </div>
                 </li>

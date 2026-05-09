@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Bell, Calendar as CalIcon, Trash2 } from "lucide-react";
+import { Bell, Calendar as CalIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -14,6 +13,7 @@ import {
   pickPrimaryCategory,
 } from "@/lib/ui/category";
 import type { Task } from "./types";
+import { TaskDeleteControl } from "./task-delete-control";
 import { TaskFormDialog } from "./task-form-dialog";
 
 export function TaskCard({ task, onChanged }: { task: Task; onChanged: () => void }) {
@@ -41,23 +41,6 @@ export function TaskCard({ task, onChanged }: { task: Task; onChanged: () => voi
         toast.error("Konnte Aufgabe nicht aktualisieren.");
         return;
       }
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove() {
-    const ok = window.confirm(`Aufgabe wirklich löschen?\n\n„${task.title}“`);
-    if (!ok) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        toast.error("Konnte Aufgabe nicht löschen.");
-        return;
-      }
-      toast.success("Aufgabe gelöscht.");
       onChanged();
     } finally {
       setBusy(false);
@@ -142,15 +125,7 @@ export function TaskCard({ task, onChanged }: { task: Task; onChanged: () => voi
                 triggerLabel="Bearbeiten"
                 onSaved={onChanged}
               />
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={remove}
-                disabled={busy}
-                aria-label="Löschen"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <TaskDeleteControl task={task} onDeleted={onChanged} disabled={busy} />
             </div>
           </div>
         </div>
