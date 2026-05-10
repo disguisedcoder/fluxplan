@@ -1,3 +1,8 @@
+/**
+ * „Skipped“-Tests hier: nur wenn `startStudySession` / `seedDemo` mit `db_unavailable` oder fehlendem
+ * `DATABASE_URL` abbrechen — dann ist PostgreSQL nicht erreichbar. Mit laufender DB (z. B. Docker)
+ * sollte die Skip-Anzahl 0 sein.
+ */
 import { test as base, expect, request } from "@playwright/test";
 import { seedDemo, startStudySession, type DemoRole, type StudyVariant } from "../utils/demoApi";
 import { resetUserData } from "../utils/appApi";

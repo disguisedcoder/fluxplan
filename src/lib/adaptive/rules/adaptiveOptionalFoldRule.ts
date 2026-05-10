@@ -56,12 +56,9 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
     if (existingFold) return null;
 
     if (ctx.isGuestStudyUser) {
-      const cnt = await prisma.task.count({ where: { userId: ctx.userId } });
-      if (cnt < 2) return null;
-      const lastTwo = await prisma.task.findMany({
+      const last = await prisma.task.findFirst({
         where: { userId: ctx.userId },
         orderBy: { createdAt: "desc" },
-        take: 2,
         select: {
           listName: true,
           tags: true,
@@ -70,14 +67,14 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
           description: true,
         },
       });
-      if (lastTwo.length < 2 || lastTwo.some(usesRichOptional)) return null;
+      if (!last || usesRichOptional(last)) return null;
       return {
         ruleKey: "adaptive_optional_fold",
         type: "task_form_optional_fold",
         title: "Zusatzfelder zunächst ausblenden?",
         explanation:
-          "Als Gast: Deine letzten Aufgaben waren sehr kompakt. Soll FluxPlan Zusatzfelder beim Anlegen zunächst einklappen?",
-        payload: { optionalUsageRate: 0, sampleSize: lastTwo.length, guest: true },
+          "Als Gast: Deine zuletzt angelegte Aufgabe war sehr kompakt. Soll FluxPlan Zusatzfelder beim Anlegen zunächst einklappen?",
+        payload: { optionalUsageRate: 0, sampleSize: 1, guest: true },
       };
     }
 

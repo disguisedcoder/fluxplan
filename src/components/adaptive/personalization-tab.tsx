@@ -106,7 +106,7 @@ export function PersonalizationTab({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]" data-testid="fp-personalization-panel">
       <div className="space-y-4">
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">

@@ -7,6 +7,7 @@ import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { dispatchStudyMeChanged } from "@/lib/study/me-invalidate";
 
 export function SessionLogoutButton({
   variant = "outline",
@@ -31,6 +32,7 @@ export function SessionLogoutButton({
         return;
       }
       toast.success("Session beendet. Du kannst ein anderes Pseudonym starten.");
+      dispatchStudyMeChanged();
       onDone?.();
       router.refresh();
       router.push("/");

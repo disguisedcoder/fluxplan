@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { InterventionLevelSlider } from "./intervention-level-slider";
@@ -16,13 +18,12 @@ import {
   readPreferenceBool,
   clampInterventionLevel,
 } from "@/lib/settings/intervention-levels";
-import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
-
 type Preferences = Record<string, unknown>;
 
-export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
+export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: boolean }) {
   const [prefs, setPrefs] = useState<Preferences>({});
   const [busy, setBusy] = useState(false);
+  const [isBaseline, setIsBaseline] = useState(serverBaseline);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/preferences", { cache: "no-store" });
@@ -35,6 +36,23 @@ export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  useEffect(() => {
+    queueMicrotask(() => setIsBaseline(serverBaseline));
+  }, [serverBaseline]);
+
+  useEffect(() => {
+    function syncSessionVariant() {
+      void fetch("/api/me", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d: { session?: { variant?: string | null } | null }) => {
+          setIsBaseline(d.session?.variant === "baseline");
+        })
+        .catch(() => {});
+    }
+    window.addEventListener(STUDY_ME_CHANGED_EVENT, syncSessionVariant);
+    return () => window.removeEventListener(STUDY_ME_CHANGED_EVENT, syncSessionVariant);
+  }, []);
 
   async function update(key: string, value: unknown) {
     setBusy(true);
@@ -56,7 +74,6 @@ export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
 
   const adaptiveEnabled = readPreferenceBool(prefs["adaptive.enabled"], true);
   const level = readInterventionLevel(prefs["adaptive.interventionLevel"], 2);
-  const taskFormFoldOptional = readTaskFormOptionalFold(prefs["taskFormOptionalFold"]);
 
   return (
     <div className="space-y-4">
@@ -70,19 +87,14 @@ export function PreferencesForm({ isBaseline }: { isBaseline: boolean }) {
 
       <Card className="fp-card">
         <CardContent className="space-y-3 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold tracking-tight">Aufgabe anlegen: Zusatzfelder</div>
-              <p className="text-xs text-muted-foreground">
-                Kategorie, Tags, Dauer, Erinnerung und Beschreibung zunächst einklappen. Ein Klick blendet sie
-                wieder ein – unabhängig von adaptiven Vorschlägen.
-              </p>
-            </div>
-            <Switch
-              checked={taskFormFoldOptional}
-              disabled={busy}
-              onCheckedChange={(v) => update("taskFormOptionalFold", { enabled: Boolean(v) })}
-            />
+          <div>
+            <div className="text-sm font-semibold tracking-tight">Aufgabe anlegen: Zusatzfelder</div>
+            <p className="text-xs text-muted-foreground">
+              Kategorie, Tags, Dauer, Erinnerung und Beschreibung können zunächst eingeklappt werden; ein Klick auf
+              „Weitere Felder“ blendet sie jederzeit ein — unabhängig von anderen Vorschlägen. FluxPlan schlägt das
+              Kompaktformular unter <span className="font-medium text-foreground">Anpassungen</span> vor; mit
+              Annehmen oder Ablehnen entscheidest du wie bei anderen adaptiven Features.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -159,9 +171,10 @@ function StudyModeCard({
             </p>
           </div>
           <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
-            Wenn du später bewusst zu <span className="font-medium text-foreground">Adaptive</span> wechselst, bleiben
-            deine Aufgaben erhalten. Starte dafür oben im Session-Bereich eine neue Session mit derselben Kennung und
-            wähle <span className="font-medium text-foreground">Adaptive</span>.
+            Zum Wechsel zu <span className="font-medium text-foreground">Adaptive</span> oben im Bereich{" "}
+            <span className="font-medium text-foreground">Study Session</span> auf{" "}
+            <span className="font-medium text-foreground">Adaptive</span> tippen, im Dialog bestätigen — die Variante
+            wird in der laufenden Session gespeichert (auch nach einem Reload). Deine Aufgaben bleiben erhalten.
           </div>
         </CardContent>
       </Card>

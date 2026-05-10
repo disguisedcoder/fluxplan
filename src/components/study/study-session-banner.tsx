@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SessionLogoutButton } from "@/components/study/session-logout-button";
+import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
 
 type MeResponse = {
   user: { id: string; pseudonym: string; studyModeEnabled: boolean } | null;
@@ -15,10 +16,15 @@ export function StudySessionBanner() {
   const [me, setMe] = useState<MeResponse | null>(null);
 
   useEffect(() => {
-    fetch("/api/me", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => setMe(data))
-      .catch(() => setMe({ user: null, session: null }));
+    function load() {
+      fetch("/api/me", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((data) => setMe(data))
+        .catch(() => setMe({ user: null, session: null }));
+    }
+    load();
+    window.addEventListener(STUDY_ME_CHANGED_EVENT, load);
+    return () => window.removeEventListener(STUDY_ME_CHANGED_EVENT, load);
   }, []);
 
   return (

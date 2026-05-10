@@ -1,6 +1,8 @@
 import { test, expect, request } from "@playwright/test";
 import { startStudySession } from "./utils/demoApi";
 
+/** Skip nur, wenn keine Study-DB erreichbar ist (siehe `fixtures/variants.ts`). */
+
 test("@admin reset-demo-users forbidden for non-admin", async ({ baseURL }) => {
   if (!baseURL) throw new Error("baseURL is required");
   const api = await request.newContext({ baseURL });

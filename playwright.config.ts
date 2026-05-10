@@ -1,4 +1,8 @@
+import path from "path";
+import { config as loadDotenv } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
+
+loadDotenv({ path: path.join(__dirname, ".env") });
 
 /** Prefer IPv4 loopback: on some Windows setups `localhost` resolves to ::1 while the dev server listens on IPv4 only. */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
@@ -18,7 +22,8 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   // Single worker in CI: shared Postgres + many session resets; parallel runs were flaky (timeouts, closed pages).
-  workers: isCI ? 1 : 2,
+  // Ein Worker: geteilte Postgres-Instanz + Session-Cookies — weniger Flakiness lokal und in CI.
+  workers: 1,
   reporter: [
     ["line"],
     ["html", { open: "never" }],
@@ -41,7 +46,8 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: "npm run dev",
+          // Webpack: auf Windows verursacht Turbopack oft ERROR_SHARING_VIOLATION (1224) auf `.next/dev` — flaky E2E.
+          command: "npm run dev:webpack",
           url: baseURL,
           reuseExistingServer: !isCI,
           timeout: 120_000,

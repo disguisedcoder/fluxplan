@@ -23,6 +23,7 @@ import {
   readInterventionLevel,
   readPreferenceBool,
 } from "@/lib/settings/intervention-levels";
+import { dispatchStudyMeChanged } from "@/lib/study/me-invalidate";
 
 type MeResponse = {
   user: { id: string; pseudonym: string; studyModeEnabled: boolean } | null;
@@ -110,14 +111,54 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
   }
 
   function confirmVariantDialog() {
-    if (variantDialog === "baseline") {
+    if (submitting) return;
+    const nextVariant = variantDialog === "baseline" ? "baseline" : variantDialog === "adaptive" ? "adaptive" : null;
+    if (!nextVariant) return;
+
+    const nextLevel = nextVariant === "adaptive" ? clampInterventionLevel(draftLevel) : interventionLevel;
+
+    if (nextVariant === "baseline") {
       setVariant("baseline");
-    } else if (variantDialog === "adaptive") {
+    } else {
       setVariant("adaptive");
-      setInterventionLevel(clampInterventionLevel(draftLevel));
+      setInterventionLevel(nextLevel);
     }
     setVariantConfirmed(true);
     setVariantDialog(null);
+
+    if (me?.session) {
+      void persistSessionVariant(nextVariant, nextVariant === "adaptive" ? nextLevel : undefined);
+    }
+  }
+
+  async function persistSessionVariant(nextVariant: "baseline" | "adaptive", level?: number) {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/study/session", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          variant: nextVariant,
+          interventionLevel: nextVariant === "adaptive" ? level : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toast.error("Studienvariante konnte nicht gespeichert werden.", {
+          description: body?.error ?? "Bitte erneut versuchen.",
+        });
+        return;
+      }
+      toast.success(
+        nextVariant === "adaptive" ? "Adaptive Variante ist jetzt aktiv." : "Baseline ist jetzt aktiv.",
+        { description: "Einstellung bleibt nach einem Reload erhalten." },
+      );
+      reloadMe();
+      dispatchStudyMeChanged();
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function startSession() {
@@ -143,6 +184,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
       toast.success("Study Session gestartet.", {
         description: `Pseudonym: ${normalized}`,
       });
+      dispatchStudyMeChanged();
       router.push("/start");
       router.refresh();
     } finally {
@@ -173,6 +215,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
       toast.success("Gast-Session gestartet.", {
         description: "Pseudonym: G01",
       });
+      dispatchStudyMeChanged();
       router.push("/start");
       router.refresh();
     } finally {
@@ -222,8 +265,9 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
           <div className="grid gap-2">
             <div className="text-sm font-medium">Studienvariante</div>
             <p className="text-xs text-muted-foreground">
-              Wird beim Session-Start als Einstellung übernommen. Zum Wechseln jeweils antippen und im Dialog
-              bestätigen.
+              Nach dem Bestätigen im Dialog wird die Variante in der aktiven Session gespeichert (inkl. nach einem
+              Seiten-Reload). Ohne laufende Session gilt die Wahl beim Klick auf{" "}
+              <span className="font-medium text-foreground">Session starten</span>.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -307,7 +351,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
                 <Button type="button" variant="outline" onClick={() => setVariantDialog(null)}>
                   Abbrechen
                 </Button>
-                <Button type="button" onClick={confirmVariantDialog}>
+                <Button type="button" onClick={confirmVariantDialog} disabled={submitting}>
                   Baseline übernehmen
                 </Button>
               </DialogFooter>
@@ -339,7 +383,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
                 <Button type="button" variant="outline" onClick={() => setVariantDialog(null)}>
                   Abbrechen
                 </Button>
-                <Button type="button" onClick={confirmVariantDialog}>
+                <Button type="button" onClick={confirmVariantDialog} disabled={submitting}>
                   Adaptive übernehmen
                 </Button>
               </DialogFooter>

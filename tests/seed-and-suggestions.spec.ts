@@ -1,6 +1,8 @@
 import { test, expect, request } from "@playwright/test";
 import { seedDemo, startStudySession } from "./utils/demoApi";
 
+/** Skip nur bei nicht erreichbarer PostgreSQL-Instanz. */
+
 test("@api start session + seed demo works", async ({ baseURL }) => {
   if (!baseURL) throw new Error("baseURL is required");
   const api = await request.newContext({ baseURL });

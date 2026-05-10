@@ -16,23 +16,57 @@ test.describe("@adaptive @study familienplanner — Adaptive-UI (Oberfläche + E
     baseURL,
   }) => {
     if (!baseURL) throw new Error("baseURL is required");
-    await page.goto("/anpassungen");
+    // Tab-Zustand kommt aus ?tab= — direkte Navigation ist in E2E zuverlässiger als Soft-Navigation nach Klick.
+    await page.goto("/anpassungen?tab=personalization");
+    await page
+      .waitForResponse(
+        (r) => r.url().includes("/api/rules") && r.request().method() === "GET" && r.ok(),
+        { timeout: 60_000 },
+      )
+      .catch(() => {});
     await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
 
     await expect(page.getByText("Was FluxPlan gerade berücksichtigt")).toBeVisible({ timeout: 30_000 });
 
     const tablist = page.getByRole("tablist", { name: "Adaptions-Tabs" });
-    await expect(tablist.getByRole("tab", { name: "Personalisierung" })).toBeVisible();
-    await tablist.getByRole("tab", { name: "Personalisierung" }).click();
+    const persTab = tablist.getByRole("tab", { name: "Personalisierung" });
+    await expect(persTab).toHaveAttribute("aria-selected", "true", { timeout: 15_000 });
 
-    await expect(page.getByText("Aktive Regeln")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText("Fokusvorschlag", { exact: true })).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByText("Ansichtspräferenz", { exact: true })).toBeVisible();
-    await expect(page.getByText("Erinnerungs-Präferenz", { exact: true })).toBeVisible();
-    await expect(page.getByText("Kalender-Konflikthinweis", { exact: true })).toBeVisible();
-    await expect(page.getByText("Adaptives Aufgabenformular", { exact: true })).toBeVisible();
-    await expect(page.getByText("Formular: Zusatzfelder einklappen", { exact: true })).toBeVisible();
-    await expect(page.getByText("Formular: Zusatzfelder wieder ausklappen", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("fp-personalization-panel")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Aktive Regeln" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Keine Regeln gefunden")).not.toBeVisible();
+    // Regel-`name` aus DB; `key`-Badge bleibt stabil (z. B. daily_focus).
+    await expect(
+      page.getByText("Fokusvorschlag", { exact: true }).or(page.getByText("daily_focus", { exact: true })),
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(
+      page.getByText("Ansichtspräferenz", { exact: true }).or(page.getByText("view_preference", { exact: true })),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByText("Erinnerungs-Präferenz", { exact: true })
+        .or(page.getByText("reminder_preference", { exact: true })),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByText("Kalender-Konflikthinweis", { exact: true })
+        .or(page.getByText("calendar_conflict", { exact: true })),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByText("Adaptives Aufgabenformular", { exact: true })
+        .or(page.getByText("adaptive_task_creation", { exact: true })),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByText("Formular: Zusatzfelder einklappen", { exact: true })
+        .or(page.getByText("adaptive_optional_fold", { exact: true })),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByText("Formular: Zusatzfelder wieder ausklappen", { exact: true })
+        .or(page.getByText("adaptive_optional_unfold", { exact: true })),
+    ).toBeVisible();
 
     const evalResponse = page.waitForResponse(
       (res) =>

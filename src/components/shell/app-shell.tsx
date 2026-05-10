@@ -6,6 +6,7 @@ import { PendingAdaptiveSuggestionBanner } from "@/components/adaptive/pending-s
 import { useEffect, useState } from "react";
 import {
   BookOpen,
+  CalendarCheck2,
   CalendarDays,
   CheckSquare,
   Cog,
@@ -16,11 +17,11 @@ import {
   PlusCircle,
   Settings2,
   Sparkles,
-  Sun,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { useGlobalNavigationShortcuts } from "@/lib/hooks/use-shortcuts";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ type NavItem = {
 const PRIMARY_NAV: NavItem[] = [
   { href: "/start", label: "Start", icon: Home },
   { href: "/willkommen", label: "Willkommen", icon: BookOpen },
-  { href: "/heute", label: "Heute", icon: Sun },
+  { href: "/heute", label: "Heute", icon: CalendarCheck2 },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
   { href: "/erstellen", label: "Erstellen", icon: PlusCircle },
@@ -46,7 +47,7 @@ const PRIMARY_NAV: NavItem[] = [
 const MOBILE_NAV: NavItem[] = [
   { href: "/willkommen", label: "Willkommen", icon: BookOpen },
   { href: "/start", label: "Start", icon: Home },
-  { href: "/heute", label: "Heute", icon: Sun },
+  { href: "/heute", label: "Heute", icon: CalendarCheck2 },
   { href: "/aufgaben", label: "Aufgaben", icon: ListChecks },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
   { href: "/erstellen", label: "Erstellen", icon: PlusCircle },
@@ -76,16 +77,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/me", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setMe(data);
-      })
-      .catch(() => {
-        if (!cancelled) setMe({ user: null, session: null });
-      });
+    function loadMe() {
+      fetch("/api/me", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) setMe(data);
+        })
+        .catch(() => {
+          if (!cancelled) setMe({ user: null, session: null });
+        });
+    }
+    loadMe();
+    function onMeChanged() {
+      loadMe();
+    }
+    window.addEventListener(STUDY_ME_CHANGED_EVENT, onMeChanged);
     return () => {
       cancelled = true;
+      window.removeEventListener(STUDY_ME_CHANGED_EVENT, onMeChanged);
     };
   }, []);
 
@@ -160,7 +169,6 @@ function BrandSidebar({
           >
             <PanelLeft className="h-4 w-4" />
           </Button>
-          <ThemeToggle />
         </div>
       </div>
 
@@ -171,6 +179,20 @@ function BrandSidebar({
           ))}
         </ul>
       </nav>
+
+      <div
+        className={cn(
+          "mt-auto border-t border-border/50",
+          compact ? "px-2 py-3" : "px-4 py-3",
+        )}
+      >
+        <div className={cn("flex items-center", compact ? "justify-center" : "justify-between gap-2")}>
+          {compact ? null : (
+            <span className="text-xs font-medium text-muted-foreground">Darstellung</span>
+          )}
+          <ThemeToggle className={compact ? "shrink-0" : undefined} />
+        </div>
+      </div>
 
       <UserBadge me={me} compact={compact} isBaseline={isBaseline} />
     </aside>

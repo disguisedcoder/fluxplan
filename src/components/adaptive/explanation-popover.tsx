@@ -26,7 +26,12 @@ export function ExplanationPopover({
     <Popover onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground"
+            aria-label="Warum sehe ich das?"
+          />
         }
       >
         <HelpCircle className="h-4 w-4" />

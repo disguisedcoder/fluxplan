@@ -3,8 +3,10 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { setStudyCookies } from "@/lib/auth/study-session";
+import { getStudyCookies } from "@/lib/auth/study-session";
+import { requireUserId } from "@/lib/auth/require-user";
 import { clampInterventionLevel } from "@/lib/settings/intervention-levels";
-import { StartStudySessionSchema } from "@/lib/validation/study";
+import { StartStudySessionSchema, UpdateStudySessionSchema } from "@/lib/validation/study";
 import { isHttpError } from "@/lib/http/errors";
 
 function makeSessionCode(pseudonym: string) {
@@ -75,6 +77,83 @@ export async function POST(req: Request) {
     await setStudyCookies({ userId: user.id, sessionId: session.id });
 
     return NextResponse.json({ user, session });
+  } catch (e: unknown) {
+    if (isHttpError(e) && e.status === 401)
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (isDbUnavailableError(e)) {
+      return NextResponse.json(
+        { error: "db_unavailable", hint: "PostgreSQL/DATABASE_URL nicht erreichbar. Starte z. B. `docker compose up -d`." },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
+    if (!sessionId) {
+      return NextResponse.json({ error: "no_active_session" }, { status: 400 });
+    }
+
+    const body = await req.json().catch(() => null);
+    const parsed = UpdateStudySessionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "invalid_request", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
+    const owned = await prisma.studySession.findFirst({
+      where: { id: sessionId, userId },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "session_not_found" }, { status: 404 });
+    }
+
+    const variant = parsed.data.variant;
+
+    const session = await prisma.$transaction(async (tx) => {
+      if (variant === "baseline") {
+        await tx.userPreference.upsert({
+          where: { userId_key: { userId, key: "adaptive.enabled" } },
+          update: { value: prefPrimitive(false) },
+          create: { userId, key: "adaptive.enabled", value: prefPrimitive(false) },
+        });
+      } else {
+        const level = clampInterventionLevel(parsed.data.interventionLevel ?? 2);
+        await tx.userPreference.upsert({
+          where: { userId_key: { userId, key: "adaptive.enabled" } },
+          update: { value: prefPrimitive(true) },
+          create: { userId, key: "adaptive.enabled", value: prefPrimitive(true) },
+        });
+        await tx.userPreference.upsert({
+          where: { userId_key: { userId, key: "adaptive.interventionLevel" } },
+          update: { value: prefPrimitive(level) },
+          create: { userId, key: "adaptive.interventionLevel", value: prefPrimitive(level) },
+        });
+      }
+
+      return tx.studySession.update({
+        where: { id: sessionId },
+        data: { variant },
+        select: { id: true, sessionCode: true, startedAt: true, variant: true },
+      });
+    });
+
+    await prisma.taskInteraction.create({
+      data: {
+        userId,
+        type: "session_variant_updated",
+        metadata: { variant, sessionId } as Prisma.InputJsonValue,
+      },
+    });
+
+    return NextResponse.json({ session });
   } catch (e: unknown) {
     if (isHttpError(e) && e.status === 401)
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });

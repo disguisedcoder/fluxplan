@@ -613,7 +613,7 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div data-testid="fp-compact-task-row" className="flex items-center gap-3 px-4 py-3">
       <Checkbox
         checked={task.status === "done"}
         onCheckedChange={(v) => toggleDone(Boolean(v))}

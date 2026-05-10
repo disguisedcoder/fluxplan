@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Sparkles, Sliders, ShieldOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -20,8 +22,31 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+function tabHref(pathname: string, searchParams: Pick<URLSearchParams, "toString">, id: TabId): string {
+  const p = new URLSearchParams(searchParams.toString());
+  if (id === "adaptations") p.delete("tab");
+  else p.set("tab", id);
+  const qs = p.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
 export function SuggestionsScreen() {
-  const [tab, setTab] = useState<TabId>("adaptations");
+  return (
+    <Suspense fallback={<div className="text-sm text-muted-foreground">Lade Anpassungen…</div>}>
+      <SuggestionsScreenInner />
+    </Suspense>
+  );
+}
+
+function SuggestionsScreenInner() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const tab = useMemo((): TabId => {
+    const raw = searchParams.get("tab");
+    if (raw === "personalization" || raw === "cooldown" || raw === "adaptations") return raw;
+    return "adaptations";
+  }, [searchParams]);
 
   const [suggestions, setSuggestions] = useState<AdaptiveSuggestion[]>([]);
   const [rules, setRules] = useState<AdaptiveRule[]>([]);
@@ -44,18 +69,11 @@ export function SuggestionsScreen() {
       }
     };
 
-    const masterMs = 28_000;
     try {
-      const bundle = Promise.all([
+      const [s, r, p] = await Promise.all([
         jsonOrEmpty("/api/suggestions", 12_000),
         jsonOrEmpty("/api/rules", 12_000),
         jsonOrEmpty("/api/preferences", 12_000),
-      ]);
-      const [s, r, p] = await Promise.race([
-        bundle,
-        new Promise<[Record<string, unknown>, Record<string, unknown>, Record<string, unknown>]>((resolve) => {
-          setTimeout(() => resolve([{}, {}, {}]), masterMs);
-        }),
       ]);
       setSuggestions((s.suggestions as AdaptiveSuggestion[] | undefined) ?? []);
       setRules((r.rules as AdaptiveRule[] | undefined) ?? []);
@@ -90,12 +108,15 @@ export function SuggestionsScreen() {
             const Icon = t.icon;
             const active = tab === t.id;
             return (
-              <button
+              <Link
                 key={t.id}
-                type="button"
+                href={tabHref(pathname, searchParams, t.id)}
+                prefetch={false}
+                replace
+                scroll={false}
                 role="tab"
                 aria-selected={active}
-                onClick={() => setTab(t.id)}
+                data-testid={`fp-adapt-tab-${t.id}`}
                 className={cn(
                   "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium transition-colors",
                   active
@@ -105,7 +126,7 @@ export function SuggestionsScreen() {
               >
                 <Icon className="h-3.5 w-3.5" />
                 {t.label}
-              </button>
+              </Link>
             );
           })}
         </div>

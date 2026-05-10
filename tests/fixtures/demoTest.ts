@@ -1,3 +1,4 @@
+/** Siehe `fixtures/variants.ts`: Skip nur bei nicht erreichbarer DB (`db_unavailable` / `DATABASE_URL`). */
 import { test as base, expect, request } from "@playwright/test";
 import { seedDemo, startStudySession } from "../utils/demoApi";
 

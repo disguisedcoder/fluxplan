@@ -14,3 +14,9 @@ export const StartStudySessionSchema = z.object({
   interventionLevel: z.coerce.number().int().min(0).max(3).optional(),
 });
 
+/** Aktive Session (Cookies): Variante und ggf. Eingriffsstufe anpassen — gleiche Logik wie beim Session-Start. */
+export const UpdateStudySessionSchema = z.object({
+  variant: z.enum(["baseline", "adaptive"]),
+  interventionLevel: z.coerce.number().int().min(0).max(3).optional(),
+});
+

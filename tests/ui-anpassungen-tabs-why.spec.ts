@@ -24,6 +24,15 @@ test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", a
     return pending.suggestions[0] ?? null;
   }, { timeoutMs: 30_000, intervalMs: 1_000, message: "pending suggestion needed for why_clicked" });
 
+  // Liste/Vorschläge wurden vor Evaluate geladen — neu laden, damit die Karte im DOM ist.
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
+  const pendingCard = page.locator(".fp-card").filter({ hasText: "Aktive Vorschläge" });
+  await expect(pendingCard.getByText("Lade …")).toBeHidden({ timeout: 60_000 });
+  await expect(
+    page.getByRole("button", { name: "Warum sehe ich das?" }).first(),
+  ).toBeVisible({ timeout: 30_000 });
+
   const before = await exportJson(api);
   const beforeWhy = Number(before.summary?.whyClickedCount ?? 0);
 

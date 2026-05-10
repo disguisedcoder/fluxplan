@@ -14,13 +14,33 @@ test("@ui tasks search + complete + reopen + delete", async ({ page, baseURL }) 
   const created = await createTask(api, { title, priority: "medium", dueDate: due.toISOString() });
 
   await page.goto("/aufgaben");
-  await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
+  await page
+    .waitForResponse(
+      (r) => {
+        const s = r.status();
+        return (
+          r.url().includes("/api/tasks") &&
+          r.request().method() === "GET" &&
+          s >= 200 &&
+          s < 400
+        );
+      },
+      { timeout: 60_000 },
+    )
+    .catch(() => {});
+  await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Lade Aufgaben…")).not.toBeVisible({ timeout: 30_000 });
 
-  // Search (fill ist in Docker/Chromium gelegentlich flaky für kontrollierte Refetches)
   const q = page.getByPlaceholder("Aufgaben durchsuchen…");
   await q.click();
-  await q.pressSequentially(title, { delay: 20 });
-  await expect(page.getByText(title)).toBeVisible({ timeout: 30_000 });
+  await q.fill("");
+  const searchWait = page.waitForResponse(
+    (r) => r.url().includes("/api/tasks") && r.url().includes("q=") && r.ok(),
+    { timeout: 30_000 },
+  );
+  await q.fill(title);
+  await searchWait;
+  await expect(page.getByText(title, { exact: true }).first()).toBeVisible({ timeout: 30_000 });
 
   // Complete via checkbox (compact row aria-label is stable)
   await page.getByLabel(`Aufgabe ${title} erledigen`).click();
@@ -41,15 +61,36 @@ test("@ui tasks search + complete + reopen + delete", async ({ page, baseURL }) 
 
   // Reopen happens outside the page; TasksScreen only refetches when `queryString` changes.
   await page.reload();
+  await page
+    .waitForResponse(
+      (r) => {
+        const s = r.status();
+        return (
+          r.url().includes("/api/tasks") &&
+          r.request().method() === "GET" &&
+          s >= 200 &&
+          s < 400
+        );
+      },
+      { timeout: 60_000 },
+    )
+    .catch(() => {});
   await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
+  await expect(page.getByText("Lade Aufgaben…")).not.toBeVisible({ timeout: 30_000 });
   const q2 = page.getByPlaceholder("Aufgaben durchsuchen…");
   await q2.click();
-  await q2.pressSequentially(title, { delay: 20 });
-  await expect(page.getByText(title)).toBeVisible({ timeout: 30_000 });
+  await q2.fill("");
+  const searchWait2 = page.waitForResponse(
+    (r) => r.url().includes("/api/tasks") && r.url().includes("q=") && r.ok(),
+    { timeout: 30_000 },
+  );
+  await q2.fill(title);
+  await searchWait2;
+  await expect(page.getByText(title, { exact: true }).first()).toBeVisible({ timeout: 30_000 });
 
-  // Delete via UI: in-app confirmation dialog (CRUD); pin CompactTaskRow (avoid matching wide ancestor divs).
+  // Delete via UI: in-app confirmation dialog (CRUD); pin CompactTaskRow by test id.
   const taskRow = page
-    .locator("div.flex.items-center.gap-3.px-4.py-3")
+    .getByTestId("fp-compact-task-row")
     .filter({ has: page.getByLabel(`Aufgabe ${title} erledigen`, { exact: true }) });
   await taskRow.locator("[data-fp-delete-trigger]").click();
   await expect(page.getByTestId("fp-task-delete-dialog")).toBeVisible();

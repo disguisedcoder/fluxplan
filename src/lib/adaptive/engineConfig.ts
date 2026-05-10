@@ -11,12 +11,15 @@ function msFromEnv(key: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/** Kurze Studien (1–3 Tage): Standard-Cooldowns in Tagesbereich; Demo weiterhin Minuten. */
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
 const SNOOZE_MS =
   msFromEnv("FP_SNOOZE_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : 24 * 60 * 60 * 1000);
 const COOLDOWN_WINDOW_MS =
-  msFromEnv("FP_COOLDOWN_WINDOW_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : 14 * 24 * 60 * 60 * 1000);
+  msFromEnv("FP_COOLDOWN_WINDOW_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : THREE_DAYS_MS);
 const COOLDOWN_DURATION_MS =
-  msFromEnv("FP_COOLDOWN_DURATION_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : 14 * 24 * 60 * 60 * 1000);
+  msFromEnv("FP_COOLDOWN_DURATION_MS") ?? (DEMO_MODE ? 10 * 60 * 1000 : THREE_DAYS_MS);
 
 export type EngineConfig = {
   adaptiveEnabled: boolean;
