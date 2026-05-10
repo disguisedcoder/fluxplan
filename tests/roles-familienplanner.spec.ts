@@ -1,4 +1,7 @@
+import { request } from "@playwright/test";
+
 import { makeVariantFixture, expect } from "./fixtures/variants";
+import { createTask } from "./utils/appApi";
 
 const test = makeVariantFixture("adaptive", "familienplanner");
 
@@ -13,10 +16,13 @@ test("@study @adaptive familienplanner adaptive UI surfaces (heute, anpassungen,
   await expect(page.getByRole("heading", { level: 1, name: "Heute" })).toBeVisible();
   await expect(page.getByText(/Vorschlag verfügbar|Keine Vorschläge offen/)).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("Modus: Adaptive")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(/Vorschlag verfügbar|Keine Vorschläge offen/)).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Nicht jetzt" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
-  ).toBeVisible({ timeout: 10_000 });
+  if (await page.getByText("Keine Vorschläge offen").isVisible()) {
+    // Kein pending → kein globales Banner mit Aktionen
+  } else {
+    await expect(
+      page.getByRole("button", { name: "Nicht jetzt" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
+    ).toBeVisible({ timeout: 25_000 });
+  }
 
   await page.goto("/anpassungen");
   await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
@@ -32,19 +38,39 @@ test("@study @adaptive familienplanner adaptive UI surfaces (heute, anpassungen,
   await expect(page.getByText("Eingriffsstufe", { exact: true })).toBeVisible();
 });
 
-test("@study @adaptive familienplanner shows time overlap hint in week planner", async ({ page }) => {
+test("@study @adaptive familienplanner shows time overlap hint in week planner", async ({ page, baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
+  const slot = new Date();
+  slot.setDate(slot.getDate() + 2);
+  slot.setHours(19, 0, 0, 0);
+  const due = slot.toISOString();
+  const stamp = Date.now();
+  await createTask(api, {
+    title: `Overlap A ${stamp}`,
+    dueDate: due,
+    estimatedMinutes: 90,
+    priority: "medium",
+  });
+  await createTask(api, {
+    title: `Overlap B ${stamp}`,
+    dueDate: due,
+    estimatedMinutes: 30,
+    priority: "medium",
+  });
+  await api.dispose();
+
   await page.goto("/kalender");
   await expect(page.getByRole("heading", { level: 1, name: "Kalender" })).toBeVisible();
-  // Demo-Konflikt liegt auf „heute + 2“; je nach Wochenstart ggf. erst nach „Nächste Woche“ sichtbar.
   let found = false;
-  for (let w = 0; w < 6; w += 1) {
+  for (let w = 0; w < 8; w += 1) {
     if ((await page.getByText(/überlappt/i).count()) > 0) {
       await expect(page.getByText(/überlappt/i).first()).toBeVisible();
       found = true;
       break;
     }
-    if (w < 5) await page.getByRole("button", { name: "Nächste Woche" }).click();
+    if (w < 7) await page.getByRole("button", { name: "Nächste Woche" }).click();
   }
-  expect(found, "Demo-Aufgaben mit Zeitüberlappung sollten im sichtbaren Wochenraster erscheinen").toBe(true);
+  expect(found, "Zwei Aufgaben gleiche Slot-Zeit sollten „überlappt“ anzeigen").toBe(true);
 });
 

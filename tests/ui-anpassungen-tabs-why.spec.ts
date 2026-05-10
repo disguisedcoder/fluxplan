@@ -6,10 +6,6 @@ import { expectEventuallyToBeTruthy } from "./utils/expectEventually";
 test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", async ({ page, baseURL }) => {
   await page.goto("/anpassungen");
   await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
-  // SuggestionsScreen loads suggestions + rules in parallel; wait for list UI (not raw fetch — avoids race with test timeout).
-  const pendingCard = page.locator(".fp-card").filter({ hasText: "Aktive Vorschläge" });
-  await expect(pendingCard.getByText("Lade …")).toBeHidden({ timeout: 60_000 });
-
   const tablist = page.getByRole("tablist", { name: "Adaptions-Tabs" });
   // Tabs exist (scoped: avoids any future duplicate tab roles elsewhere)
   await tablist.getByRole("tab", { name: "Personalisierung" }).click();

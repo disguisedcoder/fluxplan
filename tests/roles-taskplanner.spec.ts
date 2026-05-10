@@ -10,10 +10,12 @@ test("@study taskplanner core features (tasks/search/sort/create)", async ({ pag
   await page.getByPlaceholder("Aufgaben durchsuchen…").fill("Trigger");
   await expect(page.getByText(/Aufgaben sichtbar/i)).toBeVisible();
 
-  // Sort dropdown: Base UI Select — use portal content + text (role "option" varies by a11y tree).
-  await page.getByRole("combobox").filter({ hasText: /Fällig|Sortierung|Priorität|Neu zuerst/ }).first().click();
-  await expect(page.locator('[data-slot="select-content"]')).toBeVisible();
-  await page.locator('[data-slot="select-content"]').getByText("A–Z", { exact: true }).click();
+  // Sort: Trigger öffnet Portal; Item direkt ansprechen (data-slot="select-content" ist kurz unsichtbar während Animation).
+  await page.getByTestId("fp-tasks-sort").click();
+  await page
+    .locator('[data-slot="select-item"]')
+    .filter({ hasText: /^A–Z$/ })
+    .click({ timeout: 20_000 });
 
   // Create flow entry exists.
   await page.getByRole("link", { name: "Neue Aufgabe" }).click();

@@ -25,9 +25,10 @@ export default defineConfig({
   ],
   use: {
     baseURL,
-    trace: "retain-on-failure",
+    // Docker + bind-mounted test-results: trace/video artifacts occasionally hit ENOENT on dispose; keep CI lean.
+    trace: isCI ? "off" : "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    video: isCI ? "off" : "retain-on-failure",
     ...(disableChromiumProxy
       ? {
           launchOptions: {

@@ -263,7 +263,7 @@ export function TasksScreen() {
               </div>
 
               <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-                <SelectTrigger className="w-full sm:w-[170px]">
+                <SelectTrigger className="w-full sm:w-[170px]" data-testid="fp-tasks-sort">
                   <SelectValue>
                     {(v) =>
                       typeof v === "string" && v in SORT_LABELS

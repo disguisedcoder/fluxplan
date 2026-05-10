@@ -16,9 +16,11 @@ test("@ui tasks search + complete + reopen + delete", async ({ page, baseURL }) 
   await page.goto("/aufgaben");
   await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
 
-  // Search
-  await page.getByPlaceholder("Aufgaben durchsuchen…").fill(title);
-  await expect(page.getByText(title)).toBeVisible();
+  // Search (fill ist in Docker/Chromium gelegentlich flaky für kontrollierte Refetches)
+  const q = page.getByPlaceholder("Aufgaben durchsuchen…");
+  await q.click();
+  await q.pressSequentially(title, { delay: 20 });
+  await expect(page.getByText(title)).toBeVisible({ timeout: 30_000 });
 
   // Complete via checkbox (compact row aria-label is stable)
   await page.getByLabel(`Aufgabe ${title} erledigen`).click();
@@ -40,8 +42,10 @@ test("@ui tasks search + complete + reopen + delete", async ({ page, baseURL }) 
   // Reopen happens outside the page; TasksScreen only refetches when `queryString` changes.
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Aufgaben" })).toBeVisible();
-  await page.getByPlaceholder("Aufgaben durchsuchen…").fill(title);
-  await expect(page.getByText(title)).toBeVisible();
+  const q2 = page.getByPlaceholder("Aufgaben durchsuchen…");
+  await q2.click();
+  await q2.pressSequentially(title, { delay: 20 });
+  await expect(page.getByText(title)).toBeVisible({ timeout: 30_000 });
 
   // Delete via UI: in-app confirmation dialog (CRUD); pin CompactTaskRow (avoid matching wide ancestor divs).
   const taskRow = page

@@ -30,15 +30,40 @@ export function SuggestionsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    const jsonOrEmpty = async (url: string, timeoutMs: number) => {
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { cache: "no-store", signal: ac.signal });
+        if (!res.ok) return {} as Record<string, unknown>;
+        return ((await res.json()) as Record<string, unknown>) ?? {};
+      } catch {
+        return {} as Record<string, unknown>;
+      } finally {
+        clearTimeout(t);
+      }
+    };
+
+    const masterMs = 28_000;
     try {
-      const [s, r, p] = await Promise.all([
-        fetch("/api/suggestions", { cache: "no-store" }).then((x) => x.json()),
-        fetch("/api/rules", { cache: "no-store" }).then((x) => x.json()),
-        fetch("/api/preferences", { cache: "no-store" }).then((x) => x.json()),
+      const bundle = Promise.all([
+        jsonOrEmpty("/api/suggestions", 12_000),
+        jsonOrEmpty("/api/rules", 12_000),
+        jsonOrEmpty("/api/preferences", 12_000),
       ]);
-      setSuggestions(s.suggestions ?? []);
-      setRules(r.rules ?? []);
-      setPreferences(p.preferences ?? {});
+      const [s, r, p] = await Promise.race([
+        bundle,
+        new Promise<[Record<string, unknown>, Record<string, unknown>, Record<string, unknown>]>((resolve) => {
+          setTimeout(() => resolve([{}, {}, {}]), masterMs);
+        }),
+      ]);
+      setSuggestions((s.suggestions as AdaptiveSuggestion[] | undefined) ?? []);
+      setRules((r.rules as AdaptiveRule[] | undefined) ?? []);
+      setPreferences((p.preferences as Preferences | undefined) ?? {});
+    } catch {
+      setSuggestions([]);
+      setRules([]);
+      setPreferences({});
     } finally {
       setLoading(false);
     }

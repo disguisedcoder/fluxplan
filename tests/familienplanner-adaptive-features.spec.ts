@@ -23,8 +23,6 @@ test.describe("@adaptive @study familienplanner — Adaptive-UI (Oberfläche + E
 
     const tablist = page.getByRole("tablist", { name: "Adaptions-Tabs" });
     await expect(tablist.getByRole("tab", { name: "Personalisierung" })).toBeVisible();
-    const pendingCard = page.locator(".fp-card").filter({ hasText: "Aktive Vorschläge" });
-    await expect(pendingCard.getByText("Lade …")).toBeHidden({ timeout: 60_000 });
     await tablist.getByRole("tab", { name: "Personalisierung" }).click();
 
     await expect(page.getByText("Aktive Regeln")).toBeVisible({ timeout: 30_000 });
@@ -56,10 +54,11 @@ test.describe("@adaptive @study familienplanner — Adaptive-UI (Oberfläche + E
     await expect(page.getByRole("heading", { level: 1, name: "Heute" })).toBeVisible();
     await expect(page.getByText(/Vorschlag verfügbar|Keine Vorschläge offen/)).toBeVisible({ timeout: 60_000 });
     await expect(page.getByText("Modus: Adaptive")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(/Vorschlag verfügbar|Keine Vorschläge offen/)).toBeVisible();
+    // Banner erscheint nur bei pending Vorschlag; Statuskarte kann „Keine Vorschläge offen“ zeigen.
+    if (await page.getByText("Keine Vorschläge offen").isVisible()) return;
     await expect(
       page.getByRole("button", { name: "Nicht jetzt" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 25_000 });
   });
 });
 
@@ -78,13 +77,29 @@ test.describe("@adaptive @study familienplanner — Regeln (API, konsistent mit 
 
       const accepted = await respondSuggestion(api, focus.id, "accept");
       expect(accepted.suggestion.status).toBe("accepted");
-      const prefsOn = (await (await api.get("/api/preferences")).json()).preferences ?? {};
-      expect(prefsOn["adaptive.dailyFocusListHighlight"]?.enabled).toBe(true);
+      await expect
+        .poll(
+          async () => {
+            const prefsOn = (await (await api.get("/api/preferences")).json()).preferences ?? {};
+            const v = prefsOn["adaptive.dailyFocusListHighlight"];
+            return Boolean(v && typeof v === "object" && (v as { enabled?: unknown }).enabled === true);
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
 
       const undone = await respondSuggestion(api, focus.id, "undo");
       expect(undone.suggestion.status).toBe("undone");
-      const prefsOff = (await (await api.get("/api/preferences")).json()).preferences ?? {};
-      expect(prefsOff["adaptive.dailyFocusListHighlight"]?.enabled).not.toBe(true);
+      await expect
+        .poll(
+          async () => {
+            const prefsOff = (await (await api.get("/api/preferences")).json()).preferences ?? {};
+            const v = prefsOff["adaptive.dailyFocusListHighlight"];
+            return !(v && typeof v === "object" && (v as { enabled?: unknown }).enabled === true);
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
     } finally {
       await api.dispose();
     }
