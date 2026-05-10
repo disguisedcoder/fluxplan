@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { runAdaptiveEngine } from "@/lib/adaptive/adaptiveEngine";
 import { z } from "zod";
 import { isHttpError } from "@/lib/http/errors";
@@ -14,6 +15,7 @@ const EvaluateSchema = z.object({
 export async function POST(req: Request) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const body = await req.json().catch(() => null);
     const parsed = EvaluateSchema.safeParse(body);
     if (!parsed.success) {
@@ -22,6 +24,7 @@ export async function POST(req: Request) {
 
     const result = await runAdaptiveEngine({
       userId,
+      studySessionId: sessionId ?? null,
       screen: parsed.data.screen,
       taskId: parsed.data.taskId,
       metadata: parsed.data.metadata,

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { runAdaptiveEngine } from "@/lib/adaptive/adaptiveEngine";
 import { Prisma } from "@prisma/client";
 import { isHttpError } from "@/lib/http/errors";
@@ -17,6 +18,7 @@ const InteractionSchema = z.object({
 export async function POST(req: Request) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const body = await req.json().catch(() => null);
     const parsed = InteractionSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
@@ -24,6 +26,7 @@ export async function POST(req: Request) {
     const record = await prisma.taskInteraction.create({
       data: {
         userId,
+        studySessionId: sessionId ?? null,
         taskId: parsed.data.taskId ?? null,
         type: parsed.data.type,
         metadata: (parsed.data.metadata ?? {}) as Prisma.InputJsonValue,
@@ -32,7 +35,12 @@ export async function POST(req: Request) {
 
     // For view-related events, run the engine opportunistically.
     if (parsed.data.type === "view_changed" && parsed.data.screen) {
-      await runAdaptiveEngine({ userId, screen: parsed.data.screen, metadata: parsed.data.metadata });
+      await runAdaptiveEngine({
+        userId,
+        studySessionId: sessionId ?? null,
+        screen: parsed.data.screen,
+        metadata: parsed.data.metadata,
+      });
     }
 
     return NextResponse.json({ interaction: record }, { status: 201 });

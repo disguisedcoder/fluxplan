@@ -69,9 +69,18 @@ export function TodayDashboard() {
     return () => window.removeEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
   }, [load]);
 
-  const { focus, agenda, dueTodayCount, openCount, highlightedDates, dayCountsByStamp, dayTasksByStamp } = useMemo(
-    () => deriveTodayBuckets(tasks),
-    [tasks],
+  const {
+    focus,
+    agenda,
+    dueTodayCount,
+    overdueCount,
+    openCount,
+    highlightedDates,
+    dayCountsByStamp,
+    dayTasksByStamp,
+  } = useMemo(
+    () => deriveTodayBuckets(tasks, { focusIncludesOverdue: dailyFocusListHighlight }),
+    [tasks, dailyFocusListHighlight],
   );
 
   return (
@@ -89,6 +98,7 @@ export function TodayDashboard() {
       <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr_1fr]">
         <FocusListCard
           tasks={focus}
+          overdueCount={overdueCount}
           justCompleted={justCompleted}
           loading={loading}
           emphasizeDueRows={dailyFocusListHighlight}
@@ -118,6 +128,7 @@ export function TodayDashboard() {
 
 function FocusListCard({
   tasks,
+  overdueCount,
   justCompleted,
   loading,
   emphasizeDueRows,
@@ -125,6 +136,7 @@ function FocusListCard({
   onJustCompletedChange,
 }: {
   tasks: TaskWithDue[];
+  overdueCount: number;
   justCompleted: Task[];
   loading: boolean;
   emphasizeDueRows: boolean;
@@ -144,15 +156,44 @@ function FocusListCard({
           </Link>
         </div>
         <div className="text-xs text-muted-foreground">
-          Überfällige und heute fällige Aufgaben stehen vorn; nach angenommenem Fokus-Hinweis sind sie in der Liste rot
-          markiert, sonst neutral.
+          {emphasizeDueRows ? (
+            <>
+              Mit angenommenem Fokus-Hinweis: überfällige und heute fällige Aufgaben stehen vorn und sind in der Liste
+              rot hervorgehoben; danach folgen weitere Termine.
+            </>
+          ) : (
+            <>
+              Ohne Fokus-Hinweis: die Liste zeigt <span className="font-medium text-foreground">heute</span> und{" "}
+              <span className="font-medium text-foreground">später fällige</span> Termine — überfällige Aufgaben
+              bleiben bewusst außen vor (weiter unter{" "}
+              <Link href="/aufgaben" className="font-medium text-primary underline-offset-4 hover:underline">
+                Aufgaben
+              </Link>
+              ).
+            </>
+          )}
         </div>
 
         {loading ? (
           <div className="text-sm text-muted-foreground">Lade …</div>
         ) : tasks.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
-            Heute ist nichts fällig. Du kannst trotzdem fokussiert arbeiten.
+            {overdueCount > 0 && !emphasizeDueRows ? (
+              <>
+                In dieser Fokusliste stehen aktuell keine heute oder später fälligen Aufgaben.{" "}
+                {overdueCount === 1
+                  ? "Eine überfällige Aufgabe ist ausgeblendet"
+                  : `${overdueCount} überfällige Aufgaben sind ausgeblendet`}{" "}
+                — nach <span className="font-medium text-foreground">Annehmen</span> des Fokus-Hinweises (unter
+                Anpassungen) erscheinen Überfällige hier und werden rot markiert. Unter{" "}
+                <Link href="/aufgaben" className="font-medium text-primary underline-offset-4 hover:underline">
+                  Aufgaben
+                </Link>{" "}
+                siehst du den vollen Bestand.
+              </>
+            ) : (
+              <>Heute ist nichts fällig. Du kannst trotzdem fokussiert arbeiten.</>
+            )}
           </div>
         ) : (
           <ul className="space-y-2">
@@ -172,6 +213,18 @@ function FocusListCard({
             ))}
           </ul>
         )}
+
+        {!loading && tasks.length > 0 && overdueCount > 0 && !emphasizeDueRows ? (
+          <p className="text-[11px] text-muted-foreground">
+            {overdueCount === 1
+              ? "Eine überfällige Aufgabe ist in dieser Liste ausgeblendet."
+              : `${overdueCount} überfällige Aufgaben sind in dieser Liste ausgeblendet.`}{" "}
+            <Link href="/aufgaben" className="font-medium text-primary underline-offset-4 hover:underline">
+              Aufgaben
+            </Link>{" "}
+            zeigt alles; mit Fokus-Hinweis (Anpassungen) kannst du Überfällige hier rot hervorheben.
+          </p>
+        ) : null}
 
         {justCompleted.length > 0 ? (
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
@@ -520,7 +573,10 @@ function SystemStatusCard({ isBaseline }: { isBaseline: boolean }) {
   );
 }
 
-function deriveTodayBuckets(tasks: Task[]) {
+function deriveTodayBuckets(
+  tasks: Task[],
+  opts: { focusIncludesOverdue: boolean },
+) {
   const now = new Date();
   const startToday = startOfLocalDay(now);
 
@@ -544,7 +600,25 @@ function deriveTodayBuckets(tasks: Task[]) {
     (t) => t.dueAt && t.dueAt.getTime() < startToday.getTime(),
   );
   const today = enriched.filter((t) => t.dueAt && isSameLocalDay(t.dueAt, now));
-  const focus: TaskWithDue[] = [...overdue, ...today];
+
+  let focus: TaskWithDue[];
+  if (opts.focusIncludesOverdue) {
+    focus = [...overdue, ...today];
+  } else {
+    focus = [...today];
+    const future = enriched
+      .filter(
+        (t) =>
+          t.dueAt &&
+          t.dueAt.getTime() >= startToday.getTime() &&
+          !isSameLocalDay(t.dueAt, now),
+      )
+      .sort((a, b) => a.dueAt!.getTime() - b.dueAt!.getTime());
+    for (const t of future) {
+      if (focus.length >= 5) break;
+      focus.push(t);
+    }
+  }
 
   const focusIds = new Set(focus.map((t) => t.id));
   const noDate = enriched.filter((t) => !t.dueAt && !focusIds.has(t.id));
@@ -575,6 +649,7 @@ function deriveTodayBuckets(tasks: Task[]) {
     focus,
     agenda,
     dueTodayCount: today.length,
+    overdueCount: overdue.length,
     openCount: enriched.length,
     highlightedDates,
     dayCountsByStamp,

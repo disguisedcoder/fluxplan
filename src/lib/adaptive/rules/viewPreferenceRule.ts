@@ -3,7 +3,14 @@ import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import { normalizeStartViewHref } from "@/lib/settings/start-view";
 
-const SAMPLE = 24;
+/** Nur Wechsel zu diesen Kernrouten zählen (andere Seiten füllen das Fenster nicht). */
+const MAX_RAW_VIEW_EVENTS_GUEST = 40;
+const MAX_RAW_VIEW_EVENTS_DEFAULT = 120;
+/** Gast: ab so vielen Kern-Wechseln im Fenster; sonst strenger für reproduzierbare Tests. */
+const CORE_WINDOW_GUEST = 8;
+const CORE_WINDOW_DEFAULT = 28;
+const THRESHOLD_BASE_GUEST = 3;
+const THRESHOLD_BASE_DEFAULT = 7;
 
 type ViewTarget = {
   id: string;
@@ -55,7 +62,12 @@ function titleFor(href: ViewTarget["href"]): string {
   }
 }
 
-function explanationFor(href: ViewTarget["href"], count: number, sampleSize: number): string {
+function explanationFor(
+  href: ViewTarget["href"],
+  count: number,
+  sampleSize: number,
+  opts: { threshold: number; isGuest: boolean },
+): string {
   const where =
     href === "/heute"
       ? "„Heute“"
@@ -64,14 +76,17 @@ function explanationFor(href: ViewTarget["href"], count: number, sampleSize: num
         : href === "/aufgaben"
           ? "Aufgabenliste"
           : "die Seite „Erstellen“";
-  return `Dieser Vorschlag erscheint, weil du in den letzten ${sampleSize} registrierten Ansichten ${count}× zu ${where} gewechselt bist — häufiger als zu den anderen vorgeschlagenen Bereichen.`;
+  const scope = opts.isGuest
+    ? `den letzten ${sampleSize} Wechseln zu Heute, Kalender, Aufgaben oder Erstellen`
+    : `den letzten ${sampleSize} solchen Wechseln`;
+  return `Dieser Vorschlag erscheint, weil du in ${scope} ${count}× zu ${where} gewechselt bist (Schwelle: mindestens ${opts.threshold}×, häufiger als zu den anderen Kernbereichen).`;
 }
 
 export const viewPreferenceRule: AdaptiveRule = {
   key: "view_preference",
   name: "Ansichtspräferenz",
   description:
-    "Schlägt vor, die am häufigsten besuchte Kernansicht (Kalender, Aufgaben, Erstellen) als Startansicht zu setzen.",
+    "Wertet wiederholte Wechsel zu „Heute“, Kalender, Aufgaben oder Erstellen aus und schlägt die am häufigsten angesteuerte Route als Startansicht vor (Gast: ab 3 Kern-Wechseln; sonst ab 7).",
   async evaluate(ctx) {
     if (!ctx.screen) return null;
 
@@ -94,16 +109,27 @@ export const viewPreferenceRule: AdaptiveRule = {
     });
     if (recentlyAccepted) return null;
 
-    const recent = await prisma.taskInteraction.findMany({
+    const isGuest = Boolean(ctx.isGuestStudyUser);
+    const coreWindow = isGuest ? CORE_WINDOW_GUEST : CORE_WINDOW_DEFAULT;
+    const maxRaw = isGuest ? MAX_RAW_VIEW_EVENTS_GUEST : MAX_RAW_VIEW_EVENTS_DEFAULT;
+
+    const recentRaw = await prisma.taskInteraction.findMany({
       where: { userId: ctx.userId, type: "view_changed" },
       orderBy: { createdAt: "desc" },
-      take: SAMPLE,
+      take: maxRaw,
       select: { metadata: true },
     });
 
-    const baseThreshold = 4;
+    const recent = recentRaw
+      .filter((r) => {
+        const to = extractTo(r.metadata);
+        return to !== null && VIEW_TARGETS.some((t) => t.match(to));
+      })
+      .slice(0, coreWindow);
+
+    const baseThreshold = isGuest ? THRESHOLD_BASE_GUEST : THRESHOLD_BASE_DEFAULT;
     const mult = ctx.config ? thresholdMultiplier(ctx.config) : 1;
-    const threshold = Math.max(2, Math.ceil(baseThreshold * mult));
+    const threshold = Math.max(isGuest ? 2 : 4, Math.ceil(baseThreshold * mult));
 
     const counts = VIEW_TARGETS.map((t) => ({
       t,
@@ -137,7 +163,7 @@ export const viewPreferenceRule: AdaptiveRule = {
       ruleKey: "view_preference",
       type: "start_view",
       title: titleFor(href),
-      explanation: explanationFor(href, winner.count, recent.length),
+      explanation: explanationFor(href, winner.count, recent.length, { threshold, isGuest }),
       payload: {
         suggestedStartView: href,
         signal: {
@@ -145,6 +171,7 @@ export const viewPreferenceRule: AdaptiveRule = {
           count: winner.count,
           sampleSize: recent.length,
           threshold,
+          guest: isGuest,
         },
       },
     };

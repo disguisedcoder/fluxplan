@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { Prisma } from "@prisma/client";
 import { isHttpError } from "@/lib/http/errors";
 
@@ -26,6 +27,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const body = await req.json().catch(() => null);
     const parsed = UpdateRuleSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
@@ -38,6 +40,7 @@ export async function PATCH(req: Request) {
     await prisma.taskInteraction.create({
       data: {
         userId,
+        studySessionId: sessionId ?? null,
         type: "rule_toggled",
         metadata: { key: updated.key, enabled: updated.enabled } as Prisma.InputJsonValue,
       },

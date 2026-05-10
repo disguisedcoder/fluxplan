@@ -43,8 +43,22 @@ export function DataResetButton({ onDone }: { onDone?: () => void }) {
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <p className="text-muted-foreground">
-            Dabei werden Aufgaben, Interaktionen, Vorschläge und Einstellungen für
-            dieses Pseudonym gelöscht. Die Studien-Session bleibt erhalten.
+            Es werden nur die Daten der <span className="font-medium text-foreground">aktuellen Studien-Session</span>{" "}
+            geleert: Aufgaben, adaptive Vorschläge, Nutzungsprotokoll (Interaktionen) und protokollierte Ereignisse
+            dieser Session. <span className="font-medium text-foreground">Einstellungen</span> für diesen User-Code
+            bleiben bestehen. <span className="font-medium text-foreground">Andere Teilnehmende</span> werden nicht
+            beeinflusst. Du bleibst angemeldet.
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Gast-Codes <span className="font-mono">G01</span>/<span className="font-mono">G02</span> mit{" "}
+            <span className="font-medium">adaptiver</span> Session: danach wieder der{" "}
+            <span className="font-medium">Workshop-Komplett-Stand</span> (Aufgaben + alle sieben Beispiel-Vorschläge).
+            Die eingestellte{" "}
+            <span className="font-medium">Eingriffsstufe</span> bleibt erhalten.
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Ohne aktive Session-Cookies löscht die Funktion aus technischen Gründen alle App-Daten dieses User-Codes
+            inkl. Einstellungen.
           </p>
           <p>
             Tippe <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">RESET</span>,

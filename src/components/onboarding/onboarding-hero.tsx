@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -39,6 +42,22 @@ const SAMPLE_TODAY = [
 
 export function OnboardingHero() {
   const router = useRouter();
+  const [showGuestDemoStories, setShowGuestDemoStories] = useState(false);
+
+  const refreshGuest = useCallback(async () => {
+    const r = await fetch("/api/me", { cache: "no-store" });
+    if (!r.ok) {
+      setShowGuestDemoStories(false);
+      return;
+    }
+    const d = (await r.json()) as { user?: { pseudonym?: string } | null };
+    setShowGuestDemoStories(isGuestStudyPseudonym(d.user?.pseudonym));
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshGuest();
+  }, [refreshGuest]);
 
   async function markSeenAndGo() {
     await fetch("/api/preferences", {
@@ -120,24 +139,27 @@ export function OnboardingHero() {
               Ohne Tour
             </Button>
             <Link href="/einstellungen" className={buttonVariants({ variant: "outline" })}>
-              Pseudonym setzen
+              User-Code setzen
             </Link>
           </div>
 
-          <div className="rounded-xl border border-border/60 bg-card/60 p-4">
-            <div className="text-sm font-semibold tracking-tight">Demo-Story</div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Lädt Beispielaufgaben und prüft die Adaptivität sofort.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => loadDemo("family")}>
-                Familienplanner
-              </Button>
-              <Button variant="outline" onClick={() => loadDemo("task")}>
-                Taskplanner
-              </Button>
+          {showGuestDemoStories ? (
+            <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+              <div className="text-sm font-semibold tracking-tight">Demo-Story (nur Gast)</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Optional: rollenbasierte Beispielaufgaben laden (ersetzt die aktuelle Session). Adaptiver Gast hat oft
+                schon den Workshop-Stand nach dem Start.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => loadDemo("family")}>
+                  Familienplanner
+                </Button>
+                <Button variant="outline" onClick={() => loadDemo("task")}>
+                  Taskplanner
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : null}
         </CardContent>
       </Card>
 

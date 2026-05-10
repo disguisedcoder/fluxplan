@@ -4,9 +4,9 @@ import { exportJson, listSuggestions } from "./utils/appApi";
 
 test("@study evalrunner baseline has no suggestions UI", async ({ page, baseURL }) => {
   await page.goto("/anpassungen");
-  await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
-  await expect(page.getByText("Baseline-Modus")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Zum Studienwechsel/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/heute$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Heute" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).not.toBeVisible();
 
   if (!baseURL) throw new Error("baseURL is required");
   const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });

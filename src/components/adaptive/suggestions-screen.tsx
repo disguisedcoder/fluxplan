@@ -6,6 +6,9 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Sparkles, Sliders, ShieldOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  FLUXPLAN_PREFERENCES_CHANGED,
+} from "@/lib/ui/preferences-sync";
 import type { AdaptiveRule, AdaptiveSuggestion } from "./types";
 import { AdaptationsTab } from "./adaptations-tab";
 import { PersonalizationTab } from "./personalization-tab";
@@ -89,10 +92,36 @@ function SuggestionsScreenInner() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
+    void load();
+  }, [load, tab]);
+
+  useEffect(() => {
+    function onPrefs() {
+      void load();
+    }
+    window.addEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
+    return () => window.removeEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
   }, [load]);
 
   const stats = useMemo(() => deriveStats(suggestions), [suggestions]);
+
+  const personalizationReminderHref = useMemo(() => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.set("tab", "personalization");
+    const qs = p.toString();
+    return `${pathname}?${qs}#fp-reminder-snooze`;
+  }, [pathname, searchParams]);
+
+  useEffect(() => {
+    if (tab !== "personalization" || loading) return;
+    if (typeof window === "undefined" || window.location.hash !== "#fp-reminder-snooze") return;
+    const el = document.getElementById("fp-reminder-snooze");
+    if (!el) return;
+    const t = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [tab, loading]);
 
   return (
     <div className="space-y-6">
@@ -138,6 +167,8 @@ function SuggestionsScreenInner() {
           loading={loading}
           onChanged={load}
           stats={stats}
+          preferences={preferences}
+          personalizationReminderHref={personalizationReminderHref}
         />
       ) : null}
       {tab === "personalization" ? (

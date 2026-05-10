@@ -1,0 +1,38 @@
+# Einheitliches Layout für Uni-PDFs (an FH-Thesenentwurf angelehnt).
+# Referenz: Arial / Arial-Bold, etwas Calibri — daher Windows-Sans + 12pt.
+# Anpassen nur hier, nicht pro Markdown-Datei.
+from: gfm
+to: pdf
+pdf-engine: xelatex
+
+# Bilder/Screenshots: Pfade relativ zu dieser Datei (docs/pdf-export/).
+resource-path:
+  - ../study-sheets
+  - ../assets/diagrams
+  - ../assets
+
+variables:
+  lang: de-DE
+  documentclass: article
+  papersize: a4
+  # Entwurf nutzt Word-typische Schriftgröße
+  fontsize: 12pt
+  # Etwas mehr Bindung links (wie viele Arbeiten)
+  geometry: left=3cm,right=2.5cm,top=2.5cm,bottom=2.5cm
+  # Zeilenabstand in Richtung Word-Standard (ca. 1,15)
+  linestretch: 1.15
+  # Schriften wie im Entwurf-PDF (XeLaTeX + Windows-Fonts)
+  mainfont: Arial
+  sansfont: Arial
+  monofont: Consolas
+  # Gedruckt/nüchtern; URLs bleiben erkennbar
+  colorlinks: true
+  linkcolor: black
+  urlcolor: blue
+  citecolor: black
+  header-includes:
+    - \usepackage{parskip}
+    - \usepackage{microtype}
+
+# Codeblöcke (falls vorhanden)
+highlight-style: tango

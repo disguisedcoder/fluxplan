@@ -123,7 +123,7 @@ test.describe("@adaptive @study familienplanner — Regeln (API, konsistent mit 
         .toBe(true);
 
       const undone = await respondSuggestion(api, focus.id, "undo");
-      expect(undone.suggestion.status).toBe("undone");
+      expect(undone.suggestion.status).toBe("pending");
       await expect
         .poll(
           async () => {

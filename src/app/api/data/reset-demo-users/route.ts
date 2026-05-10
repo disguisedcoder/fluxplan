@@ -7,6 +7,7 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { getStudyCookies } from "@/lib/auth/study-session";
 import { isHttpError } from "@/lib/http/errors";
 import { isAdminPseudonym } from "@/lib/admin/is-admin";
+import { GUEST_STUDY_PSEUDONYMS } from "@/lib/demo/guest-study";
 import { DEMO_TEST_PSEUDONYMS } from "@/lib/demo/test-pseudonyms";
 import { ensureAdaptiveRules, seedDemoTestUsers } from "@/lib/demo/seed-demo-test-users";
 
@@ -29,11 +30,14 @@ export async function POST(req: Request) {
       select: { pseudonym: true },
     });
     if (!user || !isAdminPseudonym(user.pseudonym)) {
-      return NextResponse.json({ error: "forbidden", message: "Nur Admin-Pseudonyme dürfen alle Demo-User zurücksetzen." }, { status: 403 });
+      return NextResponse.json(
+        { error: "forbidden", message: "Nur Admin-User-Codes dürfen alle Demo-User zurücksetzen." },
+        { status: 403 },
+      );
     }
 
     const deleted = await prisma.user.deleteMany({
-      where: { pseudonym: { in: [...DEMO_TEST_PSEUDONYMS] } },
+      where: { pseudonym: { in: [...DEMO_TEST_PSEUDONYMS, ...GUEST_STUDY_PSEUDONYMS] } },
     });
 
     await ensureAdaptiveRules(prisma);
@@ -47,7 +51,7 @@ export async function POST(req: Request) {
         screen: "/einstellungen",
         metadata: {
           deletedCount: deleted.count,
-          pseudonyms: [...DEMO_TEST_PSEUDONYMS],
+          pseudonyms: [...DEMO_TEST_PSEUDONYMS, ...GUEST_STUDY_PSEUDONYMS],
         } as unknown as Prisma.InputJsonValue,
       },
     });

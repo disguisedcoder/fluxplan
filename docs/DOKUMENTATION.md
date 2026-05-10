@@ -105,8 +105,8 @@ Jede Regel reagiert auf einfache Muster. Die Engine läuft u. a. nach **Navigati
 | Regel (`ruleKey`) | Suggestion-`type` (typisch) | Auslöser (vereinfacht) | Wirkung bei **Annehmen** |
 | --- | --- | --- | --- |
 | `view_preference` | `start_view` | Häufig zwischen zwei Ansichten wechseln (z. B. `/heute` ↔ `/kalender`; Details in Regelcode) | Startansicht (`startView`) speichern; optional Navigation |
-| `reminder_preference` | `reminder_suggestion` | Wiederholt ähnliche Aufgaben mit Erinnerung (siehe Regel); Gast-Pseudonym `G`+Ziffer: lockerer | `reminderAt` auf betroffener Aufgabe setzen; Snooze-Pause siehe Preference `adaptive.reminderSuggestionSnoozeUntil` |
-| `daily_focus` | `daily_focus` | Viele offene/heutige Aufgaben (Schwelle in Regel) | **Keine** Datenänderung — nur Transparenz / Zustimmung |
+| `reminder_preference` | `reminder_suggestion` | Wiederholt ähnliche Aufgaben mit Erinnerung (siehe Regel); Gast `G01`/`G02`: lockerer | `reminderAt` auf betroffener Aufgabe setzen; Snooze-Pause siehe Preference `adaptive.reminderSuggestionSnoozeUntil` |
+| `daily_focus` | `daily_focus` | Viele offene/heutige Aufgaben (Schwelle in Regel) | **Keine** Datenänderung — setzt `adaptive.dailyFocusListHighlight`: Fokusliste auf `/heute` zeigt dann auch **überfällige** Einträge und hebt überfällig + heute **rot** hervor; ohne Annahme bleiben Überfällige in dieser Liste ausgeblendet |
 | `calendar_conflict` | `calendar_conflict` | Neue Aufgabe; an einem Kalendertag sehr hohe Summe geschätzter Minuten | **Keine** automatische Verschiebung — Hinweis |
 | `adaptive_task_creation` | `task_form_chips` | Nach mehreren Aufgaben: Muster in **optionalen** Feldern (Schwellen/Eingriffsstufe); Gast: letzte Aufgabe mit Zusatzfeldern | Preference `adaptive.taskFormChips` (`enabled`, `chipKeys`) — vorgemerkte Chips im Formular |
 | `adaptive_optional_fold` | `task_form_optional_fold` | Nach mehreren Aufgaben: **geringer** Anteil mit Kategorie/Tags/Dauer/Erinnerung/Beschreibung; kein offener `task_form_chips`-Vorschlag; Gast: zwei minimale Aufgaben | Präferenz `taskFormOptionalFold` = eingeklappte Zusatzfelder beim Anlegen/Bearbeiten |
@@ -148,9 +148,13 @@ Unter `/einstellungen` gibt es die Karte **„Aufgabe anlegen: Zusatzfelder“**
 ## 1.10 Studienmodus, Pseudonym, Export, Reset
 
 - **Pseudonym**: `/einstellungen → Pseudonym & Session`. Frei wählbar, keine Klarnamen.
+- **Gast-Workshop**: In der Session-UI **„Als Gast starten“** (wenn angeboten) vergibt der Server nacheinander **`G01`**, **`G02`** — maximal zwei Gast-User in der DB; ein dritter Versuch schlägt fehl, bis ein Admin die Gast-Konten leert oder ein fester Code genutzt wird.
 - **Session-Code** (optional): zur Trennung mehrerer Test-Durchläufe pro Pseudonym.
 - **Export**: `/einstellungen → Export JSON` oder `Export CSV` (oder direkt `GET /api/export?format=json|csv`).
-- **Reset**: roter Knopf „Daten zurücksetzen" + Bestätigungsdialog. Löscht Aufgaben, Vorschläge, Logs und Präferenzen für das Pseudonym. Pseudonym selbst bleibt.
+- **Reset** („Daten zurücksetzen“) + Bestätigungsdialog:
+  - **Mit aktiver Studien-Session** (normal nach „Session starten“): Es werden nur Daten **dieser Session** gelöscht (Aufgaben, Vorschläge, Interaktionen, `EventLog`-Einträge mit `sessionId`; ausgewählte **Adaptive-Outcome-Preferences** wie `startView`, Chips, Snooze, Cooldowns — **nicht** der globale Master `adaptive.enabled`). **Gast `G01`/`G02` + adaptive Session:** die **Eingriffsstufe** (`adaptive.interventionLevel`) bleibt erhalten; der **Workshop-Showcase** (Aufgaben + sieben pending Beispiel-Vorschläge) wird **automatisch neu gesetzt**.
+  - **Ohne Session-Cookies** (Fallback): Vollständiger Daten-Leerstand für den User (Tasks/Interactions/Suggestions/**alle** `UserPreference`); **`EventLog`** wird dabei **nicht** gelöscht (Nachvollziehbarkeit).
+  - **Pseudonym** und **User-Zeile** bleiben erhalten.
 
 ## 1.11 Demo-Setup, Rollen & Study Sheets (druckfertig)
 
@@ -162,12 +166,14 @@ FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lang
 - **Taskplanner**: aufgabengetrieben, Kategorien/Tags, Suche/Filter, Quick-Add und Sprachparser.
 - **Eval-Runner**: reproduzierbarer Feature-Check (Vorschläge, Konflikte, Export/Reset).
 
-### Demo-Button (UI)
+### Demo-Button (UI) — nur Gast **G01** / **G02**
 
-1. Study Session starten (z. B. Pseudonym `F01` / `T01` / `E01`).
-2. `/einstellungen` → Karte **„Demo-Setup“** → Rolle auswählen → **„Demo-Daten laden“**.
+1. Study Session starten (Gast-Eingabe oder Pseudonym `G01` / `G02`).
+2. `/einstellungen` → Karte **„Demo-Setup (nur Gast G01 / G02)“** → Rolle auswählen → **„Demo-Daten laden“**.
 
-Das lädt ein **größeres Aufgaben-Set** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach eine Heuristik-Prüfung aus.
+Das lädt ein **größeres Aufgaben-Set** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach Heuristik-Läufe aus. **Pseudonyme `F01`–`E05`:** diese Karte erscheint **nicht**; das Rollen-Set kommt über **Seed** (Basis-Aufgaben) und/oder **`POST /api/data/demo`** (Skript, Runner, `curl` — gleiche Payload wie unten).
+
+**Adaptiver Gast:** Beim Session-Start legt der Server **ohne** Demo-Klick den **Workshop-Stand** an (Aufgaben + **sieben** pending Beispiel-Vorschläge). Die Demo-Karte ist dann **optional** (z. B. Baseline-Gast oder größeres Rollen-Set).
 
 ### Demo-Endpoint (API)
 
@@ -205,8 +211,9 @@ Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), dami
 
 **Nur der aktuell eingeloggte Pseudonym-User** (dein Browser nach „Session starten“):
 
-- `/einstellungen → Daten zurücksetzen` — löscht Aufgaben, Interaktionen, Vorschläge und Präferenzen; **Pseudonym bleibt**.
-- Oder erneut **„Demo-Daten laden“** — macht intern ebenfalls einen Reset und legt die 10 Rollen-Aufgaben plus Trigger-Daten neu an (schneller Weg „frischer Zustand“).
+- `/einstellungen → Daten zurücksetzen` — siehe **§1.10** (session-scoped vs. User-Fallback; bei **G01/G02 + adaptiv** Workshop neu + Eingriffsstufe bleibt).
+- **G01/G02:** erneut **„Demo-Daten laden“** (falls Karte sichtbar) — intern oft mit Reset, dann Rollen-Set.
+- **F01–E05:** Demo erneut über **`POST /api/data/demo`** (oder Admin/Runner), nicht über eine entfernte UI-Karte.
 
 **Alle 15 Seed-Testuser auf einmal** (wenn mehrere Personen an `F01`–`E05` getestet haben und die DB wieder sauber sein soll):
 
@@ -219,18 +226,19 @@ Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), dami
 
 Liste der Pseudonyme im Code: `src/lib/demo/test-pseudonyms.ts`.
 
-### Admin in der Oberfläche (alle Demo-Testuser zurücksetzen)
+### Admin in der Oberfläche (Demo-Testuser & Gast-User)
 
-Für die Studie brauchst du manchmal **kein Terminal**: ein **Admin-Pseudonym** sieht in `/einstellungen` eine gelbe Karte **„Admin: Demo-Testuser“**.
+Für die Studie brauchst du manchmal **kein Terminal**: ein **Admin-Pseudonym** sieht in `/einstellungen` gelbe Admin-Karten.
 
 1. In `.env` bzw. Docker (`docker-compose.yml`) setzen: `FLUXPLAN_ADMIN_PSEUDONYMS` — Standard ist **`admin`** (ein Eintrag reicht; mehrere möglich, kommagetrennt). Der Vergleich ist **case-insensitive** (`Admin` und `ADMIN` sind dasselbe).
 2. App neu starten (damit die Variable geladen wird).
 3. Unter `/einstellungen → Pseudonym & Session` als Pseudonym z. B. **`admin`** eintragen und **Session starten**.
-4. Karte **„Alle Demo-Testuser zurücksetzen“** öffnen und `RESET_DEMO_USERS` eintippen.
+4. **„Alle Demo-Testuser zurücksetzen“** → Bestätigung `RESET_DEMO_USERS`: löscht **`F01`–`F05`, `T01`–`T05`, `E01`–`E05` und zusätzlich `G01`, `G02`**. Anschließend werden **nur die 15 Rollen-Pseudonyme** wie beim Seed neu angelegt (inkl. Standard-Aufgaben); **`G01`/`G02` erscheinen nicht automatisch wieder** — Gast-Slots sind frei, bis jemand erneut als Gast startet.
+5. **„Gast-User zurücksetzen“** → Bestätigung `RESET_GUEST_USERS`: löscht **nur** `G01` und `G02` (Slots für neue Gast-Starts).
 
-Das löscht nur `F01`–`F05`, `T01`–`T05`, `E01`–`E05` und legt sie wie beim Seed neu an. **Dein Admin-Konto bleibt.**
+**Dein Admin-Konto bleibt.**
 
-Backend: `POST /api/data/reset-demo-users` mit Body `{ "confirm": "RESET_DEMO_USERS" }` (nur wenn eingeloggt und Admin-Pseudonym).
+Backend: `POST /api/data/reset-demo-users` mit `{ "confirm": "RESET_DEMO_USERS" }`; `POST /api/data/reset-guest-users` mit `{ "confirm": "RESET_GUEST_USERS" }` (jeweils nur Admin-Pseudonym).
 
 ### Session beenden (Abmelden / User wechseln)
 
@@ -462,7 +470,7 @@ In `src/lib/hooks/use-shortcuts.ts` in `useGlobalNavigationShortcuts` einen Eint
 | Prisma-Fehler `did not initialize yet` | `npx prisma generate` (oder Container neu bauen) |
 | „Theme" wechselt nicht | Hard-Reload (`Strg+Shift+R`), `localStorage` ggf. leeren |
 | Vorschläge erscheinen nie | Eingriffsstufe ≥ 1 prüfen, Master-Toggle an, Tab Personalisierung → „Heuristiken jetzt prüfen" |
-| Demo-Button meldet „unauthorized“ | Erst eine Study Session starten (`/einstellungen → Pseudonym & Session`), dann Demo laden |
+| Demo-Button meldet „unauthorized“ / fehlt ganz | Zuerst **Study Session** starten; Karte **Demo-Setup** nur bei **`G01`/`G02`** — Codes **F/T/E:** Demo per **`POST /api/data/demo`** |
 | Build-Warnung über Lockfile | Im `next.config.ts` `turbopack.root` setzen oder lockfile in `C:\Users\janse\` löschen |
 | `npm run build` bricht mit doppelten `export`/`POST` in einer Route | Route-Datei auf **eine** Implementierung prüfen (z. B. Merge-Artefakt); siehe Historie „Demo-Route“ unten |
 
@@ -587,7 +595,7 @@ Die folgende Tabelle bezieht sich auf die **Leitidee** aus `docs/NEXT_PROMPT.md`
 | Routing | Deutsche Pfade, Redirects von alten englischen URLs | `/(app)/heute` etc., Redirects wo nötig | Konsistente IA für deutschsprachige Mockups. |
 | Kalender | Leichtgewichtige Planung, Konflikte sichtbar | Wochenraster + Konfliktlogik + Detailkarten (Weiterentwicklung im Projektverlauf) | Fokus auf **Transparenz** statt automatischer Planung. |
 | Demo & Studie | Reproduzierbare Szenarien | Rollen (`familienplanner`, `taskplanner`, `evalrunner`) mit Aufgaben-Set, `POST /api/data/demo`, Seed-User, Study-Sheets `.md` | Ohne Demo-Daten wäre Evaluation fragil; Sheets sind **druckbar** für Probanden. |
-| Admin / Reset | Nicht zwingend in NEXT_PROMPT | Admin-Pseudonym via `FLUXPLAN_ADMIN_PSEUDONYMS`, `reset-demo-users`, CLI `reset:test-users` | Praxisbedarf: zwischen Testläufen **schnell** konsistente DB-Zustände herstellen. |
+| Admin / Reset | Nicht zwingend in NEXT_PROMPT | Admin-Pseudonym via `FLUXPLAN_ADMIN_PSEUDONYMS`, `reset-demo-users` (inkl. G01/G02 löschen), `reset-guest-users`, CLI `reset:test-users`; Gast-Workshop G01/G02 + Session-Reset-Verhalten | Praxisbedarf: zwischen Testläufen **schnell** konsistente DB-Zustände herstellen. |
 | Logout / User-Wechsel | Nicht explizit im alten Prompt | `POST /api/study/logout`, UI „Session beenden“ | Ohne Logout ist Multi-User-Testing am selben Rechner unnötig frickelig. |
 | Build / Qualität | Stabiler Prototyp | `npm run lint`; `npm run build` soll grün sein | „Buildfähiger Prototyp“ ist in Verteidigung/Paper verteidigbar. |
 
@@ -632,7 +640,7 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 
 7. **Admin und Multi-Tester-Reset**  
    - **Bedarf:** Zwischen Probanden wieder **definierte** DB-Zustände ohne manuelle SQL-Arbeit.  
-   - **Konsequenz:** Admin-Pseudonym (`FLUXPLAN_ADMIN_PSEUDONYMS`, Standard `admin`), UI „Alle Demo-Testuser zurücksetzen“ (`POST /api/data/reset-demo-users`), CLI `npm run reset:test-users` + `prisma:seed`.
+   - **Konsequenz:** Admin-Pseudonym (`FLUXPLAN_ADMIN_PSEUDONYMS`, Standard `admin`), UI „Alle Demo-Testuser zurücksetzen“ inkl. **G01/G02** (`POST /api/data/reset-demo-users`), zusätzlich **„Gast-User zurücksetzen“** (`POST /api/data/reset-guest-users`), CLI `npm run reset:test-users` + `prisma:seed`. Migration entfernt **alte** Gast-Pseudonyme `G`+Ziffern außer **G01/G02**.
 
 8. **Session beenden / Pseudonym wechseln**  
    - **Bedarf:** Gleicher Rechner, mehrere Rollen — ohne Cookie-Chaos.  
@@ -681,6 +689,7 @@ npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
 npm run reset:test-users   # nur die 15 Demo-Pseudonyme löschen; danach prisma:seed
+npm run pdf                # Windows: Uni-PDFs aus docs/ (Pandoc + MiKTeX; siehe docs/pdf-export/)
 npm run prisma:studio
 
 # Code-Qualität

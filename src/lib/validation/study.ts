@@ -2,7 +2,16 @@ import { z } from "zod";
 
 export const StudyVariantSchema = z.enum(["baseline", "adaptive"]).default("adaptive");
 
-export const StartStudySessionSchema = z.object({
+const interventionLevelField = z.coerce.number().int().min(0).max(3).optional();
+
+/** Gast: kein User-Code nötig; Server vergibt nacheinander G01, G02 (max. zwei Gast-Konten). */
+const GuestStartSchema = z.object({
+  guest: z.literal(true),
+  variant: z.enum(["baseline", "adaptive"]),
+  interventionLevel: interventionLevelField,
+});
+
+const NamedStartSchema = z.object({
   pseudonym: z
     .string()
     .trim()
@@ -10,13 +19,13 @@ export const StartStudySessionSchema = z.object({
     .max(32)
     .regex(/^[A-Za-z0-9_-]+$/, "Only letters, numbers, _ and - allowed"),
   variant: StudyVariantSchema,
-  /** Bei Variante „adaptive“: Eingriffsstufe 0–3 (fehlt sie, setzt der Server 2). */
-  interventionLevel: z.coerce.number().int().min(0).max(3).optional(),
+  interventionLevel: interventionLevelField,
 });
+
+export const StartStudySessionSchema = z.union([GuestStartSchema, NamedStartSchema]);
 
 /** Aktive Session (Cookies): Variante und ggf. Eingriffsstufe anpassen — gleiche Logik wie beim Session-Start. */
 export const UpdateStudySessionSchema = z.object({
   variant: z.enum(["baseline", "adaptive"]),
   interventionLevel: z.coerce.number().int().min(0).max(3).optional(),
 });
-

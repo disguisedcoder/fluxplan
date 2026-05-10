@@ -6,7 +6,9 @@ export type AdaptiveContext = {
   taskId?: string | null;
   metadata?: Record<string, unknown>;
   config?: EngineConfig;
-  /** Pseudonyme `G01`, `G02`, … (Gast-Studysession): lockerere Schwellen. */
+  /** Aktuelle StudySession (Cookie) — Vorschläge/Logs sind pro Session zurücksetzbar. */
+  studySessionId?: string | null;
+  /** Nur `G01` / `G02` (Gast-Workshop): lockerere Schwellen in einigen Regeln. */
   isGuestStudyUser?: boolean;
 };
 

@@ -161,9 +161,11 @@ Diese Seite vereint Anpassungen, Personalisierung und Cooldown.
 Akzeptanz: Verlauf, Pause, Reaktivierung, Regel deaktivieren funktionieren End-to-End (DB + UI).
 
 ### 4.7 `/einstellungen`
-- Sektion „Pseudonym & Session“: aktuelles Pseudonym (read-only), aktive `sessionCode`, Start „Neue Session“ → Modal.
+- Sektion „Pseudonym & Session“: aktuelles Pseudonym (read-only), aktive `sessionCode`, Start „Neue Session“ → Modal; optional **„Als Gast starten“** → Server vergibt `G01`/`G02`.
 - Sektion „Adaptivität“: Master-Toggle „Adaptive Vorschläge aktiviert“ (Preference `adaptiveEnabled`); pro Regel Toggle.
-- Sektion „Daten“: Buttons „Export JSON“, „Export CSV“, „Daten zurücksetzen“ (mit Confirm-Dialog).
+- Sektion „Daten“: Buttons „Export JSON“, „Export CSV“, „Daten zurücksetzen“ (mit Confirm-Dialog; **session-scoped** wenn Session-Cookie gesetzt — siehe `docs/DOKUMENTATION.md` §1.10).
+- **Demo-Setup**-Karte: **nur** Pseudonyme **G01/G02**; Rollen-Demo für andere Codes über **`POST /api/data/demo`**.
+- Admin: **Demo-Testuser** (`RESET_DEMO_USERS`) und **Gast-User** (`RESET_GUEST_USERS`).
 - Sektion „Datenschutz“: max. 3 Sätze: „Logging lokal in PostgreSQL. Kein externes Tracking. Pseudonym frei wählbar.“
 
 ---
@@ -221,7 +223,7 @@ Bestehend behalten/ergänzen:
 
 Neu hinzufügen:
 - `GET/PUT /api/preferences` (Liste aller Preferences des Users + setzen einzelner Keys: `adaptiveEnabled`, `startView`, `interventionLevel: low|med|high`, `seenWelcome`).
-- `POST /api/data/reset` (löscht für aktuellen User: Tasks, TaskInteraction, Suggestions, EventLogs, Preferences; behält User+aktive Session).
+- `POST /api/data/reset` (Ist: mit Session → Inhalte **dieser Session** + Teil der Preferences; ohne Session → user-weit; Details §1.10 in `DOKUMENTATION.md`).
 - `POST /api/parser/task` (deterministisches Sprachparsing: Eingabe `text`, Antwort `title`, `dueDate`, `reminderAt?`, `category?`, `durationMin?` mit Confidence-Hinweis – KEINE LLM-Abhängigkeit).
 
 Validierung: zod-Schemas in `src/lib/validation/*`.

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
+import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -12,6 +13,7 @@ import { DataResetButton } from "./data-reset-button";
 import { EventLogExportButton } from "@/components/study/event-log-export-button";
 import { DemoSeedButton } from "./demo-seed-button";
 import { AdminResetDemoUsersCard } from "./admin-reset-demo-users-card";
+import { AdminResetGuestUsersCard } from "./admin-reset-guest-users-card";
 import {
   INTERVENTION_LEVELS,
   readInterventionLevel,
@@ -24,6 +26,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
   const [prefs, setPrefs] = useState<Preferences>({});
   const [busy, setBusy] = useState(false);
   const [isBaseline, setIsBaseline] = useState(serverBaseline);
+  const [showGuestDemoSetup, setShowGuestDemoSetup] = useState(false);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/preferences", { cache: "no-store" });
@@ -32,10 +35,31 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
     setPrefs(data.preferences ?? {});
   }, []);
 
+  const refreshGuestDemoVisibility = useCallback(async () => {
+    const r = await fetch("/api/me", { cache: "no-store" });
+    if (!r.ok) {
+      setShowGuestDemoSetup(false);
+      return;
+    }
+    const d = (await r.json()) as { user?: { pseudonym?: string } | null };
+    setShowGuestDemoSetup(isGuestStudyPseudonym(d.user?.pseudonym));
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshGuestDemoVisibility();
+  }, [refreshGuestDemoVisibility]);
+
+  useEffect(() => {
+    const onMe = () => void refreshGuestDemoVisibility();
+    window.addEventListener(STUDY_ME_CHANGED_EVENT, onMe);
+    return () => window.removeEventListener(STUDY_ME_CHANGED_EVENT, onMe);
+  }, [refreshGuestDemoVisibility]);
 
   useEffect(() => {
     queueMicrotask(() => setIsBaseline(serverBaseline));
@@ -89,12 +113,35 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
         <CardContent className="space-y-3 p-5">
           <div>
             <div className="text-sm font-semibold tracking-tight">Aufgabe anlegen: Zusatzfelder</div>
-            <p className="text-xs text-muted-foreground">
-              Kategorie, Tags, Dauer, Erinnerung und Beschreibung können zunächst eingeklappt werden; ein Klick auf
-              „Weitere Felder“ blendet sie jederzeit ein — unabhängig von anderen Vorschlägen. FluxPlan schlägt das
-              Kompaktformular unter <span className="font-medium text-foreground">Anpassungen</span> vor; mit
-              Annehmen oder Ablehnen entscheidest du wie bei anderen adaptiven Features.
-            </p>
+            {isBaseline ? (
+              <p className="text-xs text-muted-foreground">
+                In der <span className="font-medium text-foreground">Baseline</span> gibt es keine adaptiven
+                Vorschläge. Sobald du in den Einstellungen zur{" "}
+                <span className="font-medium text-foreground">adaptiven Variante</span> wechselst, gelten dieselben
+                Regeln wie für andere Features: Unter <span className="font-medium text-foreground">Anpassungen</span>{" "}
+                kann FluxPlan ein kompakteres Formular vorschlagen — mit{" "}
+                <span className="font-medium text-foreground">Annehmen</span>,{" "}
+                <span className="font-medium text-foreground">Nicht jetzt</span> und{" "}
+                <span className="font-medium text-foreground">Ablehnen</span>.{" "}
+                <span className="font-medium text-foreground">Weitere Felder</span> klappen den Bereich jederzeit
+                wieder auf.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Ob die Zusatzfelder (Kategorie, Tags, Dauer, Erinnerung, Beschreibung) beim Anlegen zunächst
+                eingeklappt sind, steuert dieselbe adaptive Logik wie andere Vorschläge: Unter{" "}
+                <span className="font-medium text-foreground">Anpassungen</span> schlagen die Regeln{" "}
+                <span className="font-medium text-foreground">Formular: Zusatzfelder einklappen</span> bzw.{" "}
+                <span className="font-medium text-foreground">… wieder ausklappen</span> vor — mit{" "}
+                <span className="font-medium text-foreground">Annehmen</span>,{" "}
+                <span className="font-medium text-foreground">Nicht jetzt</span> und{" "}
+                <span className="font-medium text-foreground">Ablehnen</span> (plus{" "}
+                <span className="font-medium text-foreground">Rückgängig</span> nach Annahme im Verlauf). Nach
+                Annahme des Einklapp-Vorschlags ist der Bereich zunächst zu;{" "}
+                <span className="font-medium text-foreground">Weitere Felder</span> blendet ihn jederzeit wieder ein,
+                ohne dass du den Vorschlag erneut annehmen musst.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -104,7 +151,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
           <div>
             <div className="text-sm font-semibold tracking-tight">Daten exportieren</div>
             <p className="text-xs text-muted-foreground">
-              Pseudonymisierte Daten als JSON oder CSV. Auswertung erfolgt offline.
+              Anonymisierte Studiendaten als JSON oder CSV. Auswertung erfolgt offline.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -115,28 +162,32 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
       </Card>
 
       <AdminResetDemoUsersCard />
+      <AdminResetGuestUsersCard />
 
-      <Card className="fp-card">
-        <CardContent className="space-y-3 p-5">
-          <div>
-            <div className="text-sm font-semibold tracking-tight">Demo-Setup</div>
-            <p className="text-xs text-muted-foreground">
-              {isBaseline
-                ? "Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Beispiele). Vorschläge bleiben in der Baseline deaktiviert."
-                : "Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Trigger) und bereitet Vorschläge für die adaptive Variante vor."}
-            </p>
-          </div>
-          <DemoSeedButton onDone={load} />
-        </CardContent>
-      </Card>
+      {showGuestDemoSetup ? (
+        <Card className="fp-card">
+          <CardContent className="space-y-3 p-5">
+            <div>
+              <div className="text-sm font-semibold tracking-tight">Demo-Setup (nur Gast G01 / G02)</div>
+              <p className="text-xs text-muted-foreground">
+                {isBaseline
+                  ? "Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Beispiele). Vorschläge bleiben in der Baseline deaktiviert."
+                  : "Mit adaptiver Gast-Session hast du oft schon den Workshop-Stand (Aufgaben + alle Beispiel-Vorschläge). Optional kannst du hier durch ein rollengrößeres Demo-Set ersetzen."}
+              </p>
+            </div>
+            <DemoSeedButton onDone={load} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="fp-card border-destructive/30 bg-destructive/[0.04]">
         <CardContent className="space-y-3 p-5">
           <div>
             <div className="text-sm font-semibold tracking-tight">Daten zurücksetzen</div>
             <p className="text-xs text-muted-foreground">
-              Löscht Aufgaben, Interaktionen, Vorschläge und Einstellungen. Pseudonym
-              und aktive Session bleiben.
+              Leert die App-Daten der aktuellen Studien-Session (Aufgaben, Vorschläge,
+              Nutzungsprotokoll dieser Session). Einstellungen und andere Teilnehmende
+              bleiben unberührt.
             </p>
           </div>
           <DataResetButton onDone={load} />

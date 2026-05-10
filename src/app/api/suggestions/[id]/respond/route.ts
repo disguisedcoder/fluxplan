@@ -4,7 +4,9 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { isHttpError } from "@/lib/http/errors";
+import { resolveInteractionStudySessionId } from "@/lib/data/interaction-study-session";
 import { maybeApplyCooldownAfterReject } from "@/lib/adaptive/engineConfig";
 import { normalizeStartViewHref } from "@/lib/settings/start-view";
 import { isTaskFormChipKey, type TaskFormChipKey } from "@/lib/settings/task-form-chips";
@@ -23,6 +25,7 @@ const RespondSchema = z.object({
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const { id } = await ctx.params;
 
     const body = await req.json().catch(() => null);
@@ -32,7 +35,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const suggestion = await prisma.adaptiveSuggestion.findFirst({
       where: { id, userId },
     });
-    if (!suggestion) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    if (!suggestion) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
+    const interactionSessionId = await resolveInteractionStudySessionId(
+      userId,
+      sessionId,
+      suggestion.studySessionId,
+    );
 
     if (parsed.data.action === "accept") {
       await applySuggestion(userId, suggestion);
@@ -41,7 +52,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         data: { status: "accepted", respondedAt: new Date() },
       });
       await prisma.taskInteraction.create({
-        data: { userId, type: "suggestion_accepted", metadata: { suggestionId: id, ruleKey: updated.ruleKey } },
+        data: {
+          userId,
+          studySessionId: interactionSessionId,
+          type: "suggestion_accepted",
+          metadata: { suggestionId: id, ruleKey: updated.ruleKey },
+        },
       });
       return NextResponse.json({ suggestion: updated });
     }
@@ -57,13 +73,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         });
       }
       await prisma.taskInteraction.create({
-        data: { userId, type: "suggestion_rejected", metadata: { suggestionId: id, ruleKey: updated.ruleKey } },
+        data: {
+          userId,
+          studySessionId: interactionSessionId,
+          type: "suggestion_rejected",
+          metadata: { suggestionId: id, ruleKey: updated.ruleKey },
+        },
       });
       const cooldown = await maybeApplyCooldownAfterReject(userId, updated.ruleKey);
       if (cooldown) {
         await prisma.taskInteraction.create({
           data: {
             userId,
+            studySessionId: interactionSessionId,
             type: "rule_cooldown_started",
             metadata: { ruleKey: updated.ruleKey, until: cooldown.until.toISOString() },
           },
@@ -77,6 +99,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         where: { id },
         data: { status: "snoozed", respondedAt: new Date() },
       });
+      let reminderSnooze: { until: string; days: number } | undefined;
       if (updated.ruleKey === "reminder_preference") {
         const daysRow = await prisma.userPreference.findUnique({
           where: { userId_key: { userId, key: REMINDER_SNOOZE_DAYS_PREF_KEY } },
@@ -93,21 +116,48 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
             value: { until: until.toISOString() } as Prisma.InputJsonValue,
           },
         });
+        reminderSnooze = { until: until.toISOString(), days };
       }
       await prisma.taskInteraction.create({
-        data: { userId, type: "suggestion_snoozed", metadata: { suggestionId: id, ruleKey: updated.ruleKey } },
+        data: {
+          userId,
+          studySessionId: interactionSessionId,
+          type: "suggestion_snoozed",
+          metadata: { suggestionId: id, ruleKey: updated.ruleKey },
+        },
       });
-      return NextResponse.json({ suggestion: updated });
+      return NextResponse.json({ suggestion: updated, reminderSnooze });
     }
 
-    // undo
+    // undo — Vorschlag wieder „offen“ (pending), erscheint unter Aktive Vorschläge
+    if (suggestion.status === "pending") {
+      return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    }
+
     if (suggestion.status !== "accepted") {
+      if (
+        suggestion.ruleKey === "reminder_preference" &&
+        suggestion.status === "snoozed"
+      ) {
+        await prisma.userPreference.deleteMany({
+          where: { userId, key: REMINDER_SNOOZE_UNTIL_PREF_KEY },
+        });
+      }
       const updated = await prisma.adaptiveSuggestion.update({
         where: { id },
-        data: { status: "undone", respondedAt: new Date() },
+        data: { status: "pending", respondedAt: null },
       });
       await prisma.taskInteraction.create({
-        data: { userId, type: "suggestion_undone", metadata: { suggestionId: id, ruleKey: updated.ruleKey } },
+        data: {
+          userId,
+          studySessionId: interactionSessionId,
+          type: "suggestion_undone",
+          metadata: {
+            suggestionId: id,
+            ruleKey: updated.ruleKey,
+            reopenedAsPending: true,
+          } as Prisma.InputJsonValue,
+        },
       });
       return NextResponse.json({ suggestion: updated });
     }
@@ -115,10 +165,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await undoSuggestion(userId, suggestion);
     const updated = await prisma.adaptiveSuggestion.update({
       where: { id },
-      data: { status: "undone", respondedAt: new Date() },
+      data: { status: "pending", respondedAt: null },
     });
     await prisma.taskInteraction.create({
-      data: { userId, type: "suggestion_undone", metadata: { suggestionId: id, ruleKey: updated.ruleKey } },
+      data: {
+        userId,
+        studySessionId: interactionSessionId,
+        type: "suggestion_undone",
+        metadata: {
+          suggestionId: id,
+          ruleKey: updated.ruleKey,
+          reopenedAsPending: true,
+        } as Prisma.InputJsonValue,
+      },
     });
     return NextResponse.json({ suggestion: updated });
   } catch (e: unknown) {

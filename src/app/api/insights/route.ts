@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { isHttpError } from "@/lib/http/errors";
 
 export async function GET() {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
+    const suggestionScope = sessionId
+      ? { userId, studySessionId: sessionId }
+      : { userId };
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -45,16 +50,20 @@ export async function GET() {
         },
       }),
       prisma.adaptiveSuggestion.count({
-        where: { userId, status: "pending" },
+        where: { ...suggestionScope, status: "pending" },
       }),
       prisma.adaptiveSuggestion.count({
         where: {
-          userId,
+          ...suggestionScope,
           status: { in: ["accepted", "rejected", "snoozed"] },
         },
       }),
       prisma.taskInteraction.findFirst({
-        where: { userId, type: "engine_evaluated" },
+        where: {
+          userId,
+          ...(sessionId ? { studySessionId: sessionId } : {}),
+          type: "engine_evaluated",
+        },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true },
       }),

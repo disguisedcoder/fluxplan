@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { z } from "zod";
 import { isHttpError } from "@/lib/http/errors";
 
@@ -10,6 +11,7 @@ const StatusSchema = z.enum(["pending", "accepted", "rejected", "snoozed", "undo
 export async function GET(req: Request) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const url = new URL(req.url);
     const statusParam = url.searchParams.get("status");
 
@@ -19,7 +21,11 @@ export async function GET(req: Request) {
       : undefined;
 
     const suggestions = await prisma.adaptiveSuggestion.findMany({
-      where: { userId, ...(status ? { status } : {}) },
+      where: {
+        userId,
+        ...(sessionId ? { studySessionId: sessionId } : {}),
+        ...(status ? { status } : {}),
+      },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       take: 100,
     });

@@ -49,8 +49,9 @@ export function SuggestionCard({
       );
       onChanged();
       if (
-        (action === "accept" || action === "undo") &&
-        (suggestion.type === "daily_focus" || suggestion.ruleKey === "daily_focus")
+        action === "undo" ||
+        (action === "accept" &&
+          (suggestion.type === "daily_focus" || suggestion.ruleKey === "daily_focus"))
       ) {
         notifyFluxplanPreferencesChanged();
       }
@@ -101,10 +102,13 @@ export function SuggestionCard({
                 Ablehnen
               </Button>
             </>
-          ) : suggestion.status === "accepted" ? (
+          ) : suggestion.status === "accepted" ||
+            suggestion.status === "snoozed" ||
+            suggestion.status === "rejected" ||
+            suggestion.status === "undone" ? (
             <Button variant="outline" onClick={() => respond("undo")} disabled={busy} className="gap-2">
               <Undo2 className="h-4 w-4" />
-              Rückgängig machen
+              {suggestion.status === "accepted" ? "Rückgängig machen" : "Wieder öffnen"}
             </Button>
           ) : null}
 

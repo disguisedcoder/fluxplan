@@ -7,6 +7,11 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { getStudyCookies } from "@/lib/auth/study-session";
 import { isHttpError } from "@/lib/http/errors";
 import { runAdaptiveEngine } from "@/lib/adaptive/adaptiveEngine";
+import {
+  deleteAllContentForUser,
+  deleteContentForStudySession,
+} from "@/lib/data/session-content-delete";
+import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 import { getDemoRole, roleFromPseudonym } from "@/lib/demo";
 import type { DemoRoleKey } from "@/lib/demo/types";
 
@@ -93,12 +98,18 @@ export async function POST(req: Request) {
 
     const def = getDemoRole(roleKey, new Date());
 
+    const preserveGuestWorkshop =
+      resetFirst && Boolean(sessionId) && isGuestStudyPseudonym(pseudonym);
+
     if (resetFirst) {
       await prisma.$transaction(async (tx) => {
-        await tx.task.deleteMany({ where: { userId } });
-        await tx.taskInteraction.deleteMany({ where: { userId } });
-        await tx.adaptiveSuggestion.deleteMany({ where: { userId } });
-        await tx.userPreference.deleteMany({ where: { userId } });
+        if (sessionId) {
+          await deleteContentForStudySession(tx, userId, sessionId, {
+            preserveGuestWorkshopInterventionLevel: preserveGuestWorkshop,
+          });
+        } else {
+          await deleteAllContentForUser(tx, userId);
+        }
       });
     }
 
@@ -135,6 +146,7 @@ export async function POST(req: Request) {
       await tx.task.createMany({
         data: def.tasks.map((t) => ({
           userId,
+          ...(sessionId ? { studySessionId: sessionId } : {}),
           title: t.title,
           description: t.description ?? null,
           status: TaskStatus.open,
@@ -152,6 +164,7 @@ export async function POST(req: Request) {
         await tx.taskInteraction.createMany({
           data: def.viewEvents.map((e, idx) => ({
             userId,
+            ...(sessionId ? { studySessionId: sessionId } : {}),
             type: "view_changed",
             metadata: { from: e.from ?? null, to: e.to, source: "demo", order: idx } as unknown as Prisma.InputJsonValue,
           })),
@@ -187,6 +200,7 @@ export async function POST(req: Request) {
       const taskId = ev.screen === "task_created" ? idByTitle.get(ev.taskTitle) : undefined;
       const r = await runAdaptiveEngine({
         userId,
+        studySessionId: sessionId ?? null,
         screen: ev.screen,
         taskId,
         metadata: ev.metadata,
@@ -198,6 +212,7 @@ export async function POST(req: Request) {
       ? { createdCount: 0 }
       : await runAdaptiveEngine({
           userId,
+          studySessionId: sessionId ?? null,
           screen: "/heute",
           metadata: { trigger: "demo_seeded" },
         });

@@ -11,22 +11,19 @@ Es geht nicht darum, perfekt zu planen. Nutze FluxPlan so, als würdest du einen
 - Du testest zwei Phasen:
   - Phase 1: Baseline – normale Aufgaben- und Planungs-App ohne adaptive Vorschläge.
   - Phase 2: Adaptive – FluxPlan darf Vorschläge machen, aber du entscheidest immer selbst.
-- Demo-Daten nur einmal laden.
+- In **Baseline** gibt es keinen nutzbaren Bereich **Anpassungen** (der Menüpunkt springt zurück zu **Heute**). Ab **Adaptive** ist **Anpassungen** normal erreichbar.
+- Die **Start-Aufgaben** stellt die Studienleitung bereit; bitte nicht alles von Hand neu aufbauen.
 - Beim Umstieg auf Adaptive denselben Pseudonym-Code verwenden.
 - Nichts zurücksetzen.
 - Am Ende nichts exportieren. Sag einfach der Studienleitung Bescheid.
 
-## Phase 0 – Start und Demo laden
+## Phase 0 – Start und vorbereitete Aufgaben
 1. Öffne FluxPlan.
-2. Gib dein Pseudonym ein: `F01` oder deinen zugeteilten Code.
-3. Wähle `Baseline`.
-4. Bestätige die Auswahl und starte die Session.
-5. Öffne `Einstellungen`.
-6. Wähle im Demo-Setup die Rolle `Familienplanner`.
-7. Klicke auf `Demo-Daten laden`.
-8. Öffne danach `Heute`.
+2. Gib deinen zugeteilten Code ein (z. B. `F01`).
+3. Wähle die Variante wie angesagt (**Baseline** / **Adaptive**) und starte die Session.
+4. Die Studienleitung stellt sicher, dass die **Start-Aufgaben** für dich sichtbar sind — danach öffnest du **Heute**.
 
-Kurzer Check: Du solltest jetzt bereits mehrere Familien-Aufgaben sehen. Wenn nicht, bitte kurz Bescheid sagen.
+Kurzer Check: Du solltest mehrere Familien-Aufgaben sehen. Wenn nicht, kurz Bescheid sagen.
 
 ## Phase 1 – Baseline: Erstmal ohne Mitdenken der App
 Ziel: Du lernst die normale App kennen und erzeugst genug echte Nutzung, damit später ein Vergleich möglich ist.
@@ -40,7 +37,7 @@ Ziel: Du lernst die normale App kennen und erzeugst genug echte Nutzung, damit s
 6. Öffne `Kalender` und schau, ob der Tag eher nach „passt schon“ oder „das wird sportlich“ aussieht.
 
 ### Runde 2: Bestehende Aufgaben bearbeiten
-Erledige diese Aktionen mit bestehenden Demo-Aufgaben:
+Erledige diese Aktionen mit den vorbereiteten Aufgaben:
 
 1. Markiere zwei Aufgaben als erledigt.
 2. Öffne eine erledigte Aufgabe wieder.
@@ -78,11 +75,11 @@ Jetzt darf FluxPlan vorsichtig mitdenken.
 4. Bestätige Adaptive.
 5. Übernimm die vorgeschlagene Eingriffsstufe.
 6. Starte/übernimm die neue Phase.
-7. Lade die Demo-Daten nicht erneut.
+7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer die Studienleitung sagt es ausdrücklich.
 8. Öffne `Heute` und prüfe, ob deine bisherigen Aufgaben noch da sind.
 
 ## Phase 2A – Adaptive warmfahren
-Damit FluxPlan Muster erkennen kann, benutze die App jetzt etwas gezielter.
+Damit FluxPlan Muster erkennen kann, benutze die App jetzt etwas gezielter. **Zählen nur** Wechsel zu **`Heute`**, **`Aufgaben`**, **`Kalender`**, **`Erstellen`**. Für spätere Vorschläge zur **Startansicht** soll **`Heute`** hier **am häufigsten** vorkommen — **Richtwert: mindestens siebenmal** `Heute` öffnen, die anderen Kernseiten jeweils seltener (z. B. immer wieder kurz woanders, dann zurück zu `Heute`).
 
 1. Wechsle einmal zu `Aufgaben`.
 2. Wechsle zu `Kalender`.
@@ -90,8 +87,9 @@ Damit FluxPlan Muster erkennen kann, benutze die App jetzt etwas gezielter.
 4. Wechsle zu `Erstellen`.
 5. Wechsle zurück zu `Aufgaben`.
 6. Wechsle nochmal zu `Heute`.
+7. Wiederhole Navigationswechsel, bis **`Heute` klar am häufigsten** war (siehe Richtwert oben).
 
-Das ist kein Sporttest, nur ein kleiner Navigationskreis.
+Das ist kein Sporttest, nur ein kleiner Navigationskreis mit Absicht.
 
 ## Phase 2B – Neue Aufgaben mit Muster anlegen
 Lege jetzt sechs neue Aufgaben an.
@@ -121,22 +119,22 @@ Lege jetzt sechs neue Aufgaben an.
 Wenn du ein Feld nicht findest, ist das kein Problem. Lege die Aufgabe trotzdem an.
 
 ## Phase 2C – Vorschläge bewusst testen
-Wenn ein Vorschlag erscheint:
+Es können **mehrere** Vorschläge gleichzeitig **offen** sein — **Banner** oben und/oder Karten unter **`Anpassungen`**.
 
-1. Lies den Vorschlag vollständig.
+Wenn etwas Vorgeschlagen wird:
+
+1. Lies einen Vorschlag vollständig.
 2. Klicke auf `Warum?`, falls sichtbar.
-3. Entscheide dich bewusst:
-   - Annehmen
-   - Nicht jetzt
-   - Ablehnen
-4. Wenn nach dem Annehmen `Rückgängig` oder `Undo` sichtbar ist, teste es einmal.
-5. Öffne `Anpassungen` und schau, ob du Verlauf und Erklärung nachvollziehen kannst.
+3. Entscheide dich bei **mehreren** Vorschlägen nacheinander bewusst: annehmen, `Nicht jetzt`, oder ablehnen.
+4. Wenn `Rückgängig` oder `Undo` sichtbar ist, teste es einmal — der Vorschlag kann wieder **offen** werden.
+5. Bei **vertagt** oder **abgelehnt**: `Wieder öffnen` suchen und einmal testen, falls angeboten.
+6. Öffne `Anpassungen` und prüfe Verlauf und Erklärung.
+7. Tab **`Personalisierung`**: kurz prüfen, ob **Erinnerungs-Vorschläge vertagen** (Tage) angezeigt wird — nur ansehen.
 
-Wenn kein Vorschlag erscheint:
-1. Öffne nochmal `Heute`.
-2. Erstelle noch eine kurze Aufgabe mit Datum.
-3. Wechsle einmal zu `Kalender` und zurück zu `Heute`.
-4. Dann einfach weitermachen. Kein Vorschlag ist kein Fehler.
+Wenn dir kein Banner auffällt:
+1. Öffne **`Anpassungen`** — offene Karten haben einen **farbig markierten** Rand.
+2. Sonst: `Heute`, Aufgabe mit Datum, `Kalender` ↔ `Heute`, Phase 2A kurz wiederholen.
+3. Dann einfach weitermachen. Kein Vorschlag ist kein Fehler.
 
 ## Abschluss
 Sag der Studienleitung: `Ich bin fertig.`

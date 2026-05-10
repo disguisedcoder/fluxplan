@@ -9,7 +9,7 @@ export function roleFromPseudonym(pseudonym: string): DemoRoleKey {
   if (p.startsWith("F")) return "familienplanner";
   if (p.startsWith("T")) return "taskplanner";
   if (p.startsWith("E")) return "evalrunner";
-  if (p.startsWith("G")) return "taskplanner"; // guest → simplest default role
+  if (/^(G01|G02)$/i.test(p)) return "taskplanner"; // Gast-Workshop → einfache Demo-Rolle
   return "taskplanner";
 }
 

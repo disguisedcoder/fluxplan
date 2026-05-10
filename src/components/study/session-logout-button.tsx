@@ -31,7 +31,7 @@ export function SessionLogoutButton({
         toast.error("Abmelden fehlgeschlagen.");
         return;
       }
-      toast.success("Session beendet. Du kannst ein anderes Pseudonym starten.");
+      toast.success("Session beendet. Du kannst mit einem neuen User-Code oder als Gast neu starten.");
       dispatchStudyMeChanged();
       onDone?.();
       router.refresh();

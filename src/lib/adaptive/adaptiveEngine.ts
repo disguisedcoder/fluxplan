@@ -11,6 +11,7 @@ import { adaptiveOptionalFoldRule } from "./rules/adaptiveOptionalFoldRule";
 import { adaptiveOptionalUnfoldRule } from "./rules/adaptiveOptionalUnfoldRule";
 import { isRulePaused, loadEngineConfig } from "./engineConfig";
 import { hasAcceptedOrRejectedSuggestionToday } from "./suggestionDayThrottle";
+import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
 /** Nach Annehmen/Ablehnen am selben Kalendertag kein neuer Pending-Vorschlag (Snooze ausgenommen). */
 const THROTTLE_BY_DAY_RULE_KEYS = new Set([
@@ -44,7 +45,7 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
     where: { id: ctx.userId },
     select: { pseudonym: true },
   });
-  const isGuestStudyUser = /^G\d+$/i.test(userRow?.pseudonym ?? "");
+  const isGuestStudyUser = isGuestStudyPseudonym(userRow?.pseudonym);
 
   const enabled = await prisma.adaptiveRule.findMany({
     where: { enabled: true },
@@ -78,6 +79,7 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
     await prisma.adaptiveSuggestion.create({
       data: {
         userId: ctx.userId,
+        studySessionId: ctx.studySessionId ?? null,
         ruleKey: draft.ruleKey,
         type: draft.type,
         title: draft.title,
@@ -106,6 +108,7 @@ async function logEvaluation(
     await prisma.taskInteraction.create({
       data: {
         userId: ctx.userId,
+        studySessionId: ctx.studySessionId ?? null,
         type: "engine_evaluated",
         metadata: { screen: ctx.screen, ...metadata } as Prisma.InputJsonValue,
       },

@@ -245,7 +245,7 @@ function UserBadge({ me, compact, isBaseline }: { me: Me | null; compact: boolea
         "m-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3 transition-colors hover:bg-accent/30",
         compact && "justify-center px-0",
       )}
-      title={compact ? (me?.user?.pseudonym ?? "Pseudonym setzen") : undefined}
+      title={compact ? (me?.user?.pseudonym ?? "User-Code setzen") : undefined}
     >
       <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
         {initials}
@@ -253,7 +253,7 @@ function UserBadge({ me, compact, isBaseline }: { me: Me | null; compact: boolea
       {compact ? null : (
         <div className="min-w-0 leading-tight">
           <div className="truncate text-sm font-medium">
-            {me?.user?.pseudonym ?? "Pseudonym setzen"}
+            {me?.user?.pseudonym ?? "User-Code setzen"}
           </div>
           <div className="truncate text-xs text-muted-foreground">
             {me?.user ? (isBaseline ? "Baseline-Modus" : "Vorschläge aktiv") : "Session starten"}

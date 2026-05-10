@@ -41,6 +41,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
   const [draftLevel, setDraftLevel] = useState(2);
   const [variantConfirmed, setVariantConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [missingInfo, setMissingInfo] = useState<null | "variant" | "userCode">(null);
 
   /** User- oder Session-Wechsel soll erneut aus Server-Prefs lesen (nicht nur einmal pro userId). */
   const lastPrefsSyncKeyRef = useRef<string | null>(null);
@@ -162,7 +163,14 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
   }
 
   async function startSession() {
-    if (!normalized || !variantConfirmed) return;
+    if (!variantConfirmed) {
+      setMissingInfo("variant");
+      return;
+    }
+    if (!normalized) {
+      setMissingInfo("userCode");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/study/session", {
@@ -182,7 +190,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
         return;
       }
       toast.success("Study Session gestartet.", {
-        description: `Pseudonym: ${normalized}`,
+        description: `User-Code: ${normalized}`,
       });
       dispatchStudyMeChanged();
       router.push("/start");
@@ -194,26 +202,40 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
 
   async function startGuest() {
     if (submitting) return;
+    if (!variantConfirmed) {
+      setMissingInfo("variant");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/study/session", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          pseudonym: "G01",
-          variant: "adaptive",
-          interventionLevel: 2,
+          guest: true,
+          variant,
+          interventionLevel: variant === "adaptive" ? interventionLevel : undefined,
         }),
       });
+      const payload = (await res.json().catch(() => null)) as
+        | { user?: { pseudonym?: string }; error?: string }
+        | null;
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        toast.error("Gast-Session konnte nicht gestartet werden.", {
-          description: body?.error ?? "Ungültige Eingabe oder Serverfehler.",
-        });
+        const err = payload && "error" in payload ? payload.error : undefined;
+        const msg = payload && "message" in payload && typeof (payload as { message?: string }).message === "string"
+          ? (payload as { message: string }).message
+          : undefined;
+        toast.error(
+          err === "guest_slots_full" ? "Kein freier Gast-Code (G01/G02)." : "Gast-Session konnte nicht gestartet werden.",
+          {
+            description: msg ?? err ?? "Ungültige Eingabe oder Serverfehler.",
+          },
+        );
         return;
       }
+      const assigned = payload?.user?.pseudonym ?? "Gast";
       toast.success("Gast-Session gestartet.", {
-        description: "Pseudonym: G01",
+        description: `Vergabener User-Code: ${assigned}`,
       });
       dispatchStudyMeChanged();
       router.push("/start");
@@ -229,15 +251,15 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
         <CardHeader>
           <CardTitle>Study Session</CardTitle>
           <CardDescription>
-            Pseudonym frei wählen (z. B. Testperson <span className="font-medium">F01</span>, Admin{" "}
-            <span className="font-medium">admin</span>). Groß-/Kleinschreibung egal für die Admin-Freigabe. Keine
-            Passwörter, keine personenbezogenen Daten.
+            <span className="font-medium text-foreground">User-Code</span> frei wählen (z. B. Testperson{" "}
+            <span className="font-medium">F01</span>, Admin <span className="font-medium">admin</span>) — oder ohne
+            Eingabe als <span className="font-medium">Gast</span> starten. Keine echten Namen, keine Passwörter.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {me?.user ? (
             <div className="text-sm text-muted-foreground">
-              Aktuell aktiv: <span className="font-medium text-foreground">{me.user.pseudonym}</span>
+              Aktuell aktiv — User: <span className="font-medium text-foreground">{me.user.pseudonym}</span>
               {me.session ? (
                 <>
                   {" "}
@@ -248,16 +270,20 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
           ) : null}
 
           <div className="grid gap-2">
-            <div className="text-sm font-medium">Pseudonym-Code</div>
+            <div className="text-sm font-medium">User - Code</div>
             <Input
               value={pseudonym}
               onChange={(e) => setPseudonym(e.target.value)}
-              placeholder="z.B. P01"
+              placeholder="z. B. P01"
               autoCapitalize="characters"
               spellCheck={false}
             />
             <div className="text-xs text-muted-foreground">
-              Erlaubt: Buchstaben/Zahlen sowie <span className="font-mono">_</span> und{" "}
+              Für <span className="font-medium text-foreground">Session starten</span> nötig. Bei{" "}
+              <span className="font-medium text-foreground">Als Gast starten</span> entfällt der User-Code — der Server
+              vergibt nacheinander <span className="font-mono">G01</span>, <span className="font-mono">G02</span> (max.
+              zwei Gast-Konten; danach bitte eigenen Code oder Admin-Reset). Erlaubt bei eigenem Code: Buchstaben/Zahlen
+              sowie <span className="font-mono">_</span> und{" "}
               <span className="font-mono">-</span>.
             </div>
           </div>
@@ -307,11 +333,16 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
 
           <div className="flex flex-wrap items-center gap-2">
             {me?.user ? <SessionLogoutButton onDone={reloadMe} /> : null}
-            <Button onClick={startSession} disabled={!normalized || !variantConfirmed || submitting}>
+            <Button onClick={startSession} disabled={submitting}>
               Session starten
             </Button>
             {allowGuest ? (
-              <Button type="button" variant="outline" onClick={startGuest} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={startGuest}
+                disabled={submitting || !variantConfirmed}
+              >
                 Als Gast starten
               </Button>
             ) : null}
@@ -389,6 +420,40 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
               </DialogFooter>
             </>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={missingInfo !== null}
+        onOpenChange={(open) => {
+          if (!open) setMissingInfo(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>
+              {missingInfo === "variant" ? "Studienvariante fehlt" : "User-Code fehlt"}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {missingInfo === "variant" ? (
+                <>
+                  Bitte wähle <span className="font-medium text-foreground">Baseline</span> oder{" "}
+                  <span className="font-medium text-foreground">Adaptive</span> und bestätige die Auswahl im Dialog —
+                  erst danach kann die Session starten.
+                </>
+              ) : (
+                <>
+                  Bitte gib einen <span className="font-medium text-foreground">User-Code</span> ein (z. B. P01), oder
+                  nutze <span className="font-medium text-foreground">Als Gast starten</span>, wenn verfügbar.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-2 sm:justify-end">
+            <Button type="button" onClick={() => setMissingInfo(null)}>
+              Verstanden
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -125,8 +125,8 @@ Praktische Wirkung:
 
 - Engine kann Suggestion `ruleKey: "daily_focus"`, `type: "daily_focus"` erzeugen.
 - In `TodayDashboard` ist `daily_focus` explizit als **informational-only** behandelt:
-  - der “Accept” Button ist “Verstanden” und soll **keine Task-Daten ändern**.
-- Die tatsächliche **Fokusliste** wird clientseitig aus offenen Tasks abgeleitet (`deriveTodayBuckets()`), nicht aus Engine-Payload.
+  - der “Accept” Button ist “Verstanden” und soll **keine Task-Daten ändern** — er setzt nur die Preference `adaptive.dailyFocusListHighlight`.
+- Die tatsächliche **Fokusliste** wird clientseitig aus offenen Tasks abgeleitet (`deriveTodayBuckets()`), nicht aus Engine-Payload. **Ohne** diese Preference: Top-Liste **ohne überfällige** Aufgaben (nur heute, später fällig, dann undatierte Auffüller). **Mit** Preference: wie zuvor überfällig → heute → Auffüller; überfällige und heute **rot** hervorgehoben.
 
 ### 2.4 `calendar_conflict` → Konflikthinweis
 
@@ -152,7 +152,7 @@ Quellen:
 Praktische Wirkung:
 
 - Das Formular ist **ohne Engine** schon progressiv (Nutzer aktiviert Zusatzfelder per Chips; Parser füllt bei Bedarf).
-- Die Regel feuert nach **`screen: "task_created"`**, wenn in den letzten Aufgaben **optionale Felder** (Kategorie, Tags, Dauer, Erinnerung, Beschreibung) über Schwellen hinweg **häufig** genutzt werden (Details + Sample-Größe in der Regeldatei; `thresholdMultiplier` / Eingriffsstufe). **Gast-Pseudonyme** `G` + Ziffer: Muster aus der zuletzt „reichen“ Aufgabe.
+- Die Regel feuert nach **`screen: "task_created"`**, wenn in den letzten Aufgaben **optionale Felder** (Kategorie, Tags, Dauer, Erinnerung, Beschreibung) über Schwellen hinweg **häufig** genutzt werden (Details + Sample-Größe in der Regeldatei; `thresholdMultiplier` / Eingriffsstufe). **Gast-Pseudonyme** `G01` / `G02`: Muster aus der zuletzt „reichen“ Aufgabe.
 - Suggestion-`type`: **`task_form_chips`**, Payload u. a. `chipKeys`. **Accept** in `applySuggestion`: upsert **`adaptive.taskFormChips`** `{ enabled: true, chipKeys }` — Formular blendet diese Chips beim Laden ein.
 - **Baseline:** diese Suggestion entsteht praktisch nicht (Engine aus / keine Evaluations).
 
@@ -271,7 +271,8 @@ Quelle:
 
 Ablauf:
 
-- `/einstellungen` → Demo-Setup → Rolle wählen → “Demo-Daten laden”
+- **UI:** `/einstellungen` → Demo-Setup → Rolle wählen → „Demo-Daten laden“ — Karte **nur** für **`G01`/`G02`**.
+- **API/Skript:** `POST /api/data/demo` mit `role` (und optional `resetFirst`) für **alle** Pseudonyme (z. B. F01, Seeds, E2E).
 
 Was passiert im Backend:
 
@@ -282,6 +283,8 @@ Was passiert im Backend:
 Empfehlung:
 
 - Rolle `evalrunner` ist am ehesten dafür gebaut, Suggestion-Lifecycle + Konflikte schnell sichtbar zu machen.
+
+**Gast-Workshop (`G01`/`G02`, adaptive Session):** Beim Session-Start setzt `seedGuestAdaptiveShowcase` Aufgaben + **sieben** pending Vorschläge (je Regeltyp) — **ohne** Demo-Button. Nach **Daten zurücksetzen** wird derselbe Showcase erneut gesät; **Eingriffsstufe** bleibt.
 
 **`adaptive_optional_fold` auslösen (ohne Zufall):**
 
@@ -303,7 +306,7 @@ Empfehlung:
 | `runAdaptiveEngine` | wird oft nicht aufgerufen bzw. bricht sofort ab (`adaptive_disabled`) | läuft bei `evaluate`, `view_changed`, `task_created`, … |
 | Neue `AdaptiveSuggestion` | praktisch keine | ja, wenn Regeln + Schwellen passen |
 | `task_form_chips` / `task_form_optional_fold` / `task_form_optional_unfold` | nein | ja (nach Mustern) |
-| Gast `G`+Ziffer (`isGuestStudyUser`) | — | lockerere Schwellen / verkürzte Muster in mehreren Regeln |
+| Gast `G01`/`G02` (`isGuestStudyUser`) | — | lockerere Schwellen / verkürzte Muster in mehreren Regeln |
 | `taskFormOptionalFold` (manuell unter Einstellungen) | **ja**, reine Präferenz | **ja**, zusätzlich zu Vorschlägen möglich |
 
 ---

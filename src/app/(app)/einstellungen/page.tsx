@@ -18,7 +18,7 @@ export default async function EinstellungenPage() {
     <div>
       <PageHeader
         title="Einstellungen"
-        subtitle="Pseudonym, Studienmodus, Export und Reset – alles an einem Ort."
+        subtitle="User-Code, Studienmodus, Export und Reset – alles an einem Ort."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -26,13 +26,13 @@ export default async function EinstellungenPage() {
           <Card className="fp-card">
             <CardContent className="space-y-4 p-5">
               <div>
-                <div className="text-sm font-semibold tracking-tight">Pseudonym &amp; Session</div>
+                <div className="text-sm font-semibold tracking-tight">User &amp; Session</div>
                 <p className="text-xs text-muted-foreground">
-                  FluxPlan speichert keine personenbezogenen Daten. Du arbeitest unter einem frei wählbaren Code.
+                  FluxPlan speichert keine personenbezogenen Daten. Du arbeitest unter einem frei wählbaren User-Code.
                 </p>
               </div>
               <StudySessionBanner />
-              <SessionCodeInput />
+              <SessionCodeInput allowGuest />
             </CardContent>
           </Card>
 
@@ -43,7 +43,7 @@ export default async function EinstellungenPage() {
               <div className="text-sm font-semibold tracking-tight">Datenschutz</div>
               <ul className="space-y-1.5 text-sm text-muted-foreground">
                 <li>· Logging läuft lokal in PostgreSQL. Es wird nichts extern gesendet.</li>
-                <li>· Pseudonyme sind frei wählbar und nicht mit echten Identitäten verknüpft.</li>
+                <li>· User-Codes sind frei wählbar und nicht mit echten Identitäten verknüpft.</li>
                 <li>· Vorschläge erscheinen erst bei erkennbaren Mustern – und nur, wenn du sie erlaubst.</li>
               </ul>
             </CardContent>

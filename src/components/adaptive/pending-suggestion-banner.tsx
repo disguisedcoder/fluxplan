@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { normalizeStartViewHref } from "@/lib/settings/start-view";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
+import { reportSuggestionRespondFailure } from "@/lib/ui/suggestion-respond-errors";
 
 type Me = {
   user: { pseudonym: string } | null;
@@ -130,10 +131,19 @@ function PendingSuggestionBannerInner({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action }),
     });
-    if (!res.ok) {
-      toast.error("Aktion fehlgeschlagen.");
-      return;
-    }
+    if (await reportSuggestionRespondFailure(res)) return;
+    const body = (await res.json()) as { reminderSnooze?: { until: string; days: number } };
+    const reminderDesc =
+      action === "snooze" && suggestion.ruleKey === "reminder_preference" && body.reminderSnooze
+        ? `Frühestens wieder ab ${new Date(body.reminderSnooze.until).toLocaleDateString("de-DE", {
+            weekday: "short",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })} (${body.reminderSnooze.days} Kalendertage). Anpassungen → Verlauf → vertagten Vorschlag öffnen, um Frist und Tage zu ändern.`
+        : action === "snooze" && suggestion.ruleKey === "reminder_preference"
+          ? "Frist und Tage: Anpassungen → Verlauf oder Personalisierung → „Erinnerungs-Vorschläge vertagen“."
+          : undefined;
     toast.success(
       action === "accept"
         ? suggestion.type === "start_view"
@@ -142,11 +152,10 @@ function PendingSuggestionBannerInner({
         : action === "snooze"
           ? "Vertagt."
           : "Abgelehnt.",
+      reminderDesc ? { description: reminderDesc } : undefined,
     );
     onChanged();
-    if (action === "accept" && suggestion.type === "daily_focus") {
-      notifyFluxplanPreferencesChanged();
-    }
+    notifyFluxplanPreferencesChanged();
     if (action === "accept" && suggestion.type === "start_view") {
       const p =
         suggestion.payload && typeof suggestion.payload === "object"
@@ -199,9 +208,10 @@ function PendingSuggestionBannerInner({
               <div className="mt-2 truncate text-xs text-muted-foreground">{suggestion.explanation}</div>
               {suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus" ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Die Listen auf dieser Seite kommen aus deinen Aufgaben.{" "}
-                  <span className="font-medium text-foreground">Annehmen</span> ändert keine Aufgaben, hebt aber
-                  überfällige und heute fällige Einträge in der To-Do-Liste rot hervor.
+                  Ohne <span className="font-medium text-foreground">Annehmen</span> zeigt die To-Do-Liste auf „Heute“
+                  nur heute und später fällige Aufgaben; Überfällige sind dort ausgeblendet (unter Aufgaben sichtbar).{" "}
+                  <span className="font-medium text-foreground">Annehmen</span> ändert keine Aufgaben, lässt aber
+                  Überfällige in der Liste erscheinen und hebt überfällige sowie heute fällige Zeilen rot hervor.
                 </div>
               ) : null}
               {suggestion.ruleKey === "adaptive_task_creation" || suggestion.type === "task_form_chips" ? (
@@ -220,17 +230,22 @@ function PendingSuggestionBannerInner({
               {suggestion.ruleKey === "adaptive_optional_fold" ||
               suggestion.type === "task_form_optional_fold" ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Mit <span className="font-medium text-foreground">Annehmen</span> wird gespeichert, dass der Bereich{" "}
-                  <span className="font-medium text-foreground">Zusatzfelder</span> beim Anlegen zunächst eingeklappt
-                  ist. Du kannst ihn jederzeit aufklappen; unter{" "}
-                  <span className="font-medium text-foreground">Einstellungen</span> lässt sich das zurücksetzen.
+                  Wie bei anderen Vorschlägen: <span className="font-medium text-foreground">Annehmen</span>,{" "}
+                  <span className="font-medium text-foreground">Nicht jetzt</span> oder{" "}
+                  <span className="font-medium text-foreground">Ablehnen</span>. Nach Annahme sind die Zusatzfelder
+                  zunächst zu — <span className="font-medium text-foreground">Weitere Felder</span> blendet sie wieder
+                  ein; im Verlauf unter <span className="font-medium text-foreground">Anpassungen</span> kannst du die
+                  Annahme mit <span className="font-medium text-foreground">Rückgängig</span> widerrufen.
                 </div>
               ) : null}
               {suggestion.ruleKey === "adaptive_optional_unfold" ||
               suggestion.type === "task_form_optional_unfold" ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Mit <span className="font-medium text-foreground">Annehmen</span> werden die Zusatzfelder beim Anlegen
-                  wieder standardmäßig sichtbar (wie ohne Einklappen).
+                  <span className="font-medium text-foreground">Annehmen</span>,{" "}
+                  <span className="font-medium text-foreground">Nicht jetzt</span> oder{" "}
+                  <span className="font-medium text-foreground">Ablehnen</span> — nach Annahme sind die Zusatzfelder
+                  wieder standardmäßig sichtbar; <span className="font-medium text-foreground">Rückgängig</span> im
+                  Verlauf stellt das Einklappen wieder her.
                 </div>
               ) : null}
               {suggestion.type === "start_view" ? (

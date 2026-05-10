@@ -6,6 +6,9 @@
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
     "build": "next build",
+    "docs:pdf": "node scripts/export-docs-pdf.mjs",
+    "pdf": "node scripts/export-docs-pdf.mjs",
+    "postbuild": "npm run docs:pdf",
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
@@ -51,6 +54,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

@@ -11,22 +11,19 @@ Es geht nicht um perfekte Produktivität. Es geht um echte Nutzung.
 - Du testest zwei Phasen:
   - Phase 1: Baseline – normale Aufgaben-App ohne adaptive Vorschläge.
   - Phase 2: Adaptive – FluxPlan darf Vorschläge machen, aber du entscheidest.
-- Demo-Daten nur einmal laden.
+- In **Baseline** gibt es keinen nutzbaren Bereich **Anpassungen** (der Menüpunkt springt zurück zu **Heute**). Ab **Adaptive** ist **Anpassungen** normal erreichbar.
+- Die **Start-Aufgaben** stellt die Studienleitung bereit; bitte nicht alles von Hand neu aufbauen.
 - Beim Umstieg auf Adaptive denselben Pseudonym-Code verwenden.
 - Nichts zurücksetzen.
 - Am Ende nichts exportieren. Sag einfach der Studienleitung Bescheid.
 
-## Phase 0 – Start und Demo laden
+## Phase 0 – Start und vorbereitete Aufgaben
 1. Öffne FluxPlan.
-2. Gib dein Pseudonym ein: `T01` oder deinen zugeteilten Code.
-3. Wähle `Baseline`.
-4. Bestätige die Auswahl und starte die Session.
-5. Öffne `Einstellungen`.
-6. Wähle im Demo-Setup die Rolle `Taskplanner`.
-7. Klicke auf `Demo-Daten laden`.
-8. Öffne danach `Aufgaben`.
+2. Gib deinen zugeteilten Code ein (z. B. `T01`).
+3. Wähle die Variante wie angesagt (**Baseline** / **Adaptive**) und starte die Session.
+4. Die Studienleitung stellt sicher, dass die **Start-Aufgaben** für dich sichtbar sind — danach öffnest du **Aufgaben**.
 
-Kurzer Check: Du solltest jetzt Aufgaben zu Lesen, Feedback, Export, Quick Add oder Methodik sehen.
+Kurzer Check: Du solltest Aufgaben zu Lesen, Feedback, Export, Quick Add oder Methodik sehen. Wenn nicht, kurz Bescheid sagen.
 
 ## Phase 1 – Baseline: Erstmal klassisch planen
 Ziel: Du nutzt die Grundfunktionen, bevor FluxPlan später Vorschläge machen darf.
@@ -91,11 +88,11 @@ Was war in Baseline angenehm? Was hat eher geklickt wie ein alter Drucker?
 4. Bestätige Adaptive.
 5. Übernimm die vorgeschlagene Eingriffsstufe.
 6. Starte/übernimm die neue Phase.
-7. Lade die Demo-Daten nicht erneut.
+7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer die Studienleitung sagt es ausdrücklich.
 8. Öffne `Aufgaben` und prüfe, ob deine bisherigen Aufgaben noch sichtbar sind.
 
 ## Phase 2A – Adaptive warmfahren
-Wechsle ein paar Mal bewusst zwischen den Bereichen:
+Wechsle bewusst zwischen den Kernseiten **`Heute`**, **`Aufgaben`**, **`Kalender`**, **`Erstellen`** — nur diese zählen für Muster. **`Heute`** soll in dieser Phase **am häufigsten** vorkommen (**Richtwert: mindestens siebenmal** öffnen, andere Kernseiten jeweils seltener).
 
 1. `Aufgaben`
 2. `Heute`
@@ -104,6 +101,7 @@ Wechsle ein paar Mal bewusst zwischen den Bereichen:
 5. `Aufgaben`
 6. `Erstellen`
 7. `Heute`
+8. Ergänze Wechsel, bis **`Heute` klar dominiert** (siehe Richtwert oben).
 
 Das hilft FluxPlan, Nutzungsmuster zu sehen.
 
@@ -135,21 +133,22 @@ Lege sechs neue Aufgaben an.
 Wenn Parser-Chips erscheinen: Schau kurz, was erkannt wurde. Du musst nichts perfekt machen.
 
 ## Phase 2C – Vorschläge testen
-Wenn ein Vorschlag erscheint:
+Mehrere Vorschläge können **gleichzeitig offen** sein — **Banner** und/oder **`Anpassungen`**.
 
-1. Lies ihn vollständig.
+Wenn Vorschläge sichtbar sind:
+
+1. Lies mindestens einen vollständig.
 2. Klicke auf `Warum?`, falls sichtbar.
-3. Nimm einen Vorschlag an, wenn er sinnvoll wirkt.
-4. Lehne einen Vorschlag ab oder wähle `Nicht jetzt`, wenn er nicht passt.
-5. Falls `Rückgängig` oder `Undo` sichtbar ist, teste es einmal.
+3. Nimm einen Vorschlag an, wenn er sinnvoll wirkt; bearbeite **weitere** offene Vorschläge mit ablehnen oder `Nicht jetzt`, damit unterschiedliche Zustände sichtbar werden.
+4. Falls `Rückgängig` oder `Undo` sichtbar ist, teste es einmal (der Vorschlag kann danach wieder **offen** sein).
+5. Bei vertagt/abgelehnt: **`Wieder öffnen`** testen, falls sichtbar.
 6. Öffne `Anpassungen` und prüfe den Verlauf.
+7. Tab **`Personalisierung`**: optional **Erinnerungs-Vorschläge vertagen** ansehen.
 
-Wenn kein Vorschlag erscheint:
-1. Erstelle noch eine Aufgabe mit Datum und ähnlichem Muster.
-2. Öffne `Heute`.
-3. Öffne `Aufgaben`.
-4. Öffne `Kalender`.
-5. Dann normal weiterarbeiten. Kein Vorschlag ist kein Fehler.
+Wenn kein Banner auffällt:
+1. Öffne **`Anpassungen`** (offene Karten mit farbigem Rand).
+2. Sonst: neue Aufgabe mit Datum, `Heute`, `Aufgaben`, `Kalender`, Phase 2A kurz wiederholen.
+3. Dann normal weiterarbeiten. Kein Vorschlag ist kein Fehler.
 
 ## Abschluss
 Sag der Studienleitung: `Ich bin fertig.`

@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
-import { setStudyCookies } from "@/lib/auth/study-session";
-import { getStudyCookies } from "@/lib/auth/study-session";
+import { getStudyCookies, setStudyCookies } from "@/lib/auth/study-session";
 import { requireUserId } from "@/lib/auth/require-user";
 import { clampInterventionLevel } from "@/lib/settings/intervention-levels";
 import { StartStudySessionSchema, UpdateStudySessionSchema } from "@/lib/validation/study";
-import { isHttpError } from "@/lib/http/errors";
+import { HttpError, isHttpError } from "@/lib/http/errors";
+import { seedGuestAdaptiveShowcase } from "@/lib/demo/guest-adaptive-showcase-seed";
+import { allocateGuestPseudonym, isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
 function makeSessionCode(pseudonym: string) {
   const now = new Date();
@@ -30,14 +31,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const pseudonym = parsed.data.pseudonym;
     const variant = parsed.data.variant;
+    const isGuest = "guest" in parsed.data && parsed.data.guest === true;
+    const namedPseudonym = "pseudonym" in parsed.data ? parsed.data.pseudonym : null;
 
     const { user, session } = await prisma.$transaction(async (tx) => {
+      const pseudonym = isGuest
+        ? await allocateGuestPseudonym(tx)
+        : namedPseudonym!;
+      if (isGuest && !pseudonym) {
+        throw new HttpError(
+          409,
+          "Beide Gast-Codes (G01, G02) sind bereits angelegt. Bitte einen eigenen User-Code nutzen oder einen Admin die Demo-/Gast-Konten zurücksetzen lassen.",
+        );
+      }
+      const resolvedPseudonym = pseudonym!;
+
       const u = await tx.user.upsert({
-        where: { pseudonym },
+        where: { pseudonym: resolvedPseudonym },
         update: {},
-        create: { pseudonym, studyModeEnabled: true },
+        create: { pseudonym: resolvedPseudonym, studyModeEnabled: true },
         select: { id: true, pseudonym: true, studyModeEnabled: true, createdAt: true },
       });
 
@@ -65,11 +78,15 @@ export async function POST(req: Request) {
       const s = await tx.studySession.create({
         data: {
           userId: u.id,
-          sessionCode: makeSessionCode(pseudonym),
+          sessionCode: makeSessionCode(resolvedPseudonym),
           variant,
         },
         select: { id: true, sessionCode: true, startedAt: true, variant: true },
       });
+
+      if (isGuest && variant === "adaptive") {
+        await seedGuestAdaptiveShowcase(tx, { userId: u.id, studySessionId: s.id });
+      }
 
       return { user: u, session: s };
     });
@@ -78,6 +95,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ user, session });
   } catch (e: unknown) {
+    if (isHttpError(e) && e.status === 409)
+      return NextResponse.json({ error: "guest_slots_full", message: e.message }, { status: 409 });
     if (isHttpError(e) && e.status === 401)
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     if (isDbUnavailableError(e)) {
@@ -145,9 +164,22 @@ export async function PATCH(req: Request) {
       });
     });
 
+    if (variant === "adaptive") {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { pseudonym: true } });
+      if (isGuestStudyPseudonym(u?.pseudonym)) {
+        const taskCount = await prisma.task.count({ where: { userId, studySessionId: sessionId } });
+        if (taskCount === 0) {
+          await prisma.$transaction((tx) =>
+            seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId }),
+          );
+        }
+      }
+    }
+
     await prisma.taskInteraction.create({
       data: {
         userId,
+        studySessionId: sessionId,
         type: "session_variant_updated",
         metadata: { variant, sessionId } as Prisma.InputJsonValue,
       },

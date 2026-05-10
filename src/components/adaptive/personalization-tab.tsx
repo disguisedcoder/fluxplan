@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdaptiveRule } from "./types";
 import type { Preferences } from "./suggestions-screen";
+import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 import { InterventionLevelSlider } from "@/components/settings/intervention-level-slider";
 import {
   INTERVENTION_LEVELS,
@@ -146,7 +147,9 @@ export function PersonalizationTab({
           </CardContent>
         </Card>
 
-        <ReminderSnoozePrefsCard preferences={preferences} onChanged={onChanged} />
+        <div id="fp-reminder-snooze" className="scroll-mt-24">
+          <ReminderSnoozePrefsCard preferences={preferences} onChanged={onChanged} />
+        </div>
 
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">
@@ -206,7 +209,10 @@ export function PersonalizationTab({
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li>· Keine adaptive Änderung passiert ohne sichtbare Aktion.</li>
               <li>· Jede Regel kann einzeln deaktiviert werden.</li>
-              <li>· Jede Annahme bleibt rückgängig machbar.</li>
+              <li>
+                · Jede Annahme bleibt rückgängig machbar — der Vorschlag erscheint danach wieder unter „Aktive
+                Vorschläge“.
+              </li>
             </ul>
           </CardContent>
         </Card>
@@ -255,6 +261,26 @@ function ReminderSnoozePrefsCard({
     }
   }
 
+  async function clearVertagen() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: REMINDER_SNOOZE_UNTIL_PREF_KEY, value: null }),
+      });
+      if (!res.ok) {
+        toast.error("Konnte Vertagen nicht zurücksetzen.");
+        return;
+      }
+      toast.success("Vertagen beendet.");
+      notifyFluxplanPreferencesChanged();
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const untilLabel =
     until && until.getTime() > Date.now()
       ? until.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
@@ -266,8 +292,12 @@ function ReminderSnoozePrefsCard({
         <div>
           <h3 className="text-sm font-semibold tracking-tight">Erinnerungs-Vorschläge vertagen</h3>
           <p className="text-xs text-muted-foreground">
-            Wenn du bei einem Erinnerungs-Vorschlag „Nicht jetzt“ wählst, fragt FluxPlan erst wieder nach Ablauf
-            dieser Frist.
+            Wenn du bei einem <span className="font-medium text-foreground">offenen</span> Erinnerungs-Vorschlag „Nicht
+            jetzt“ wählst, wird diese Frist hier gespeichert. Änderst du die Tage, während Vertagen aktiv ist, wird das
+            früheste Datum <span className="font-medium text-foreground">ab heute</span> mit der neuen Anzahl neu
+            berechnet. Nach „Annehmen“ eines Vorschlags wird Vertagen zurückgesetzt; nach „Rückgängig“ ebenfalls. Die
+            Werte unten aktualisieren sich, sobald du wieder auf Anpassungen/Personalisierung wechselst oder eine Aktion
+            ausführst.
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
@@ -291,10 +321,24 @@ function ReminderSnoozePrefsCard({
           </Button>
         </div>
         {untilLabel ? (
-          <p className="text-xs text-muted-foreground">
-            Aktuell aktiv: nächste Erinnerungs-Vorschläge frühestens ab{" "}
-            <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Aktuell aktiv: nächste Erinnerungs-Vorschläge frühestens ab{" "}
+              <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => void clearVertagen()}
+            >
+              Vertagen beenden
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Dann können Erinnerungs-Vorschläge wieder wie gewohnt erscheinen (sobald die Regel passt).
+            </p>
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground">Kein Vertagen aktiv — Vorschläge können wieder erscheinen.</p>
         )}

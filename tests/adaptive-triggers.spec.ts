@@ -30,8 +30,28 @@ test("@adaptive suggestion lifecycle (snooze -> re-trigger -> accept -> undo)", 
   expect(accepted.suggestion.status).toBe("accepted");
 
   const undone = await respondSuggestion(api, after.id, "undo");
-  expect(undone.suggestion.status).toBe("undone");
+  expect(undone.suggestion.status).toBe("pending");
 
   await api.dispose();
+});
+
+test("@adaptive snoozed suggestion can be reopened with undo (pending again)", async ({ page, baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
+  try {
+    await evaluateAdaptive(api, "/heute");
+    const first = await expectEventuallyToBeTruthy(async () => {
+      const pending = await listSuggestions(api, "pending");
+      return pending.suggestions[0] ?? null;
+    }, { timeoutMs: 30_000, intervalMs: 1_000, message: "waiting for pending suggestion" });
+
+    const snoozed = await respondSuggestion(api, first.id, "snooze");
+    expect(snoozed.suggestion.status).toBe("snoozed");
+
+    const reopened = await respondSuggestion(api, first.id, "undo");
+    expect(reopened.suggestion.status).toBe("pending");
+  } finally {
+    await api.dispose();
+  }
 });
 

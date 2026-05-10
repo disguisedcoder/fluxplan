@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
+import { getStudyCookies } from "@/lib/auth/study-session";
 import { UpdateTaskSchema } from "@/lib/validation/tasks";
 import { isHttpError } from "@/lib/http/errors";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const { id } = await ctx.params;
 
     const body = await req.json().catch(() => null);
@@ -58,6 +60,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     await prisma.taskInteraction.create({
       data: {
         userId,
+        studySessionId: sessionId ?? null,
         taskId: task.id,
         type: interactionType,
         metadata: { from: { status: existing.status }, to: { status: task.status } },
@@ -75,6 +78,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const userId = await requireUserId();
+    const { sessionId } = await getStudyCookies();
     const { id } = await ctx.params;
 
     const existing = await prisma.task.findFirst({ where: { id, userId } });
@@ -84,6 +88,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     await prisma.taskInteraction.create({
       data: {
         userId,
+        studySessionId: sessionId ?? null,
         taskId: null,
         type: "task_deleted",
         metadata: {

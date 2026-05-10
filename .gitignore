@@ -43,3 +43,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# von PDF-Build aus Mermaid gerendert (bei Bedarf löschen oder committen)
+/docs/assets/diagrams/.mermaid-cache/
+**/.pdf-build-*.md

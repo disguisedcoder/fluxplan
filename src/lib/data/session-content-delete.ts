@@ -1,0 +1,59 @@
+import type { Prisma } from "@prisma/client";
+
+import {
+  deleteAdaptiveOutcomePreferences,
+  type DeleteAdaptiveOutcomeOptions,
+} from "@/lib/data/adaptive-outcome-preferences";
+
+export type SessionContentDeleteOptions = {
+  /** G01/G02: `adaptive.interventionLevel` nach Session-Reset nicht löschen (Workshop-Showcase). */
+  preserveGuestWorkshopInterventionLevel?: boolean;
+};
+
+/** Löscht nur Inhalte, die zur angegebenen StudySession gehören (nicht andere Sessions desselben Users). */
+export async function deleteContentForStudySession(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  studySessionId: string,
+  opts?: SessionContentDeleteOptions,
+) {
+  const prefOpts: DeleteAdaptiveOutcomeOptions | undefined =
+    opts?.preserveGuestWorkshopInterventionLevel ? { preserveInterventionLevel: true } : undefined;
+
+  const tasks = await tx.task.deleteMany({ where: { userId, studySessionId } });
+  const interactions = await tx.taskInteraction.deleteMany({
+    where: { userId, studySessionId },
+  });
+  const suggestions = await tx.adaptiveSuggestion.deleteMany({
+    where: { userId, studySessionId },
+  });
+  const eventLogs = await tx.eventLog.deleteMany({
+    where: { userId, sessionId: studySessionId },
+  });
+  const preferences = await deleteAdaptiveOutcomePreferences(tx, userId, prefOpts);
+  return {
+    tasks: tasks.count,
+    interactions: interactions.count,
+    suggestions: suggestions.count,
+    preferences,
+    eventLogs: eventLogs.count,
+  };
+}
+
+/**
+ * Alles App-Daten für den User (alle Sessions) — Fallback ohne aktive Session-Cookies.
+ * `EventLog` bleibt wie bisher unangetastet (Export/Studienauswertung).
+ */
+export async function deleteAllContentForUser(tx: Prisma.TransactionClient, userId: string) {
+  const tasks = await tx.task.deleteMany({ where: { userId } });
+  const interactions = await tx.taskInteraction.deleteMany({ where: { userId } });
+  const suggestions = await tx.adaptiveSuggestion.deleteMany({ where: { userId } });
+  const preferences = await tx.userPreference.deleteMany({ where: { userId } });
+  return {
+    tasks: tasks.count,
+    interactions: interactions.count,
+    suggestions: suggestions.count,
+    preferences: preferences.count,
+    eventLogs: 0,
+  };
+}

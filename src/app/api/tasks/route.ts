@@ -65,6 +65,7 @@ export async function POST(req: Request) {
     const task = await prisma.task.create({
       data: {
         userId,
+        studySessionId: sessionId ?? null,
         title: parsed.data.title,
         description: parsed.data.description ?? null,
         priority: parsed.data.priority ?? undefined,
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
     await prisma.taskInteraction.create({
       data: {
         userId,
+        studySessionId: sessionId ?? null,
         taskId: task.id,
         type: "task_created",
         metadata: { priority: task.priority, dueDate: task.dueDate },
@@ -95,7 +97,12 @@ export async function POST(req: Request) {
       },
     });
 
-    await runAdaptiveEngine({ userId, screen: "task_created", taskId: task.id });
+    await runAdaptiveEngine({
+      userId,
+      studySessionId: sessionId ?? null,
+      screen: "task_created",
+      taskId: task.id,
+    });
 
     return NextResponse.json({ task }, { status: 201 });
   } catch (e: unknown) {

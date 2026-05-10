@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { Check, Clock, HelpCircle, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { AdaptiveSuggestion } from "./types";
 import { labelForStartHref, normalizeStartViewHref } from "@/lib/settings/start-view";
 import {
@@ -18,6 +20,14 @@ import {
   suggestionStraplineClass,
 } from "./suggestion-visuals";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
+import { reportSuggestionRespondFailure } from "@/lib/ui/suggestion-respond-errors";
+import {
+  readReminderSnoozeDaysPref,
+  readReminderSuggestionSnoozeUntil,
+  REMINDER_SNOOZE_DAYS_PREF_KEY,
+  REMINDER_SNOOZE_UNTIL_PREF_KEY,
+} from "@/lib/settings/reminder-snooze";
+import type { Preferences } from "./suggestions-screen";
 
 const RULE_LABELS: Record<string, string> = {
   view_preference: "Startansicht",
@@ -33,16 +43,75 @@ function ruleLabelFor(ruleKey: string) {
   return RULE_LABELS[ruleKey] ?? "Vorschlag";
 }
 
+function formatReminderSnoozeDateDe(d: Date) {
+  return d.toLocaleDateString("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function ReminderSnoozeCallout({
+  preferences,
+  personalizationReminderHref,
+}: {
+  preferences: Preferences;
+  personalizationReminderHref: string;
+}) {
+  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
+  const days = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
+  if (!until) return null;
+  // eslint-disable-next-line react-hooks/purity -- „Vertagen aktiv“ hängt von der aktuellen Uhrzeit ab
+  const active = until.getTime() > Date.now();
+  if (!active) return null;
+  const label = formatReminderSnoozeDateDe(until);
+  return (
+    <Card
+      className="fp-card-soft border-amber-500/30 bg-amber-500/[0.07]"
+      data-testid="fp-reminder-snooze-callout"
+    >
+      <CardContent className="space-y-2 p-4 text-sm">
+        <div className="font-medium text-foreground">Erinnerungs-Vorschläge vertagt („Nicht jetzt“)</div>
+        <p className="text-xs text-muted-foreground">
+          Neue Erinnerungs-Vorschläge frühestens wieder ab{" "}
+          <span className="font-medium text-foreground">{label}</span> (lokaler Kalendertag, Tagesbeginn).
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Aktuell eingestellt: <span className="font-medium text-foreground">{days}</span> Kalendertage pro „Nicht
+          jetzt“.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Wartezeit ändern</span> oder{" "}
+          <span className="font-medium text-foreground">Vertagen beenden</span>: Tab{" "}
+          <Link
+            href={personalizationReminderHref}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            prefetch={false}
+          >
+            Personalisierung
+          </Link>{" "}
+          → Karte „Erinnerungs-Vorschläge vertagen“ (oder unten beim vertagten Vorschlag im Detail).
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AdaptationsTab({
   suggestions,
   loading,
   onChanged,
   stats,
+  preferences,
+  personalizationReminderHref,
 }: {
   suggestions: AdaptiveSuggestion[];
   loading: boolean;
   onChanged: () => void;
   stats: { total: number; accepted: number; rejected: number; snoozed: number; pending: number };
+  preferences: Preferences;
+  personalizationReminderHref: string;
 }) {
   const pending = useMemo(() => suggestions.filter((s) => s.status === "pending"), [suggestions]);
   const history = useMemo(
@@ -73,6 +142,10 @@ export function AdaptationsTab({
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
       <div className="space-y-3">
+        <ReminderSnoozeCallout
+          preferences={preferences}
+          personalizationReminderHref={personalizationReminderHref}
+        />
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">
             <div className="flex items-baseline justify-between">
@@ -128,7 +201,16 @@ export function AdaptationsTab({
         </Card>
       </div>
 
-      <DetailPanel suggestion={active} onChanged={onChanged} />
+      <DetailPanel
+        suggestion={active}
+        preferences={preferences}
+        personalizationReminderHref={personalizationReminderHref}
+        onSuggestionAction={() => {
+          setActiveId(null);
+          onChanged();
+        }}
+        reloadSuggestions={onChanged}
+      />
     </div>
   );
 }
@@ -187,12 +269,149 @@ function SuggestionRow({
   );
 }
 
+function SnoozedReminderDetailPanel({
+  preferences,
+  personalizationReminderHref,
+  reloadSuggestions,
+}: {
+  preferences: Preferences;
+  personalizationReminderHref: string;
+  reloadSuggestions: () => void;
+}) {
+  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
+  const daysPref = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
+  const [draft, setDraft] = useState(String(daysPref));
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setDraft(String(readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY])));
+  }, [preferences]);
+
+  async function saveDays() {
+    const n = Math.min(30, Math.max(1, Math.round(Number(draft))));
+    if (!Number.isFinite(n)) {
+      toast.error("Bitte eine Zahl zwischen 1 und 30 eingeben.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: REMINDER_SNOOZE_DAYS_PREF_KEY, value: n }),
+      });
+      if (!res.ok) {
+        toast.error("Konnte Einstellung nicht speichern.");
+        return;
+      }
+      toast.success("Tage gespeichert.", {
+        description:
+          "Wenn Vertagen aktiv war, wurde das früheste Datum ab heute mit der neuen Tageszahl neu gesetzt.",
+      });
+      notifyFluxplanPreferencesChanged();
+      reloadSuggestions();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearVertagen() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: REMINDER_SNOOZE_UNTIL_PREF_KEY, value: null }),
+      });
+      if (!res.ok) {
+        toast.error("Konnte Vertagen nicht beenden.");
+        return;
+      }
+      toast.success("Vertagen beendet.");
+      notifyFluxplanPreferencesChanged();
+      reloadSuggestions();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/purity
+  const untilActive = until && until.getTime() > Date.now();
+  const untilLabel = until ? formatReminderSnoozeDateDe(until) : null;
+
+  return (
+    <section
+      className="space-y-3 rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4"
+      data-testid="fp-snoozed-reminder-detail"
+    >
+      <div className="text-xs font-medium uppercase tracking-wider text-amber-900/90 dark:text-amber-100/90">
+        Vertagen (Erinnerungs-Vorschläge)
+      </div>
+      {untilActive && untilLabel ? (
+        <p className="text-sm text-muted-foreground">
+          Nächste Erinnerungs-Vorschläge frühestens wieder ab{" "}
+          <span className="font-medium text-foreground">{untilLabel}</span> (lokaler Kalendertag, Tagesbeginn).
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Kein aktives Vertagen-Datum in den Einstellungen — du kannst trotzdem die Standard-Tageszahl für künftige
+          „Nicht jetzt“-Klicks anpassen.
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Standard nach jedem „Nicht jetzt“: <span className="font-medium text-foreground">{daysPref}</span>{" "}
+        Kalendertage (ab heute gezählt bis zum frühesten Tag neuer Vorschläge).
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="grid gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground" htmlFor="fp-snooze-days-inline">
+            Tage bis zum nächsten Vorschlag
+          </label>
+          <Input
+            id="fp-snooze-days-inline"
+            type="number"
+            min={1}
+            max={30}
+            className="w-24"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            disabled={busy}
+          />
+        </div>
+        <Button type="button" variant="secondary" size="sm" onClick={() => void saveDays()} disabled={busy}>
+          Speichern
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => void clearVertagen()} disabled={busy}>
+          Vertagen beenden
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Alle Texte und Optionen auch unter{" "}
+        <Link
+          href={personalizationReminderHref}
+          className="font-medium text-primary underline-offset-4 hover:underline"
+          prefetch={false}
+        >
+          Personalisierung → Erinnerungs-Vorschläge vertagen
+        </Link>
+        .
+      </p>
+    </section>
+  );
+}
+
 function DetailPanel({
   suggestion,
-  onChanged,
+  preferences,
+  personalizationReminderHref,
+  onSuggestionAction,
+  reloadSuggestions,
 }: {
   suggestion: AdaptiveSuggestion | null;
-  onChanged: () => void;
+  preferences: Preferences;
+  personalizationReminderHref: string;
+  onSuggestionAction: () => void;
+  reloadSuggestions: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -216,10 +435,14 @@ function DetailPanel({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      if (!res.ok) {
-        toast.error("Aktion fehlgeschlagen.");
-        return;
-      }
+      if (await reportSuggestionRespondFailure(res)) return;
+      const body = (await res.json()) as { reminderSnooze?: { until: string; days: number } };
+      const snoozeDesc =
+        action === "snooze" && suggestion!.ruleKey === "reminder_preference" && body.reminderSnooze
+          ? `Frühestens wieder ab ${formatReminderSnoozeDateDe(new Date(body.reminderSnooze.until))} (${body.reminderSnooze.days} Kalendertage). Details siehst du direkt unter diesem Vorschlag.`
+          : action === "snooze" && suggestion!.ruleKey === "reminder_preference"
+            ? "Frist und Tage: oberer Hinweis auf dieser Seite oder Tab „Personalisierung“ → „Erinnerungs-Vorschläge vertagen“."
+            : undefined;
       toast.success(
         action === "accept"
           ? "Vorschlag angenommen."
@@ -227,9 +450,11 @@ function DetailPanel({
             ? "Vorschlag abgelehnt."
             : action === "snooze"
               ? "Vertagt."
-              : "Rückgängig.",
+              : "Änderung rückgängig — Vorschlag wieder offen.",
+        snoozeDesc ? { description: snoozeDesc } : undefined,
       );
-      onChanged();
+      onSuggestionAction();
+      notifyFluxplanPreferencesChanged();
       if (action === "accept" && suggestion!.type === "start_view") {
         const p =
           suggestion!.payload && typeof suggestion!.payload === "object"
@@ -238,12 +463,6 @@ function DetailPanel({
         const raw = typeof p.suggestedStartView === "string" ? p.suggestedStartView : "/heute";
         router.push(normalizeStartViewHref(raw));
         router.refresh();
-      }
-      if (
-        (action === "accept" || action === "undo") &&
-        (suggestion!.type === "daily_focus" || suggestion!.ruleKey === "daily_focus")
-      ) {
-        notifyFluxplanPreferencesChanged();
       }
     } finally {
       setBusy(false);
@@ -265,6 +484,11 @@ function DetailPanel({
   }
 
   const isPending = suggestion.status === "pending";
+  const canReopenSuggestion =
+    suggestion.status === "accepted" ||
+    suggestion.status === "snoozed" ||
+    suggestion.status === "rejected" ||
+    suggestion.status === "undone";
   const meta = getSuggestionVisualMeta(suggestion.ruleKey);
   const HeaderIcon = meta.Icon;
 
@@ -343,6 +567,14 @@ function DetailPanel({
           <PayloadPreview payload={suggestion.payload} type={suggestion.type} />
         </section>
 
+        {suggestion.ruleKey === "reminder_preference" && suggestion.status === "snoozed" ? (
+          <SnoozedReminderDetailPanel
+            preferences={preferences}
+            personalizationReminderHref={personalizationReminderHref}
+            reloadSuggestions={reloadSuggestions}
+          />
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
           {isPending ? (
             <>
@@ -359,15 +591,31 @@ function DetailPanel({
                 Ablehnen
               </Button>
             </>
-          ) : suggestion.status === "accepted" ? (
-            <Button variant="outline" onClick={() => respond("undo")} disabled={busy}>
-              <Undo2 className="h-4 w-4" />
-              Rückgängig
-            </Button>
+          ) : canReopenSuggestion ? (
+            <div className="w-full space-y-2">
+              <Button variant="outline" onClick={() => respond("undo")} disabled={busy}>
+                <Undo2 className="h-4 w-4" />
+                {suggestion.status === "accepted" ? "Rückgängig" : "Wieder öffnen"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {suggestion.status === "accepted" ? (
+                  <>
+                    Setzt die <span className="font-medium text-foreground">Annahme</span> zurück (inkl. gespeicherter
+                    Einstellungen, falls welche gesetzt wurden) und zeigt den Vorschlag wieder unter{" "}
+                    <span className="font-medium text-foreground">Aktive Vorschläge</span>.
+                  </>
+                ) : (
+                  <>
+                    Hebt <span className="font-medium text-foreground">Vertagen</span> oder{" "}
+                    <span className="font-medium text-foreground">Ablehnen</span> auf — der Vorschlag erscheint wieder
+                    unter <span className="font-medium text-foreground">Aktive Vorschläge</span>, damit du neu
+                    entscheiden kannst (inkl. Erinnerungs-Vertagen in der Personalisierung, falls zutreffend).
+                  </>
+                )}
+              </p>
+            </div>
           ) : (
-            <span className="text-xs text-muted-foreground">
-              Diese Entscheidung ist abgeschlossen.
-            </span>
+            <p className="text-xs text-muted-foreground">Dieser Status wird nicht mehr unterstützt.</p>
           )}
         </div>
       </CardContent>
@@ -392,8 +640,16 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
         <p>Für diese Aufgabe wird eine Erinnerung eingetragen. Du kannst sie jederzeit ändern oder entfernen.</p>
         <p className="text-xs text-muted-foreground">
-          „Nicht jetzt“ vertagt neue Erinnerungs-Vorschläge um die unter Personalisierung eingestellte Anzahl
-          Tage (Standard 3).
+          <span className="font-medium text-foreground">Annehmen</span> löscht ein laufendes Vertagen (du hast die
+          Erinnerung ja übernommen). <span className="font-medium text-foreground">Rückgängig</span> entfernt die
+          Erinnerung wieder und räumt Vertagen auf — ein neuer Vorschlag kann danach erscheinen.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Nicht jetzt</span> gilt nur für diesen{" "}
+          <span className="font-medium text-foreground">offenen</span> Vorschlag und speichert Frist und Tageszahl.
+          Nach Vertagen: im <span className="font-medium text-foreground">Verlauf</span> den Eintrag wählen — dort
+          erscheinen <span className="font-medium text-foreground">Datum, Tage und Buttons</span> zum Anpassen;
+          gleiches gilt unter <span className="font-medium text-foreground">Personalisierung</span>.
         </p>
       </div>
     );
@@ -401,9 +657,9 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
   if (type === "daily_focus") {
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Es werden keine Aufgaben geändert. In der To-Do-Liste auf „Heute“ werden überfällige und heute fällige
-        Einträge danach rot hervorgehoben; ohne Annahme bleiben dieselben Einträge sichtbar, aber ohne rote
-        Kennzeichnung.
+        Es werden keine Aufgaben geändert. Ohne Annahme blendet die To-Do-Liste auf „Heute“ überfällige Aufgaben aus
+        (nur heute und später); nach Annahme erscheinen Überfällige dort und werden zusammen mit heute fälligen Zeilen
+        rot hervorgehoben.
       </div>
     );
   }
@@ -418,19 +674,34 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
   }
   if (type === "task_form_optional_unfold") {
     return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Beim Annehmen wird die Einstellung <span className="font-medium text-foreground">Zusatzfelder eingeklappt</span>{" "}
-        zurückgenommen — der Bereich ist beim Anlegen wieder standardmäßig offen.
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
+        <p>
+          Beim <span className="font-medium text-foreground">Annehmen</span> wird die Einstellung{" "}
+          <span className="font-medium text-foreground">Zusatzfelder eingeklappt</span> zurückgenommen — der Bereich
+          ist beim Anlegen wieder standardmäßig offen.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Nicht jetzt</span> und{" "}
+          <span className="font-medium text-foreground">Ablehnen</span> wirken wie bei anderen adaptiven Vorschlägen;
+          nach Annahme kannst du im Verlauf <span className="font-medium text-foreground">Rückgängig</span> wählen.
+        </p>
       </div>
     );
   }
   if (type === "task_form_optional_fold") {
     return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Beim Annehmen wird die Einstellung{" "}
-        <span className="font-medium text-foreground">Zusatzfelder eingeklappt</span> gespeichert.
-        Unter <span className="font-medium text-foreground">Einstellungen</span> kannst du das jederzeit
-        wieder ändern; bestehende Aufgaben werden nicht angepasst.
+      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
+        <p>
+          Beim <span className="font-medium text-foreground">Annehmen</span> wird{" "}
+          <span className="font-medium text-foreground">Zusatzfelder eingeklappt</span> gespeichert — beim Anlegen
+          siehst du zuerst nur die Kernfelder; <span className="font-medium text-foreground">Weitere Felder</span>{" "}
+          blendet den Bereich jederzeit wieder ein.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Nicht jetzt</span> vertagt den Vorschlag (wie bei anderen
+          Regeln), <span className="font-medium text-foreground">Ablehnen</span> lehnt ab. Bestehende Aufgaben werden
+          nicht geändert.
+        </p>
       </div>
     );
   }

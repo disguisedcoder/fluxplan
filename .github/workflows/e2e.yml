@@ -34,11 +34,32 @@ jobs:
 
       - name: Start services and run E2E (e2e service in compose)
         run: |
+          set -euo pipefail
           docker compose up -d --build
           E2E_ID=$(docker compose ps -q e2e | head -n 1)
           if [ -z "$E2E_ID" ]; then echo "e2e container not found"; exit 1; fi
+          # `docker wait` kann je nach Docker-Version mit dem Container-Exit-Code enden — ohne set +e bricht
+          # der Schritt ab, bevor wir Logs schreiben.
+          set +e
           docker wait "$E2E_ID"
-          exit $(docker inspect "$E2E_ID" --format='{{.State.ExitCode}}')
+          set -e
+          CODE=$(docker inspect "$E2E_ID" --format='{{.State.ExitCode}}')
+          if [ "$CODE" != "0" ]; then
+            echo "E2E container exited with code ${CODE}"
+            echo "::group::docker compose ps -a"
+            docker compose ps -a
+            echo "::endgroup::"
+            echo "::group::docker compose logs e2e"
+            docker compose logs --no-color --tail=800 e2e
+            echo "::endgroup::"
+            echo "::group::docker compose logs app"
+            docker compose logs --no-color --tail=800 app
+            echo "::endgroup::"
+            echo "::group::docker compose logs db"
+            docker compose logs --no-color --tail=300 db
+            echo "::endgroup::"
+          fi
+          exit "$CODE"
 
       - name: Upload Playwright report
         if: always()

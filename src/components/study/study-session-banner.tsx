@@ -35,7 +35,7 @@ export function StudySessionBanner() {
           <div className="text-muted-foreground">
             {me?.user ? (
               <>
-                Pseudonym: <span className="font-medium text-foreground">{me.user.pseudonym}</span>
+                User: <span className="font-medium text-foreground">{me.user.pseudonym}</span>
                 {me.session ? (
                   <>
                     {" "}
