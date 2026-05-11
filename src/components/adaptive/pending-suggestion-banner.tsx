@@ -34,7 +34,7 @@ export function PendingAdaptiveSuggestionBanner({
   pathname: string;
   me: Me | null;
 }) {
-  const [suggestion, setSuggestion] = useState<AdaptiveSuggestion | null>(null);
+  const [storedSuggestion, setStoredSuggestion] = useState<AdaptiveSuggestion | null>(null);
 
   const isBaseline = me?.session?.variant === "baseline";
   const hideOnPath =
@@ -43,10 +43,12 @@ export function PendingAdaptiveSuggestionBanner({
     !me?.user ||
     isBaseline;
 
+  const suggestion = hideOnPath ? null : storedSuggestion;
+
   const loadPendingSuggestion = useCallback(async () => {
     const res = await studyApiFetch("/api/suggestions?status=pending", { cache: "no-store" });
     if (!res.ok) {
-      setSuggestion(null);
+      setStoredSuggestion(null);
       return;
     }
     const data = await res.json();
@@ -57,12 +59,11 @@ export function PendingAdaptiveSuggestionBanner({
         s.ruleKey === "view_preference" ||
         s.type === "start_view",
     );
-    setSuggestion(preferred ?? suggestions[0] ?? null);
+    setStoredSuggestion(preferred ?? suggestions[0] ?? null);
   }, []);
 
   useEffect(() => {
     if (hideOnPath) {
-      setSuggestion(null);
       return;
     }
     let cancelled = false;

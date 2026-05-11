@@ -92,8 +92,10 @@ export function TasksScreen() {
   /** Nach async: nur anwenden, wenn Filter noch dieselben sind (sonst verworfene/stale Requests). */
   const queryStringRef = useRef(queryString);
   const statusRef = useRef(status);
-  queryStringRef.current = queryString;
-  statusRef.current = status;
+  useEffect(() => {
+    queryStringRef.current = queryString;
+    statusRef.current = status;
+  }, [queryString, status]);
 
   async function load(signal?: AbortSignal) {
     const qsSnapshot = queryString;
@@ -148,7 +150,9 @@ export function TasksScreen() {
 
   useEffect(() => {
     const ac = new AbortController();
-    void load(ac.signal);
+    queueMicrotask(() => {
+      void load(ac.signal);
+    });
     return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryString]);

@@ -58,7 +58,9 @@ export function TodayDashboard() {
   useEffect(() => {
     const ac = new AbortController();
     const { signal } = ac;
-    void load(signal);
+    queueMicrotask(() => {
+      void load(signal);
+    });
     studyApiFetch("/api/me", { cache: "no-store", signal })
       .then((r) => r.json())
       .then((me: { session?: { variant?: string | null } | null }) => {
@@ -531,11 +533,10 @@ function WeekGlanceCard({
 }
 
 function SystemStatusCard({ isBaseline }: { isBaseline: boolean }) {
-  const [hasSuggestion, setHasSuggestion] = useState(false);
+  const [pendingSuggestionCount, setPendingSuggestionCount] = useState(0);
 
   useEffect(() => {
     if (isBaseline) {
-      setHasSuggestion(false);
       return;
     }
     let cancelled = false;
@@ -543,13 +544,15 @@ function SystemStatusCard({ isBaseline }: { isBaseline: boolean }) {
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { suggestions?: unknown[] } | null) => {
         if (cancelled || !data?.suggestions) return;
-        setHasSuggestion(data.suggestions.length > 0);
+        setPendingSuggestionCount(data.suggestions.length);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [isBaseline]);
+
+  const hasSuggestion = !isBaseline && pendingSuggestionCount > 0;
 
   const STATUS = [
     {

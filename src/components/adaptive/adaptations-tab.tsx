@@ -270,23 +270,33 @@ function SuggestionRow({
   );
 }
 
-function SnoozedReminderDetailPanel({
-  preferences,
+function SnoozedReminderUntilCopy({ until }: { until: Date }) {
+  const [untilActive] = useState(() => until.getTime() > Date.now());
+  const untilLabel = formatReminderSnoozeDateDe(until);
+  return untilActive ? (
+    <p className="text-sm text-muted-foreground">
+      Nächste Erinnerungs-Vorschläge frühestens wieder ab{" "}
+      <span className="font-medium text-foreground">{untilLabel}</span> (lokaler Kalendertag, Tagesbeginn).
+    </p>
+  ) : (
+    <p className="text-sm text-muted-foreground">
+      Kein aktives Vertagen-Datum in den Einstellungen — du kannst trotzdem die Standard-Tageszahl für künftige
+      „Nicht jetzt“-Klicks anpassen.
+    </p>
+  );
+}
+
+function SnoozedReminderDetailFields({
+  daysPrefKey,
   personalizationReminderHref,
   reloadSuggestions,
 }: {
-  preferences: Preferences;
+  daysPrefKey: number;
   personalizationReminderHref: string;
   reloadSuggestions: () => void;
 }) {
-  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
-  const daysPref = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
-  const [draft, setDraft] = useState(String(daysPref));
+  const [draft, setDraft] = useState(() => String(daysPrefKey));
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    setDraft(String(readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY])));
-  }, [preferences]);
 
   async function saveDays() {
     const n = Math.min(30, Math.max(1, Math.round(Number(draft))));
@@ -336,31 +346,10 @@ function SnoozedReminderDetailPanel({
     }
   }
 
-  // eslint-disable-next-line react-hooks/purity
-  const untilActive = until && until.getTime() > Date.now();
-  const untilLabel = until ? formatReminderSnoozeDateDe(until) : null;
-
   return (
-    <section
-      className="space-y-3 rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4"
-      data-testid="fp-snoozed-reminder-detail"
-    >
-      <div className="text-xs font-medium uppercase tracking-wider text-amber-900/90 dark:text-amber-100/90">
-        Vertagen (Erinnerungs-Vorschläge)
-      </div>
-      {untilActive && untilLabel ? (
-        <p className="text-sm text-muted-foreground">
-          Nächste Erinnerungs-Vorschläge frühestens wieder ab{" "}
-          <span className="font-medium text-foreground">{untilLabel}</span> (lokaler Kalendertag, Tagesbeginn).
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Kein aktives Vertagen-Datum in den Einstellungen — du kannst trotzdem die Standard-Tageszahl für künftige
-          „Nicht jetzt“-Klicks anpassen.
-        </p>
-      )}
+    <>
       <p className="text-xs text-muted-foreground">
-        Standard nach jedem „Nicht jetzt“: <span className="font-medium text-foreground">{daysPref}</span>{" "}
+        Standard nach jedem „Nicht jetzt“: <span className="font-medium text-foreground">{daysPrefKey}</span>{" "}
         Kalendertage (ab heute gezählt bis zum frühesten Tag neuer Vorschläge).
       </p>
       <div className="flex flex-wrap items-end gap-2">
@@ -397,6 +386,44 @@ function SnoozedReminderDetailPanel({
         </Link>
         .
       </p>
+    </>
+  );
+}
+
+function SnoozedReminderDetailPanel({
+  preferences,
+  personalizationReminderHref,
+  reloadSuggestions,
+}: {
+  preferences: Preferences;
+  personalizationReminderHref: string;
+  reloadSuggestions: () => void;
+}) {
+  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
+  const daysPref = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
+
+  return (
+    <section
+      className="space-y-3 rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4"
+      data-testid="fp-snoozed-reminder-detail"
+    >
+      <div className="text-xs font-medium uppercase tracking-wider text-amber-900/90 dark:text-amber-100/90">
+        Vertagen (Erinnerungs-Vorschläge)
+      </div>
+      {until ? (
+        <SnoozedReminderUntilCopy key={until.getTime()} until={until} />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Kein aktives Vertagen-Datum in den Einstellungen — du kannst trotzdem die Standard-Tageszahl für künftige
+          „Nicht jetzt“-Klicks anpassen.
+        </p>
+      )}
+      <SnoozedReminderDetailFields
+        key={daysPref}
+        daysPrefKey={daysPref}
+        personalizationReminderHref={personalizationReminderHref}
+        reloadSuggestions={reloadSuggestions}
+      />
     </section>
   );
 }

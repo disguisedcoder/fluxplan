@@ -1,4 +1,4 @@
-# Volumes (fluxplan_db, e2e_node_modules) bleiben bei `docker compose down` standardmäßig liegen
+# Volumes (fluxplan_db, e2e_node_modules, next_cache) bleiben bei `docker compose down` standardmäßig liegen
 # und fressen Platz. Zum Aufräumen: `npm run docker:down` (= down -v --remove-orphans).
 # DB ist danach leer — beim nächsten `up` laufen Migrate + Seed im App-Container wieder.
 # Nur Container stoppen, Daten behalten: `npm run docker:down:soft`.
@@ -48,6 +48,8 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      # Keep Next/Turbopack lock and cache files off the Windows bind mount.
+      - next_cache:/app/.next
     command: ["node","scripts/docker-start-dev.mjs"]
     healthcheck:
       test:
@@ -104,4 +106,4 @@ services:
 volumes:
   fluxplan_db:
   e2e_node_modules:
-
+  next_cache:

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { PlayCircle } from "lucide-react";
 
@@ -222,21 +222,15 @@ export function PersonalizationTab({
   );
 }
 
-function ReminderSnoozePrefsCard({
-  preferences,
+function ReminderSnoozeDayEditor({
+  daysKey,
   onChanged,
 }: {
-  preferences: Preferences;
+  daysKey: number;
   onChanged: () => void;
 }) {
-  const days = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
-  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
-  const [draft, setDraft] = useState(String(days));
+  const [draft, setDraft] = useState(() => String(daysKey));
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    setDraft(String(readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY])));
-  }, [preferences]);
 
   async function saveDays() {
     const n = Math.min(30, Math.max(1, Math.round(Number(draft))));
@@ -262,6 +256,40 @@ function ReminderSnoozePrefsCard({
     }
   }
 
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="grid gap-1.5">
+        <label className="text-xs font-medium text-muted-foreground" htmlFor="rem-snooze-days">
+          Tage bis zum nächsten Vorschlag
+        </label>
+        <Input
+          id="rem-snooze-days"
+          type="number"
+          min={1}
+          max={30}
+          className="w-24"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          disabled={busy}
+        />
+      </div>
+      <Button type="button" variant="secondary" size="sm" onClick={() => void saveDays()} disabled={busy}>
+        Speichern
+      </Button>
+    </div>
+  );
+}
+
+function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged: () => void }) {
+  const [vertagenNochAktiv] = useState(() => until.getTime() > Date.now());
+  const untilLabel = until.toLocaleDateString("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const [busy, setBusy] = useState(false);
+
   async function clearVertagen() {
     setBusy(true);
     try {
@@ -282,10 +310,37 @@ function ReminderSnoozePrefsCard({
     }
   }
 
-  const untilLabel =
-    until && until.getTime() > Date.now()
-      ? until.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
-      : null;
+  if (!vertagenNochAktiv) {
+    return (
+      <p className="text-xs text-muted-foreground">Kein Vertagen aktiv — Vorschläge können wieder erscheinen.</p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Aktuell aktiv: nächste Erinnerungs-Vorschläge frühestens ab{" "}
+        <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
+      </p>
+      <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void clearVertagen()}>
+        Vertagen beenden
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        Dann können Erinnerungs-Vorschläge wieder wie gewohnt erscheinen (sobald die Regel passt).
+      </p>
+    </div>
+  );
+}
+
+function ReminderSnoozePrefsCard({
+  preferences,
+  onChanged,
+}: {
+  preferences: Preferences;
+  onChanged: () => void;
+}) {
+  const days = readReminderSnoozeDaysPref(preferences[REMINDER_SNOOZE_DAYS_PREF_KEY]);
+  const until = readReminderSuggestionSnoozeUntil(preferences[REMINDER_SNOOZE_UNTIL_PREF_KEY]);
 
   return (
     <Card className="fp-card">
@@ -301,45 +356,9 @@ function ReminderSnoozePrefsCard({
             ausführst.
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="grid gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="rem-snooze-days">
-              Tage bis zum nächsten Vorschlag
-            </label>
-            <Input
-              id="rem-snooze-days"
-              type="number"
-              min={1}
-              max={30}
-              className="w-24"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              disabled={busy}
-            />
-          </div>
-          <Button type="button" variant="secondary" size="sm" onClick={() => void saveDays()} disabled={busy}>
-            Speichern
-          </Button>
-        </div>
-        {untilLabel ? (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Aktuell aktiv: nächste Erinnerungs-Vorschläge frühestens ab{" "}
-              <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => void clearVertagen()}
-            >
-              Vertagen beenden
-            </Button>
-            <p className="text-[11px] text-muted-foreground">
-              Dann können Erinnerungs-Vorschläge wieder wie gewohnt erscheinen (sobald die Regel passt).
-            </p>
-          </div>
+        <ReminderSnoozeDayEditor key={days} daysKey={days} onChanged={onChanged} />
+        {until ? (
+          <ReminderSnoozeUntilPanel key={until.getTime()} until={until} onChanged={onChanged} />
         ) : (
           <p className="text-xs text-muted-foreground">Kein Vertagen aktiv — Vorschläge können wieder erscheinen.</p>
         )}

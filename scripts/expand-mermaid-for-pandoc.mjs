@@ -25,7 +25,6 @@ if (!inPath || !outPath) {
 
 const absIn = path.resolve(inPath);
 const absOut = path.resolve(outPath);
-const mdDir = path.dirname(absIn);
 
 const textIn = fs.readFileSync(absIn, "utf8");
 if (!textIn.includes("```mermaid")) {
