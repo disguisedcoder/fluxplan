@@ -416,11 +416,11 @@ function TaskFormDialogBody({
               />
             ) : null}
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button className="w-full sm:w-auto" variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
               Abbrechen
             </Button>
-            <Button onClick={submit} disabled={!canSubmit}>
+            <Button className="w-full sm:w-auto" onClick={submit} disabled={!canSubmit}>
               Speichern
             </Button>
           </div>

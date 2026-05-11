@@ -652,7 +652,11 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
           {task.title}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-          {due ? <span className={cn(overdue && "text-destructive")}>{due}</span> : <span>Ohne Datum</span>}
+          {due ? (
+            <span className={cn(overdue && "font-medium text-destructive dark:text-amber-200")}>{due}</span>
+          ) : (
+            <span>Ohne Datum</span>
+          )}
           {cat ? <span className="capitalize">{cat}</span> : null}
         </div>
       </div>
@@ -666,7 +670,7 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
 
 function priorityDot(priority: Task["priority"]) {
   return priority === "high"
-    ? "bg-rose-500/80"
+    ? "bg-rose-500/80 dark:bg-amber-300"
     : priority === "medium"
       ? "bg-amber-500/80"
       : "bg-emerald-500/80";

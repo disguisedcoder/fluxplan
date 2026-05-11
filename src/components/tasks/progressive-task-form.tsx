@@ -427,15 +427,16 @@ export function ProgressiveTaskForm() {
               </div>
             ) : null}
 
-            <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
+            <div className="flex flex-col-reverse gap-2 border-t border-border/60 pt-4 sm:flex-row sm:justify-end">
               <Button
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => router.back()}
                 disabled={submitting}
               >
                 Abbrechen
               </Button>
-              <Button onClick={submit} disabled={submitting || !title.trim()}>
+              <Button className="w-full sm:w-auto" onClick={submit} disabled={submitting || !title.trim()}>
                 Aufgabe anlegen
               </Button>
             </div>

@@ -378,11 +378,11 @@ function Stat({
 }) {
   const toneClass =
     tone === "positive"
-      ? "text-emerald-600"
+      ? "text-emerald-600 dark:text-emerald-200"
       : tone === "warning"
-        ? "text-rose-600"
+        ? "text-amber-700 dark:text-amber-200"
         : tone === "info"
-          ? "text-amber-600"
+          ? "text-amber-600 dark:text-amber-200"
           : "text-foreground";
   return (
     <div className="rounded-xl border border-border/60 bg-card px-4 py-3">

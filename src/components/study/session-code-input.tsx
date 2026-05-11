@@ -25,6 +25,7 @@ import {
 } from "@/lib/settings/intervention-levels";
 import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { dispatchStudyMeChanged } from "@/lib/study/me-invalidate";
+import { cn } from "@/lib/utils";
 
 type MeResponse = {
   user: { id: string; pseudonym: string; studyModeEnabled: boolean } | null;
@@ -296,11 +297,11 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
               Seiten-Reload). Ohne laufende Session gilt die Wahl beim Klick auf{" "}
               <span className="font-medium text-foreground">Session starten</span>.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <Button
                 type="button"
                 variant="outline"
-                className={variant === "baseline" ? "border-primary/40 bg-primary/10 text-primary" : undefined}
+                className={cn("w-full", variant === "baseline" && "border-primary/40 bg-primary/10 text-primary")}
                 onClick={() => openVariantDialog("baseline")}
                 aria-pressed={variant === "baseline"}
               >
@@ -309,7 +310,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
               <Button
                 type="button"
                 variant="outline"
-                className={variant === "adaptive" ? "border-primary/40 bg-primary/10 text-primary" : undefined}
+                className={cn("w-full", variant === "adaptive" && "border-primary/40 bg-primary/10 text-primary")}
                 onClick={() => openVariantDialog("adaptive")}
                 aria-pressed={variant === "adaptive"}
               >
@@ -332,15 +333,16 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             {me?.user ? <SessionLogoutButton onDone={reloadMe} /> : null}
-            <Button onClick={startSession} disabled={submitting}>
+            <Button className="w-full sm:w-auto" onClick={startSession} disabled={submitting}>
               Session starten
             </Button>
             {allowGuest ? (
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={startGuest}
                 disabled={submitting || !variantConfirmed}
               >
@@ -348,7 +350,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
               </Button>
             ) : null}
             {me?.user ? (
-              <Button type="button" variant="outline" onClick={() => router.push("/start")}>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => router.push("/start")}>
                 Zur App
               </Button>
             ) : null}
@@ -362,7 +364,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
           if (!open) setVariantDialog(null);
         }}
       >
-        <DialogContent className="sm:max-w-lg" showCloseButton>
+        <DialogContent className="p-5 sm:max-w-lg sm:p-6" showCloseButton>
           {variantDialog === "baseline" ? (
             <>
               <DialogHeader>
@@ -379,7 +381,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
                   </span>
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-2 sm:justify-end">
+              <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-4 sm:justify-end">
                 <Button type="button" variant="outline" onClick={() => setVariantDialog(null)}>
                   Abbrechen
                 </Button>
@@ -406,12 +408,14 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
                   </span>
                 </DialogDescription>
               </DialogHeader>
-              <InterventionLevelSlider
-                value={draftLevel}
-                levels={[...INTERVENTION_LEVELS]}
-                onChange={(v) => setDraftLevel(clampInterventionLevel(v))}
-              />
-              <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-2 sm:justify-end">
+              <div className="rounded-xl border border-border/60 bg-card/60 p-4">
+                <InterventionLevelSlider
+                  value={draftLevel}
+                  levels={[...INTERVENTION_LEVELS]}
+                  onChange={(v) => setDraftLevel(clampInterventionLevel(v))}
+                />
+              </div>
+              <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-4 sm:justify-end">
                 <Button type="button" variant="outline" onClick={() => setVariantDialog(null)}>
                   Abbrechen
                 </Button>
@@ -430,7 +434,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
           if (!open) setMissingInfo(null);
         }}
       >
-        <DialogContent className="sm:max-w-md" showCloseButton>
+        <DialogContent className="p-5 sm:max-w-md sm:p-6" showCloseButton>
           <DialogHeader>
             <DialogTitle>
               {missingInfo === "variant" ? "Studienvariante fehlt" : "User-Code fehlt"}
@@ -450,7 +454,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
               )}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-2 sm:justify-end">
+          <DialogFooter showCloseButton={false} className="border-t-0 bg-transparent p-0 pt-4 sm:justify-end">
             <Button type="button" onClick={() => setMissingInfo(null)}>
               Verstanden
             </Button>

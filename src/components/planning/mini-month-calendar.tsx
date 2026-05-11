@@ -124,18 +124,23 @@ export function MiniMonthCalendar({
           const cell = (
             <div
               className={cn(
-                "mx-auto flex h-10 w-8 min-w-0 flex-col items-center justify-start overflow-hidden rounded-full text-[12px]",
+                "mx-auto flex h-10 w-9 max-w-full min-w-0 flex-col items-center justify-center gap-1 overflow-hidden text-[12px]",
                 !isCurrentMonth && "text-muted-foreground/40",
                 isCurrentMonth && isWeekend && !isToday && "text-rose-500/80",
-                isHighlighted && !isToday && "bg-primary/10 text-primary",
-                isToday && "bg-primary text-primary-foreground font-semibold shadow-sm",
+                isHighlighted && !isToday && "text-primary",
               )}
             >
-              <div className="flex h-[1.125rem] w-full shrink-0 items-center justify-center leading-none tabular-nums">
+              <div
+                className={cn(
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full leading-none tabular-nums",
+                  isHighlighted && !isToday && "bg-primary/10",
+                  isToday && "bg-primary font-semibold text-primary-foreground shadow-sm",
+                )}
+              >
                 {d.getDate()}
               </div>
               <div
-                className="flex h-2.5 w-full min-w-0 shrink-0 items-center justify-center gap-px px-0.5"
+                className="flex h-3 w-full min-w-0 shrink-0 items-center justify-center gap-px px-0.5"
                 aria-hidden={count === 0}
               >
                 {useCountChip ? (
@@ -188,7 +193,7 @@ export function MiniMonthCalendar({
                   >
                     {cell}
                   </PopoverTrigger>
-                  <PopoverContent className="w-80">
+                  <PopoverContent className="w-[min(20rem,calc(100vw-2rem))]">
                     <div className="space-y-2">
                       <div className="text-sm font-medium">
                         {dateLabel} · {count} Aufgaben

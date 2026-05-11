@@ -292,7 +292,8 @@ function FocusListCard({
 }
 
 const FOCUS_ROW_OVERDUE_EMPHASIS =
-  "border-rose-500/45 bg-rose-500/[0.06] dark:border-rose-500/35 dark:bg-rose-950/30";
+  "border-rose-500/45 bg-rose-500/[0.06] dark:border-amber-400/50 dark:bg-amber-400/10";
+const FOCUS_ROW_DUE_META_EMPHASIS = "font-medium text-destructive dark:text-amber-200";
 
 function focusListDuePresentation(task: TaskWithDue, emphasizeDueRows: boolean) {
   const now = new Date();
@@ -327,7 +328,7 @@ function focusListDuePresentation(task: TaskWithDue, emphasizeDueRows: boolean) 
     }
     return {
       meta,
-      metaClassName: "font-medium text-destructive",
+      metaClassName: FOCUS_ROW_DUE_META_EMPHASIS,
       rowClassName: FOCUS_ROW_OVERDUE_EMPHASIS,
     } as const;
   }
@@ -345,7 +346,7 @@ function focusListDuePresentation(task: TaskWithDue, emphasizeDueRows: boolean) 
     }
     return {
       meta,
-      metaClassName: "font-medium text-destructive",
+      metaClassName: FOCUS_ROW_DUE_META_EMPHASIS,
       rowClassName: FOCUS_ROW_OVERDUE_EMPHASIS,
     } as const;
   }

@@ -99,7 +99,7 @@ export function TaskCard({ task, onChanged }: { task: Task; onChanged: () => voi
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5",
-                  isOverdue && "text-destructive",
+                  isOverdue && "font-medium text-destructive dark:text-amber-200",
                 )}
               >
                 <CalIcon className="h-3.5 w-3.5" />

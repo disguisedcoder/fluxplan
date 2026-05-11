@@ -303,7 +303,7 @@ function MobileBottomNav({ pathname, isBaseline }: { pathname: string; isBaselin
       aria-label="Hauptnavigation"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-background/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 backdrop-blur md:hidden"
     >
-      <ul className="grid grid-cols-7">
+      <ul className={cn("grid", nav.length === 7 ? "grid-cols-7" : "grid-cols-6")}>
         {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -312,12 +312,12 @@ function MobileBottomNav({ pathname, isBaseline }: { pathname: string; isBaselin
               <Link
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] leading-tight transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-[10px] leading-tight transition-colors sm:gap-1 sm:px-1 sm:text-[11px]",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <Icon className="h-5 w-5" />
-                <span className="truncate">{item.label}</span>
+                <span className="w-full truncate text-center">{item.label}</span>
               </Link>
             </li>
           );

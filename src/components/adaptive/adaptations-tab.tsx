@@ -603,25 +603,25 @@ function DetailPanel({
           />
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+        <div className="grid gap-2 border-t border-border/60 pt-4 sm:flex sm:flex-wrap sm:items-center">
           {isPending ? (
             <>
-              <Button onClick={() => respond("accept")} disabled={busy}>
+              <Button className="w-full sm:w-auto" onClick={() => respond("accept")} disabled={busy}>
                 <Check className="h-4 w-4" />
                 Annehmen
               </Button>
-              <Button variant="outline" onClick={() => respond("snooze")} disabled={busy}>
+              <Button className="w-full sm:w-auto" variant="outline" onClick={() => respond("snooze")} disabled={busy}>
                 <Clock className="h-4 w-4" />
                 Nicht jetzt
               </Button>
-              <Button variant="ghost" onClick={() => respond("reject")} disabled={busy}>
+              <Button className="w-full sm:w-auto" variant="ghost" onClick={() => respond("reject")} disabled={busy}>
                 <X className="h-4 w-4" />
                 Ablehnen
               </Button>
             </>
           ) : canReopenSuggestion ? (
             <div className="w-full space-y-2">
-              <Button variant="outline" onClick={() => respond("undo")} disabled={busy}>
+              <Button className="w-full sm:w-auto" variant="outline" onClick={() => respond("undo")} disabled={busy}>
                 <Undo2 className="h-4 w-4" />
                 {suggestion.status === "accepted" ? "Rückgängig" : "Wieder öffnen"}
               </Button>
@@ -778,11 +778,11 @@ function statusBadgeClass(s: string) {
     case "pending":
       return "bg-primary/10 text-primary border-primary/30";
     case "accepted":
-      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:border-emerald-400/35 dark:bg-emerald-400/10 dark:text-emerald-100";
     case "rejected":
-      return "bg-rose-100 text-rose-700 border-rose-200";
+      return "bg-rose-100 text-rose-700 border-rose-200 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-100";
     case "snoozed":
-      return "bg-amber-100 text-amber-700 border-amber-200";
+      return "bg-amber-100 text-amber-700 border-amber-200 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-100";
     case "undone":
       return "bg-muted text-muted-foreground border-border";
     default:

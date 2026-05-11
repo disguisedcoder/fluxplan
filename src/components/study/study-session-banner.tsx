@@ -46,7 +46,7 @@ export function StudySessionBanner() {
                   <>
                     {" "}
                     ·{" "}
-                    <span className="text-amber-700 dark:text-amber-500">
+                    <span className="text-amber-700 dark:text-amber-200">
                       Keine gültige Session (Code ungültig oder veraltet) — unten neu starten.
                     </span>
                   </>

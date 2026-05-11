@@ -115,7 +115,7 @@ export function suggestionIconWrapClass(accent: SuggestionAccent, active: boolea
       case "amber":
         return "bg-amber-500/20 text-amber-900 dark:text-amber-100";
       case "rose":
-        return "bg-rose-500/20 text-rose-800 dark:text-rose-200";
+        return "bg-rose-500/20 text-rose-800 dark:bg-amber-400/15 dark:text-amber-100";
       default:
         return "bg-primary/15 text-primary";
     }
@@ -128,7 +128,7 @@ export function suggestionIconWrapClass(accent: SuggestionAccent, active: boolea
     case "amber":
       return "bg-amber-500/10 text-amber-800 dark:text-amber-200";
     case "rose":
-      return "bg-rose-500/10 text-rose-700 dark:text-rose-300";
+      return "bg-rose-500/10 text-rose-700 dark:bg-amber-400/10 dark:text-amber-100";
     default:
       return "bg-muted text-muted-foreground";
   }
@@ -144,7 +144,7 @@ export function suggestionCategoryPillClass(accent: SuggestionAccent): string {
     case "amber":
       return "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-50";
     case "rose":
-      return "border-rose-500/40 bg-rose-500/10 text-rose-900 dark:text-rose-100";
+      return "border-rose-500/40 bg-rose-500/10 text-rose-900 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-100";
     default:
       return "border-border bg-muted text-foreground";
   }
@@ -160,7 +160,7 @@ export function suggestionStraplineClass(accent: SuggestionAccent): string {
     case "amber":
       return "border-amber-500/25 bg-amber-500/10 text-amber-950 dark:text-amber-50";
     case "rose":
-      return "border-rose-500/25 bg-rose-500/10 text-rose-950 dark:text-rose-50";
+      return "border-rose-500/25 bg-rose-500/10 text-rose-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-50";
     default:
       return "border-border/60 bg-muted/40 text-foreground";
   }

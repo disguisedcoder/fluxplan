@@ -300,7 +300,7 @@ function CalendarHeader({
           </Button>
         </div>
         {conflictCount > 0 ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 dark:border-amber-400/45 dark:bg-amber-400/10 dark:text-amber-100">
             <AlertTriangle className="h-3.5 w-3.5" />
             {conflictCount} Konflikt{conflictCount === 1 ? "" : "e"}
           </span>
@@ -476,7 +476,7 @@ function MonthDayCell({
                 className={cn(
                   "flex w-full flex-col items-start gap-0 rounded-md border px-1 py-0.5 text-left text-[10px] leading-tight transition-colors hover:brightness-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:text-[11px]",
                   baseClass,
-                  conflict && "ring-1 ring-amber-400 ring-offset-1 ring-offset-background",
+                  conflict && "ring-1 ring-amber-400 ring-offset-1 ring-offset-background dark:ring-amber-300",
                 )}
               >
                 <span className="w-full truncate font-medium">{it.task.title}</span>
@@ -633,7 +633,7 @@ function EventChip({
       className={cn(
         "absolute overflow-hidden rounded-md border px-2 py-1 text-[11px] leading-tight shadow-sm transition-colors hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         baseClass,
-        conflict && "ring-1 ring-amber-400 ring-offset-1 ring-offset-background",
+        conflict && "ring-1 ring-amber-400 ring-offset-1 ring-offset-background dark:ring-amber-300",
       )}
       style={{
         top,
@@ -757,13 +757,13 @@ function ConflictDetailsCard({
   const flat = groups.flatMap((g) => g.items);
   const count = flat.length;
   return (
-    <Card className="fp-card border-rose-200/60 bg-rose-50/30">
+    <Card className="fp-card border-amber-500/35 bg-amber-500/[0.08] dark:border-amber-400/45 dark:bg-amber-400/10">
       <CardContent className="space-y-3 p-5">
-        <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+        <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-100">
           <AlertTriangle className="h-4 w-4" />
           Konflikt erkannt
         </div>
-        <p className="text-sm text-amber-900/80">
+        <p className="text-sm text-amber-900/80 dark:text-amber-100/85">
           {count} Termin{count === 1 ? "" : "e"} überlapp{count === 1 ? "t" : "en"} sich. Du kannst Alternativen wählen oder „Nur Aufgabe“ speichern.
         </p>
 
