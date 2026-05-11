@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { TaskFormChipKey } from "@/lib/settings/task-form-chips";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
@@ -44,7 +45,12 @@ export const adaptiveTaskCreationRule: AdaptiveRule = {
     if (ctx.screen !== "task_created") return null;
 
     const existing = await prisma.adaptiveSuggestion.findFirst({
-      where: { userId: ctx.userId, ruleKey: "adaptive_task_creation", status: "pending" },
+      where: {
+        userId: ctx.userId,
+        ruleKey: "adaptive_task_creation",
+        status: "pending",
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
+      },
       select: { id: true },
     });
     if (existing) return null;

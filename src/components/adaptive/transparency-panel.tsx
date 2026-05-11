@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Insights = {
@@ -25,7 +26,7 @@ export function TransparencyPanel() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch("/api/insights", { cache: "no-store" });
+        const res = await studyApiFetch("/api/insights", { cache: "no-store" });
         if (!res.ok) {
           if (!cancelled) setData(null);
           return;

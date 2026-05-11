@@ -12,16 +12,16 @@ Es geht nicht darum, perfekt zu planen. Nutze FluxPlan so, als würdest du einen
   - Phase 1: Baseline – normale Aufgaben- und Planungs-App ohne adaptive Vorschläge.
   - Phase 2: Adaptive – FluxPlan darf Vorschläge machen, aber du entscheidest immer selbst.
 - In **Baseline** gibt es keinen nutzbaren Bereich **Anpassungen** (der Menüpunkt springt zurück zu **Heute**). Ab **Adaptive** ist **Anpassungen** normal erreichbar.
-- Die **Start-Aufgaben** stellt die Studienleitung bereit; bitte nicht alles von Hand neu aufbauen.
+- Die **Start-Aufgaben** sind vorbereitet (Demo/Seed/Setup); bitte nicht alles von Hand neu aufbauen.
 - Beim Umstieg auf Adaptive denselben Pseudonym-Code verwenden.
 - Nichts zurücksetzen.
-- Am Ende nichts exportieren. Sag einfach der Studienleitung Bescheid.
+- Am Ende nichts exportieren. Melde dich kurz, wenn du durch bist (wie vereinbart).
 
 ## Phase 0 – Start und vorbereitete Aufgaben
 1. Öffne FluxPlan.
 2. Gib deinen zugeteilten Code ein (z. B. `F01`).
 3. Wähle die Variante wie angesagt (**Baseline** / **Adaptive**) und starte die Session.
-4. Die Studienleitung stellt sicher, dass die **Start-Aufgaben** für dich sichtbar sind — danach öffnest du **Heute**.
+4. Prüfe, dass die **Start-Aufgaben** für dich sichtbar sind (Setup vor dem Test). Wenn nicht, kurz melden — danach öffnest du **Heute**.
 
 Kurzer Check: Du solltest mehrere Familien-Aufgaben sehen. Wenn nicht, kurz Bescheid sagen.
 
@@ -64,7 +64,7 @@ Danach:
 Nimm dir 1 Minute und beantworte innerlich:
 Was hat dir geholfen, dich zu orientieren? Was war eher unklar?
 
-Du musst nichts aufschreiben, außer die Studienleitung bittet dich darum.
+Du musst nichts aufschreiben, außer du wirst ausdrücklich darum gebeten.
 
 ## Phase 2 – Auf Adaptive umstellen
 Jetzt darf FluxPlan vorsichtig mitdenken.
@@ -75,7 +75,7 @@ Jetzt darf FluxPlan vorsichtig mitdenken.
 4. Bestätige Adaptive.
 5. Übernimm die vorgeschlagene Eingriffsstufe.
 6. Starte/übernimm die neue Phase.
-7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer die Studienleitung sagt es ausdrücklich.
+7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer du wurdest ausdrücklich dazu angewiesen.
 8. Öffne `Heute` und prüfe, ob deine bisherigen Aufgaben noch da sind.
 
 ## Phase 2A – Adaptive warmfahren
@@ -137,7 +137,7 @@ Wenn dir kein Banner auffällt:
 3. Dann einfach weitermachen. Kein Vorschlag ist kein Fehler.
 
 ## Abschluss
-Sag der Studienleitung: `Ich bin fertig.`
+Wenn du fertig bist: kurz **`Ich bin fertig.`** melden (wie vereinbart).
 
 Kurze Abschlussfrage:
 Hat sich Adaptive eher wie Hilfe, Ablenkung oder neutral angefühlt?

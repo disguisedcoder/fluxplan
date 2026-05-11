@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { AdaptiveRule } from "../types";
 
 export const calendarConflictRule: AdaptiveRule = {
@@ -37,7 +38,12 @@ export const calendarConflictRule: AdaptiveRule = {
     if (totalMinutes < 8 * 60) return null;
 
     const existing = await prisma.adaptiveSuggestion.findFirst({
-      where: { userId: ctx.userId, ruleKey: "calendar_conflict", status: "pending" },
+      where: {
+        userId: ctx.userId,
+        ruleKey: "calendar_conflict",
+        status: "pending",
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
+      },
       select: { id: true },
     });
     if (existing) return null;

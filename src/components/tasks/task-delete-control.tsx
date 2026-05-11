@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { Task } from "./types";
@@ -45,7 +46,7 @@ export function TaskDeleteControl({ task, onDeleted, disabled, className, trigge
   async function confirmDelete() {
     setBusy(true);
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+      const res = await studyApiFetch(`/api/tasks/${task.id}`, { method: "DELETE" });
       if (res.status === 401) {
         toast.error("Bitte starte zuerst eine Study Session.");
         return;

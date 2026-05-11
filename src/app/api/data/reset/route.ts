@@ -9,8 +9,12 @@ import {
   deleteAllContentForUser,
   deleteContentForStudySession,
 } from "@/lib/data/session-content-delete";
+import { seedGuestBaselineCalendar } from "@/lib/demo/guest-baseline-calendar-seed";
 import { seedGuestAdaptiveShowcase } from "@/lib/demo/guest-adaptive-showcase-seed";
+import { applyGuestWorkshopDefaultPreferences } from "@/lib/demo/guest-workshop-default-prefs";
 import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
+import { isDemoTestPseudonym, roleFromPseudonym } from "@/lib/demo";
+import { ensureDefaultAdaptiveRules, seedRoleDemoContent } from "@/lib/demo/seed-role-demo-content";
 
 export async function POST() {
   try {
@@ -27,24 +31,44 @@ export async function POST() {
       sessionVariant = s?.variant ?? null;
     }
 
-    const preserveGuestWorkshop =
+    const guestSessionReseed =
       Boolean(sessionId) &&
-      sessionVariant === "adaptive" &&
-      isGuestStudyPseudonym(userRow?.pseudonym);
+      isGuestStudyPseudonym(userRow?.pseudonym) &&
+      (sessionVariant === "adaptive" || sessionVariant === "baseline");
+
+    const demoTestSessionReseed =
+      Boolean(sessionId) &&
+      isDemoTestPseudonym(userRow?.pseudonym) &&
+      (sessionVariant === "adaptive" || sessionVariant === "baseline");
 
     const scope = sessionId ? ("session" as const) : ("user" as const);
     const result = await prisma.$transaction(async (tx) => {
       if (sessionId) {
         return deleteContentForStudySession(tx, userId, sessionId, {
-          preserveGuestWorkshopInterventionLevel: preserveGuestWorkshop,
+          /** Gast-Reset = vollständiger Workshop-Neuaufbau inkl. Eingriffsstufe-Werk (kein Preserve). */
+          preserveGuestWorkshopInterventionLevel: false,
         });
       }
       return deleteAllContentForUser(tx, userId);
     });
 
-    if (preserveGuestWorkshop && sessionId) {
+    if (guestSessionReseed && sessionId && sessionVariant) {
       await prisma.$transaction(async (tx) => {
-        await seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId });
+        await applyGuestWorkshopDefaultPreferences(tx, { userId, variant: sessionVariant });
+        if (sessionVariant === "adaptive") {
+          await seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId });
+        } else {
+          await seedGuestBaselineCalendar(tx, { userId, studySessionId: sessionId });
+        }
+      });
+    } else if (demoTestSessionReseed && sessionId && sessionVariant && userRow?.pseudonym) {
+      await ensureDefaultAdaptiveRules();
+      await seedRoleDemoContent({
+        userId,
+        studySessionId: sessionId,
+        roleKey: roleFromPseudonym(userRow.pseudonym),
+        isBaseline: sessionVariant === "baseline",
+        seedReason: "session_data_reset",
       });
     }
 

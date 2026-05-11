@@ -33,8 +33,13 @@ function readHrefFromJsonValue(value: unknown): string | null {
   return null;
 }
 
+/** Nur explizit gespeicherte Startansicht; ohne Eintrag → `null` (→ `/willkommen` über `/start`). */
+export function getSavedStartViewHref(prefs: Record<string, unknown>): string | null {
+  return readHrefFromJsonValue(prefs["startView"]);
+}
+
 export function resolveStartViewFromPreferences(prefs: Record<string, unknown>): string {
-  const raw = readHrefFromJsonValue(prefs["startView"]);
+  const raw = getSavedStartViewHref(prefs);
   return normalizeStartViewHref(raw ?? DEFAULT_START_HREF);
 }
 

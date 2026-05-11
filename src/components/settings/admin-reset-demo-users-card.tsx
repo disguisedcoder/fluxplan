@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GUEST_STUDY_PSEUDONYMS } from "@/lib/demo/guest-study";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { DEMO_TEST_PSEUDONYMS } from "@/lib/demo/test-pseudonyms";
 
 type Me = {
@@ -28,7 +29,7 @@ export function AdminResetDemoUsersCard() {
   const [confirm, setConfirm] = useState("");
 
   const load = useCallback(async () => {
-    const r = await fetch("/api/me", { cache: "no-store" });
+    const r = await studyApiFetch("/api/me", { cache: "no-store" });
     if (!r.ok) return;
     const data = (await r.json()) as Me;
     setMe(data);
@@ -44,7 +45,7 @@ export function AdminResetDemoUsersCard() {
   async function run() {
     setBusy(true);
     try {
-      const res = await fetch("/api/data/reset-demo-users", {
+      const res = await studyApiFetch("/api/data/reset-demo-users", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ confirm: "RESET_DEMO_USERS" }),

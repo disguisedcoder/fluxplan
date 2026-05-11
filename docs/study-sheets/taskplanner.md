@@ -12,16 +12,16 @@ Es geht nicht um perfekte Produktivität. Es geht um echte Nutzung.
   - Phase 1: Baseline – normale Aufgaben-App ohne adaptive Vorschläge.
   - Phase 2: Adaptive – FluxPlan darf Vorschläge machen, aber du entscheidest.
 - In **Baseline** gibt es keinen nutzbaren Bereich **Anpassungen** (der Menüpunkt springt zurück zu **Heute**). Ab **Adaptive** ist **Anpassungen** normal erreichbar.
-- Die **Start-Aufgaben** stellt die Studienleitung bereit; bitte nicht alles von Hand neu aufbauen.
+- Die **Start-Aufgaben** sind vorbereitet (Demo/Seed/Setup); bitte nicht alles von Hand neu aufbauen.
 - Beim Umstieg auf Adaptive denselben Pseudonym-Code verwenden.
 - Nichts zurücksetzen.
-- Am Ende nichts exportieren. Sag einfach der Studienleitung Bescheid.
+- Am Ende nichts exportieren. Melde dich kurz, wenn du durch bist (wie vereinbart).
 
 ## Phase 0 – Start und vorbereitete Aufgaben
 1. Öffne FluxPlan.
 2. Gib deinen zugeteilten Code ein (z. B. `T01`).
 3. Wähle die Variante wie angesagt (**Baseline** / **Adaptive**) und starte die Session.
-4. Die Studienleitung stellt sicher, dass die **Start-Aufgaben** für dich sichtbar sind — danach öffnest du **Aufgaben**.
+4. Prüfe, dass die **Start-Aufgaben** für dich sichtbar sind (Setup vor dem Test). Wenn nicht, kurz melden — danach öffnest du **Aufgaben**.
 
 Kurzer Check: Du solltest Aufgaben zu Lesen, Feedback, Export, Quick Add oder Methodik sehen. Wenn nicht, kurz Bescheid sagen.
 
@@ -88,7 +88,7 @@ Was war in Baseline angenehm? Was hat eher geklickt wie ein alter Drucker?
 4. Bestätige Adaptive.
 5. Übernimm die vorgeschlagene Eingriffsstufe.
 6. Starte/übernimm die neue Phase.
-7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer die Studienleitung sagt es ausdrücklich.
+7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer du wurdest ausdrücklich dazu angewiesen.
 8. Öffne `Aufgaben` und prüfe, ob deine bisherigen Aufgaben noch sichtbar sind.
 
 ## Phase 2A – Adaptive warmfahren
@@ -151,7 +151,7 @@ Wenn kein Banner auffällt:
 3. Dann normal weiterarbeiten. Kein Vorschlag ist kein Fehler.
 
 ## Abschluss
-Sag der Studienleitung: `Ich bin fertig.`
+Wenn du fertig bist: kurz **`Ich bin fertig.`** melden (wie vereinbart).
 
 Kurze Abschlussfrage:
 Hat Adaptive dir Arbeit abgenommen oder eher zusätzliche Entscheidungen erzeugt?

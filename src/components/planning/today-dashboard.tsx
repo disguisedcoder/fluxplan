@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { QuickAddInput } from "@/components/tasks/quick-add-input";
 import { MiniMonthCalendar } from "./mini-month-calendar";
 import type { Task } from "@/components/tasks/types";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import {
   categoryBadgeClass,
@@ -33,12 +34,13 @@ export function TodayDashboard() {
   const [isBaseline, setIsBaseline] = useState(false);
   const [dailyFocusListHighlight, setDailyFocusListHighlight] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     try {
       const [tasksRes, prefRes] = await Promise.all([
-        fetch("/api/tasks?status=open", { cache: "no-store" }),
-        fetch("/api/preferences", { cache: "no-store" }),
+        studyApiFetch("/api/tasks?status=open", { cache: "no-store", signal }),
+        studyApiFetch("/api/preferences", { cache: "no-store", signal }),
       ]);
+      if (signal?.aborted) return;
       const data = await tasksRes.json();
       setTasks(data.tasks ?? []);
       if (prefRes.ok) {
@@ -46,19 +48,27 @@ export function TodayDashboard() {
         const prefs = prefJson.preferences ?? {};
         setDailyFocusListHighlight(readDailyFocusListHighlightPref(prefs[DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY]));
       }
+    } catch (e) {
+      if (signal?.aborted || (e instanceof DOMException && e.name === "AbortError")) return;
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
-    fetch("/api/me", { cache: "no-store" })
+    const ac = new AbortController();
+    const { signal } = ac;
+    void load(signal);
+    studyApiFetch("/api/me", { cache: "no-store", signal })
       .then((r) => r.json())
       .then((me: { session?: { variant?: string | null } | null }) => {
+        if (signal.aborted) return;
         setIsBaseline(me?.session?.variant === "baseline");
       })
-      .catch(() => setIsBaseline(false));
+      .catch(() => {
+        if (!signal.aborted) setIsBaseline(false);
+      });
+    return () => ac.abort();
   }, [load]);
 
   useEffect(() => {
@@ -244,7 +254,7 @@ function FocusListCard({
                     size="xs"
                     variant="outline"
                     onClick={async () => {
-                      const res = await fetch(`/api/tasks/${t.id}`, {
+                      const res = await studyApiFetch(`/api/tasks/${t.id}`, {
                         method: "PATCH",
                         headers: { "content-type": "application/json" },
                         body: JSON.stringify({ status: "open" }),
@@ -368,7 +378,7 @@ function FocusListItem({
       const ok = window.confirm(`Als erledigt markieren?\n\n${task.title}`);
       if (!ok) return;
     }
-    await fetch(`/api/tasks/${task.id}`, {
+    await studyApiFetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ status: next ? "done" : "open" }),
@@ -501,7 +511,7 @@ function WeekGlanceCard({
   return (
     <Card className="fp-card">
       <CardContent className="space-y-4 p-6">
-        <h3 className="text-sm font-semibold tracking-tight">Woche im Überblick</h3>
+        <h3 className="text-sm font-semibold tracking-tight">Monat im Überblick</h3>
         <MiniMonthCalendar
           highlightedDates={highlightedDates}
           dayCountsByStamp={dayCountsByStamp}
@@ -529,7 +539,7 @@ function SystemStatusCard({ isBaseline }: { isBaseline: boolean }) {
       return;
     }
     let cancelled = false;
-    fetch("/api/suggestions?status=pending", { cache: "no-store" })
+    studyApiFetch("/api/suggestions?status=pending", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { suggestions?: unknown[] } | null) => {
         if (cancelled || !data?.suggestions) return;

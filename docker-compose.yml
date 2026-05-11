@@ -1,3 +1,8 @@
+# Volumes (fluxplan_db, e2e_node_modules) bleiben bei `docker compose down` standardmäßig liegen
+# und fressen Platz. Zum Aufräumen: `npm run docker:down` (= down -v --remove-orphans).
+# DB ist danach leer — beim nächsten `up` laufen Migrate + Seed im App-Container wieder.
+# Nur Container stoppen, Daten behalten: `npm run docker:down:soft`.
+# Zusätzlich alle unbenutzten Docker-Volumes global löschen (Vorsicht, andere Projekte!): `npm run docker:down:full`
 services:
   db:
     image: postgres:16-alpine

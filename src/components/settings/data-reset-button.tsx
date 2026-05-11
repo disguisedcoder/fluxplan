@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,7 +21,7 @@ export function DataResetButton({ onDone }: { onDone?: () => void }) {
   async function reset() {
     setBusy(true);
     try {
-      const res = await fetch("/api/data/reset", { method: "POST" });
+      const res = await studyApiFetch("/api/data/reset", { method: "POST" });
       if (!res.ok) {
         toast.error("Reset fehlgeschlagen.");
         return;
@@ -50,11 +51,15 @@ export function DataResetButton({ onDone }: { onDone?: () => void }) {
             beeinflusst. Du bleibst angemeldet.
           </p>
           <p className="text-muted-foreground text-xs">
-            Gast-Codes <span className="font-mono">G01</span>/<span className="font-mono">G02</span> mit{" "}
-            <span className="font-medium">adaptiver</span> Session: danach wieder der{" "}
-            <span className="font-medium">Workshop-Komplett-Stand</span> (Aufgaben + alle sieben Beispiel-Vorschläge).
-            Die eingestellte{" "}
-            <span className="font-medium">Eingriffsstufe</span> bleibt erhalten.
+            Gast-Codes <span className="font-mono">G01</span>/<span className="font-mono">G02</span> mit Session: danach
+            wieder der <span className="font-medium">Workshop-Komplett-Stand</span> (Aufgaben + Vorschläge wie im
+            Workshop-Skript).
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Demo-Test-Codes <span className="font-mono">F01</span>–<span className="font-mono">E05</span> mit Session:
+            danach wieder die <span className="font-medium">Werkstatt-Demo</span> passend zum Code (F = Familie, T =
+            Task, E = Eval) — keine leere Session, sondern dieselben Demo-Aufgaben und -Einstellungen wie beim ersten
+            Laden über &quot;Demo-Daten laden&quot;.
           </p>
           <p className="text-muted-foreground text-xs">
             Ohne aktive Session-Cookies löscht die Funktion aus technischen Gründen alle App-Daten dieses User-Codes

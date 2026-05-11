@@ -7,18 +7,12 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { clampInterventionLevel } from "@/lib/settings/intervention-levels";
 import { StartStudySessionSchema, UpdateStudySessionSchema } from "@/lib/validation/study";
 import { HttpError, isHttpError } from "@/lib/http/errors";
+import { deleteContentForStudySession } from "@/lib/data/session-content-delete";
+import { seedGuestBaselineCalendar } from "@/lib/demo/guest-baseline-calendar-seed";
 import { seedGuestAdaptiveShowcase } from "@/lib/demo/guest-adaptive-showcase-seed";
+import { applyGuestWorkshopDefaultPreferences } from "@/lib/demo/guest-workshop-default-prefs";
 import { allocateGuestPseudonym, isGuestStudyPseudonym } from "@/lib/demo/guest-study";
-
-function makeSessionCode(pseudonym: string) {
-  const now = new Date();
-  const stamp = now
-    .toISOString()
-    .replaceAll(":", "")
-    .replaceAll("-", "")
-    .slice(0, 15); // YYYYMMDDTHHMMSS
-  return `S-${pseudonym}-${stamp}`;
-}
+import { makeStudySessionCode } from "@/lib/study/make-session-code";
 
 export async function POST(req: Request) {
   try {
@@ -78,7 +72,7 @@ export async function POST(req: Request) {
       const s = await tx.studySession.create({
         data: {
           userId: u.id,
-          sessionCode: makeSessionCode(resolvedPseudonym),
+          sessionCode: makeStudySessionCode(resolvedPseudonym),
           variant,
         },
         select: { id: true, sessionCode: true, startedAt: true, variant: true },
@@ -86,6 +80,8 @@ export async function POST(req: Request) {
 
       if (isGuest && variant === "adaptive") {
         await seedGuestAdaptiveShowcase(tx, { userId: u.id, studySessionId: s.id });
+      } else if (isGuest && variant === "baseline") {
+        await seedGuestBaselineCalendar(tx, { userId: u.id, studySessionId: s.id });
       }
 
       return { user: u, session: s };
@@ -134,6 +130,11 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "session_not_found" }, { status: 404 });
     }
 
+    const existingSession = await prisma.studySession.findFirst({
+      where: { id: sessionId, userId },
+      select: { variant: true },
+    });
+
     const variant = parsed.data.variant;
 
     const session = await prisma.$transaction(async (tx) => {
@@ -164,15 +165,45 @@ export async function PATCH(req: Request) {
       });
     });
 
+    const patchLevel = parsed.data.interventionLevel;
+
     if (variant === "adaptive") {
       const u = await prisma.user.findUnique({ where: { id: userId }, select: { pseudonym: true } });
       if (isGuestStudyPseudonym(u?.pseudonym)) {
-        const taskCount = await prisma.task.count({ where: { userId, studySessionId: sessionId } });
-        if (taskCount === 0) {
-          await prisma.$transaction((tx) =>
-            seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId }),
-          );
+        const wasBaseline = existingSession?.variant === "baseline";
+        if (wasBaseline) {
+          await prisma.$transaction(async (tx) => {
+            await deleteContentForStudySession(tx, userId, sessionId, {
+              preserveGuestWorkshopInterventionLevel: false,
+            });
+            await applyGuestWorkshopDefaultPreferences(tx, {
+              userId,
+              variant: "adaptive",
+              interventionLevel: patchLevel,
+            });
+            await seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId });
+          });
+        } else {
+          const taskCount = await prisma.task.count({ where: { userId, studySessionId: sessionId } });
+          if (taskCount === 0) {
+            await prisma.$transaction((tx) =>
+              seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId }),
+            );
+          }
         }
+      }
+    }
+
+    if (variant === "baseline") {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { pseudonym: true } });
+      if (isGuestStudyPseudonym(u?.pseudonym) && existingSession?.variant === "adaptive") {
+        await prisma.$transaction(async (tx) => {
+          await deleteContentForStudySession(tx, userId, sessionId, {
+            preserveGuestWorkshopInterventionLevel: false,
+          });
+          await applyGuestWorkshopDefaultPreferences(tx, { userId, variant: "baseline" });
+          await seedGuestBaselineCalendar(tx, { userId, studySessionId: sessionId });
+        });
       }
     }
 

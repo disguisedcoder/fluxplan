@@ -23,6 +23,7 @@ import {
   readInterventionLevel,
   readPreferenceBool,
 } from "@/lib/settings/intervention-levels";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { dispatchStudyMeChanged } from "@/lib/study/me-invalidate";
 
 type MeResponse = {
@@ -49,7 +50,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
   const normalized = useMemo(() => pseudonym.trim(), [pseudonym]);
 
   function reloadMe() {
-    fetch("/api/me", { cache: "no-store" })
+    studyApiFetch("/api/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setMe(data))
       .catch(() => setMe({ user: null, session: null }));
@@ -57,7 +58,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/me", { cache: "no-store" })
+    studyApiFetch("/api/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((data: MeResponse) => {
         if (!cancelled) setMe(data);
@@ -86,7 +87,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
 
     const sessionVar = me.session?.variant;
 
-    void fetch("/api/preferences", { cache: "no-store" })
+    void studyApiFetch("/api/preferences", { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { preferences?: Record<string, unknown> }) => {
         const prefs = d.preferences ?? {};
@@ -135,7 +136,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
   async function persistSessionVariant(nextVariant: "baseline" | "adaptive", level?: number) {
     setSubmitting(true);
     try {
-      const res = await fetch("/api/study/session", {
+      const res = await studyApiFetch("/api/study/session", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -173,7 +174,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/study/session", {
+      const res = await studyApiFetch("/api/study/session", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -208,7 +209,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/study/session", {
+      const res = await studyApiFetch("/api/study/session", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

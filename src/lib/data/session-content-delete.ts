@@ -20,12 +20,24 @@ export async function deleteContentForStudySession(
   const prefOpts: DeleteAdaptiveOutcomeOptions | undefined =
     opts?.preserveGuestWorkshopInterventionLevel ? { preserveInterventionLevel: true } : undefined;
 
-  const tasks = await tx.task.deleteMany({ where: { userId, studySessionId } });
+  /** Zeilen ohne Session (Altlasten vor session-scoped Daten) mit aufräumen — sonst blockieren sie API-Filter (`GET` nur aktuelle Session). */
+  const sessionOrLegacy: Prisma.TaskWhereInput = {
+    userId,
+    OR: [{ studySessionId }, { studySessionId: null }],
+  };
+
+  const tasks = await tx.task.deleteMany({ where: sessionOrLegacy });
   const interactions = await tx.taskInteraction.deleteMany({
-    where: { userId, studySessionId },
+    where: {
+      userId,
+      OR: [{ studySessionId }, { studySessionId: null }],
+    },
   });
   const suggestions = await tx.adaptiveSuggestion.deleteMany({
-    where: { userId, studySessionId },
+    where: {
+      userId,
+      OR: [{ studySessionId }, { studySessionId: null }],
+    },
   });
   const eventLogs = await tx.eventLog.deleteMany({
     where: { userId, sessionId: studySessionId },

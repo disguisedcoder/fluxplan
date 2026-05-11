@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Clock, HelpCircle, Undo2, X } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -128,7 +129,7 @@ export function AdaptationsTab({
   useEffect(() => {
     if (!active) return;
     if (active.status !== "pending") return;
-    fetch("/api/events", {
+    studyApiFetch("/api/events", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -295,7 +296,7 @@ function SnoozedReminderDetailPanel({
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/preferences", {
+      const res = await studyApiFetch("/api/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key: REMINDER_SNOOZE_DAYS_PREF_KEY, value: n }),
@@ -318,7 +319,7 @@ function SnoozedReminderDetailPanel({
   async function clearVertagen() {
     setBusy(true);
     try {
-      const res = await fetch("/api/preferences", {
+      const res = await studyApiFetch("/api/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key: REMINDER_SNOOZE_UNTIL_PREF_KEY, value: null }),
@@ -430,7 +431,7 @@ function DetailPanel({
   async function respond(action: "accept" | "reject" | "snooze" | "undo") {
     setBusy(true);
     try {
-      const res = await fetch(`/api/suggestions/${suggestion!.id}/respond`, {
+      const res = await studyApiFetch(`/api/suggestions/${suggestion!.id}/respond`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
@@ -472,7 +473,7 @@ function DetailPanel({
   function logWhy() {
     if (whyLogged.current) return;
     whyLogged.current = true;
-    fetch("/api/events", {
+    studyApiFetch("/api/events", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

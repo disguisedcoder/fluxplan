@@ -16,6 +16,7 @@ import {
   suggestionIconWrapClass,
   suggestionStraplineClass,
 } from "@/components/adaptive/suggestion-visuals";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { normalizeStartViewHref } from "@/lib/settings/start-view";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
@@ -43,7 +44,7 @@ export function PendingAdaptiveSuggestionBanner({
     isBaseline;
 
   const loadPendingSuggestion = useCallback(async () => {
-    const res = await fetch("/api/suggestions?status=pending", { cache: "no-store" });
+    const res = await studyApiFetch("/api/suggestions?status=pending", { cache: "no-store" });
     if (!res.ok) {
       setSuggestion(null);
       return;
@@ -66,7 +67,7 @@ export function PendingAdaptiveSuggestionBanner({
     }
     let cancelled = false;
     (async () => {
-      await fetch("/api/adaptive/evaluate", {
+      await studyApiFetch("/api/adaptive/evaluate", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ screen: pathname }),
@@ -114,7 +115,7 @@ function PendingSuggestionBannerInner({
   useEffect(() => {
     if (seenLogged.current) return;
     seenLogged.current = true;
-    fetch("/api/events", {
+    studyApiFetch("/api/events", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -126,7 +127,7 @@ function PendingSuggestionBannerInner({
   }, [suggestion.id, suggestion.ruleKey, screen]);
 
   async function respond(action: "accept" | "reject" | "snooze") {
-    const res = await fetch(`/api/suggestions/${suggestion.id}/respond`, {
+    const res = await studyApiFetch(`/api/suggestions/${suggestion.id}/respond`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action }),
@@ -275,7 +276,7 @@ function PendingSuggestionBannerInner({
           <ExplanationPopover
             explanation={suggestion.explanation}
             onOpen={() => {
-              fetch("/api/events", {
+              studyApiFetch("/api/events", {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({

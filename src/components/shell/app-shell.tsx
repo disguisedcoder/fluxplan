@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PendingAdaptiveSuggestionBanner } from "@/components/adaptive/pending-suggestion-banner";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
   CalendarCheck2,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
@@ -78,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     function loadMe() {
-      fetch("/api/me", { cache: "no-store" })
+      studyApiFetch("/api/me", { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           if (!cancelled) setMe(data);
@@ -327,27 +328,40 @@ function MobileBottomNav({ pathname, isBaseline }: { pathname: string; isBaselin
 }
 
 function useLogViewChange(pathname: string) {
+  /** Im Client liefert `window.setTimeout` eine `number`-Id; mit `@types/node` kollidiert `ReturnType<typeof setTimeout>`. */
+  const debounceRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!pathname) return;
-    // TaskInteraction + Engine (view_preference zählt view_changed hier)
-    fetch("/api/interactions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        type: "view_changed",
-        screen: pathname,
-        metadata: { to: pathname },
-      }),
-    }).catch(() => {});
-    // EventLog bleibt für Export / Studien-Zähler (viewChangedCount)
-    fetch("/api/events", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        eventType: "view_changed",
-        screen: pathname,
-        metadata: { to: pathname },
-      }),
-    }).catch(() => {});
+    // Kurz entkoppeln: weniger parallele POSTs bei StrictMode / schnellen Layout-Updates (Turbopack).
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      debounceRef.current = null;
+      // TaskInteraction + Engine (view_preference zählt view_changed hier)
+      studyApiFetch("/api/interactions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          type: "view_changed",
+          screen: pathname,
+          metadata: { to: pathname },
+        }),
+      }).catch(() => {});
+      // EventLog bleibt für Export / Studien-Zähler (viewChangedCount)
+      studyApiFetch("/api/events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          eventType: "view_changed",
+          screen: pathname,
+          metadata: { to: pathname },
+        }),
+      }).catch(() => {});
+    }, 120);
+
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    };
   }, [pathname]);
 }

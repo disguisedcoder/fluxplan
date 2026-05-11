@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarClock, ChevronDown, ChevronUp, Clock, Plus, Tag, Type, X } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -123,7 +124,7 @@ function TaskFormDialogBody({
     let cancelled = false;
     if (mode === "edit" && initial && initialActiveFields(mode, initial).size > 0) return;
 
-    fetch("/api/preferences", { cache: "no-store" })
+    studyApiFetch("/api/preferences", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { preferences?: Record<string, unknown> } | null) => {
         if (cancelled || !data?.preferences) return;
@@ -191,12 +192,12 @@ function TaskFormDialogBody({
     try {
       const res =
         mode === "create"
-          ? await fetch("/api/tasks", {
+          ? await studyApiFetch("/api/tasks", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(payload),
             })
-          : await fetch(`/api/tasks/${initial!.id}`, {
+          : await studyApiFetch(`/api/tasks/${initial!.id}`, {
               method: "PATCH",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(payload),

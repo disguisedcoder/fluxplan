@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import {
@@ -27,6 +28,7 @@ export const reminderPreferenceRule: AdaptiveRule = {
         ruleKey: "reminder_preference",
         status: "pending",
         payload: { path: ["taskId"], equals: ctx.taskId },
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
       },
       select: { id: true },
     });

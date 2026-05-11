@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { AdaptiveRule } from "../types";
 
 export const dailyFocusRule: AdaptiveRule = {
@@ -18,6 +19,7 @@ export const dailyFocusRule: AdaptiveRule = {
         ruleKey: "daily_focus",
         status: "pending",
         createdAt: { gte: since },
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
       },
       select: { id: true },
     });

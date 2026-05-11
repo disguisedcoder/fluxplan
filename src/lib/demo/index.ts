@@ -24,3 +24,6 @@ export function getDemoRole(role: DemoRoleKey, now = new Date()): DemoRoleDefini
   return def;
 }
 
+export { DEMO_TEST_PSEUDONYMS, isDemoTestPseudonym } from "./test-pseudonyms";
+export type { DemoTestPseudonym } from "./test-pseudonyms";
+

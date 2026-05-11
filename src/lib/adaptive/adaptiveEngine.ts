@@ -11,6 +11,7 @@ import { adaptiveOptionalFoldRule } from "./rules/adaptiveOptionalFoldRule";
 import { adaptiveOptionalUnfoldRule } from "./rules/adaptiveOptionalUnfoldRule";
 import { isRulePaused, loadEngineConfig } from "./engineConfig";
 import { hasAcceptedOrRejectedSuggestionToday } from "./suggestionDayThrottle";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
 /** Nach Annehmen/Ablehnen am selben Kalendertag kein neuer Pending-Vorschlag (Snooze ausgenommen). */
@@ -35,7 +36,7 @@ const rules: AdaptiveRule[] = [
 ];
 
 export async function runAdaptiveEngine(ctx: AdaptiveContext) {
-  const config = ctx.config ?? (await loadEngineConfig(ctx.userId));
+  const config = ctx.config ?? (await loadEngineConfig(ctx.userId, ctx.studySessionId));
   if (!config.adaptiveEnabled) {
     await logEvaluation(ctx, { reason: "adaptive_disabled", createdCount: 0 });
     return { createdCount: 0 };
@@ -64,14 +65,20 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
     if (!draft) continue;
 
     const dup = await prisma.adaptiveSuggestion.findFirst({
-      where: { userId: ctx.userId, ruleKey: draft.ruleKey, type: draft.type, status: "pending" },
+      where: {
+        userId: ctx.userId,
+        ruleKey: draft.ruleKey,
+        type: draft.type,
+        status: "pending",
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
+      },
       select: { id: true },
     });
     if (dup) continue;
 
     if (
       THROTTLE_BY_DAY_RULE_KEYS.has(draft.ruleKey) &&
-      (await hasAcceptedOrRejectedSuggestionToday(ctx.userId, draft.ruleKey))
+      (await hasAcceptedOrRejectedSuggestionToday(ctx.userId, draft.ruleKey, ctx.studySessionId))
     ) {
       continue;
     }

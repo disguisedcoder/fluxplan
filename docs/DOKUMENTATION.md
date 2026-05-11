@@ -6,8 +6,8 @@ Dieses Dokument hat **drei** Hauptteile:
 2. **Technologie** – was hinter den Kulissen passiert, einfach erklärt. Ziel: Du kannst jeden Punkt im Code zeigen und in 1–2 Sätzen erklären.
 3. **Architektur & Projektentwicklung** – geplante vs. umgesetzte Architekturentscheidungen, Systemdiagramme (Mermaid) und eine **Chronik** von Feedback und Änderungen im Projektverlauf (für Bachelorarbeit/Abwehr im Verteidigungsgespräch).
 
-**Kompakter UI-Katalog** (Features, Trigger, sichtbare UI-Effekte, Baseline vs. Adaptive — für Leitung/Runner): [`UI-FEATURES-KATALOG.md`](UI-FEATURES-KATALOG.md).  
-Study Sheets für Probanden + Runner-Hinweise: [`study-sheets/README.md`](study-sheets/README.md).
+**Kompakter UI-Katalog** (Features, Trigger, sichtbare UI-Effekte, Baseline vs. Adaptive — für Moderation & technischen Ablauf): [`UI-FEATURES-KATALOG.md`](UI-FEATURES-KATALOG.md).  
+Study Sheets für Testpersonen plus Hinweise fürs Team: [`study-sheets/README.md`](study-sheets/README.md).
 
 ---
 
@@ -25,7 +25,7 @@ Study Sheets für Probanden + Runner-Hinweise: [`study-sheets/README.md`](study-
 
    Browser öffnen: `http://localhost:3000`.
 
-2. Beim Öffnen der App: **`/` → `/start`**. **„Start“** in der Sidebar führt zur **gespeicherten Standardansicht** (z. B. `/heute`, `/kalender`, `/aufgaben`, `/erstellen` — aus der Preference `startView`; ohne Session oder ohne abgeschlossenes Willkommen → **`/willkommen`**). **„Willkommen“** ist eine **eigene** Seite mit Tour & Prinzipien (`/willkommen`). Über `/einstellungen → Pseudonym & Session` legst du einen frei wählbaren Code an (z. B. `P01`). Erst danach werden Aufgaben und Logs unter diesem Pseudonym gespeichert.
+2. Beim Öffnen der App: **`/` → `/start`**. **`/start`** ist ein **`GET`-Route-Handler** (keine eigene RSC-Seite): er leitet per Redirect auf die **gespeicherte Standardansicht** weiter (z. B. `/heute`, `/kalender`, `/aufgaben`, `/erstellen` — Preference `startView`; ohne Session oder ohne gesetzte Startansicht → **`/willkommen`**). **„Start“** in der Sidebar ruft dieselbe Logik auf. **„Willkommen“** ist eine **eigene** Seite mit Tour & Prinzipien (`/willkommen`). Über `/einstellungen → Pseudonym & Session` legst du einen frei wählbaren Code an (z. B. `P01`). Erst danach werden Aufgaben und Logs unter diesem Pseudonym gespeichert.
 
 3. Über die Sidebar wechselst du zwischen den Hauptbereichen. Auf Mobile gibt es die untere Tab-Bar.
 
@@ -64,6 +64,7 @@ Die geparsten Werte erscheinen als Chips. Du kannst sie jederzeit überschreiben
 
 ## 1.4 Kalender (`/kalender`)
 
+- Umschalten **Monat** / **Woche**: In der **Wochen**ansicht entspricht der erste Wechsel auf **Woche** der **aktuellen Kalenderwoche** (Montag–Sonntag um das heutige Datum), nicht der Woche, in der der Monatserste liegt. Monats- und Wochen-Pfeile aktualisieren **Monats-Anker** und **Wochenbeginn** gemeinsam (`week-planner.tsx`).
 - Wochenraster mit Stundenslots (8–19 Uhr).
 - Jede Aufgabe mit Datum erscheint als Chip am richtigen Tag.
 - **Konflikte** (mehrere Aufgaben gleichzeitig oder >8 h Gesamtschätzung) werden rot markiert. FluxPlan verschiebt nichts automatisch.
@@ -131,13 +132,13 @@ Die **Studienvariante** steckt in der Session (`baseline` vs. `adaptive`). Techn
 | **`/anpassungen`** | Tabs nutzbar; **keine** frischen Trigger aus dem laufenden Alltag | aktive Vorschläge + Verlauf; Karten optisch nach Regelart getrennt |
 | **Kalender-Konflikte** | **Ja** — reine UI-Heuristik (Überlappung, Kapazität) | **Ja** — identisch; zusätzlich kann die Engine einen **Konflikt-Hinweis-Vorschlag** erzeugen |
 | **Formular `/erstellen` + Bearbeiten** | Volle manuelle Bedienung; **Einstellung** „Zusatzfelder eingeklappt“ wirkt trotzdem, wenn gesetzt | wie Baseline **plus** optionale Vorschläge (`task_form_chips`, `task_form_optional_fold`, `task_form_optional_unfold`); **Hinweis** bei möglicher Zeit-Überschneidung (Warnung, kein Block; Logik `task-time-overlap.ts`) |
-| **Logging** | gleiche Events möglich; weniger `suggestion_*` / `engine_evaluated` in der Praxis | mehr Einträge, sobald Proband mit Vorschlägen interagiert |
+| **Logging** | gleiche Events möglich; weniger `suggestion_*` / `engine_evaluated` in der Praxis | mehr Einträge, sobald Nutzer:innen mit Vorschlägen interagieren |
 
 **Kernaussage für die Arbeit:** Baseline liefert die **ruhige Produktivitäts-UI** ohne adaptive Schicht; Adaptive fügt **erklärbare, reversible Vorschläge** hinzu — ohne automatisches Umplanen.
 
 ## 1.8 Einstellungen: Formular „Zusatzfelder“
 
-Unter `/einstellungen` gibt es die Karte **„Aufgabe anlegen: Zusatzfelder“** (Schalter). Sie speichert `taskFormOptionalFold` (`{ enabled: true|false }`) und wirkt auf **`/erstellen`** und den **Bearbeiten-Dialog** — unabhängig davon, ob die Session baseline oder adaptive ist. So können Probanden in der Baseline ebenfalls ein kompakteres Formular wählen, ohne dass die Engine beteiligt sein muss.
+Unter `/einstellungen` gibt es die Karte **„Aufgabe anlegen: Zusatzfelder“** (Schalter). Sie speichert `taskFormOptionalFold` (`{ enabled: true|false }`) und wirkt auf **`/erstellen`** und den **Bearbeiten-Dialog** — unabhängig davon, ob die Session baseline oder adaptive ist. So können Nutzer:innen in der Baseline ebenfalls ein kompakteres Formular wählen, ohne dass die Engine beteiligt sein muss.
 
 ## 1.9 Theme (Hell / Dunkel / System)
 
@@ -152,7 +153,7 @@ Unter `/einstellungen` gibt es die Karte **„Aufgabe anlegen: Zusatzfelder“**
 - **Session-Code** (optional): zur Trennung mehrerer Test-Durchläufe pro Pseudonym.
 - **Export**: `/einstellungen → Export JSON` oder `Export CSV` (oder direkt `GET /api/export?format=json|csv`).
 - **Reset** („Daten zurücksetzen“) + Bestätigungsdialog:
-  - **Mit aktiver Studien-Session** (normal nach „Session starten“): Es werden nur Daten **dieser Session** gelöscht (Aufgaben, Vorschläge, Interaktionen, `EventLog`-Einträge mit `sessionId`; ausgewählte **Adaptive-Outcome-Preferences** wie `startView`, Chips, Snooze, Cooldowns — **nicht** der globale Master `adaptive.enabled`). **Gast `G01`/`G02` + adaptive Session:** die **Eingriffsstufe** (`adaptive.interventionLevel`) bleibt erhalten; der **Workshop-Showcase** (Aufgaben + sieben pending Beispiel-Vorschläge) wird **automatisch neu gesetzt**.
+  - **Mit aktiver Studien-Session** (normal nach „Session starten“): Es werden nur Daten **dieser Session** gelöscht (Aufgaben, Vorschläge, Interaktionen, `EventLog`-Einträge mit `sessionId`; ausgewählte **Adaptive-Outcome-Preferences** wie `startView`, Chips, Snooze, Cooldowns — **nicht** der globale Master `adaptive.enabled`, außer beim unten beschriebenen **Gast-Workshop-Reset**). **Gast `G01`/`G02`:** „Daten zurücksetzen“ leert die Session und setzt **Werk-Defaults** (`adaptive.enabled` passend zur Session-Variante, **Eingriffsstufe 2**) sowie den **kompletten Workshop** neu: **Adaptive** = alle Kernaufgaben + Timeline + **sieben** wieder **pending** Beispiel-Vorschläge; **Baseline** = dieselben Kernaufgaben + Timeline **ohne** Vorschläge.
   - **Ohne Session-Cookies** (Fallback): Vollständiger Daten-Leerstand für den User (Tasks/Interactions/Suggestions/**alle** `UserPreference`); **`EventLog`** wird dabei **nicht** gelöscht (Nachvollziehbarkeit).
   - **Pseudonym** und **User-Zeile** bleiben erhalten.
 
@@ -211,7 +212,7 @@ Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), dami
 
 **Nur der aktuell eingeloggte Pseudonym-User** (dein Browser nach „Session starten“):
 
-- `/einstellungen → Daten zurücksetzen` — siehe **§1.10** (session-scoped vs. User-Fallback; bei **G01/G02 + adaptiv** Workshop neu + Eingriffsstufe bleibt).
+- `/einstellungen → Daten zurücksetzen` — siehe **§1.10** (session-scoped vs. User-Fallback; bei **G01/G02** Workshop inkl. Werk-Defaults neu, siehe dort).
 - **G01/G02:** erneut **„Demo-Daten laden“** (falls Karte sichtbar) — intern oft mit Reset, dann Rollen-Set.
 - **F01–E05:** Demo erneut über **`POST /api/data/demo`** (oder Admin/Runner), nicht über eine entfernte UI-Karte.
 
@@ -594,7 +595,7 @@ Die folgende Tabelle bezieht sich auf die **Leitidee** aus `docs/NEXT_PROMPT.md`
 | Auth | Pseudonym + Session, kein echtes Login | Cookies `fp_userId` / `fp_sessionId`, `requireUserId()` | Minimaler Aufwand; Trennung der Teilnehmer über Pseudonym; Session für Export/Logs. |
 | Routing | Deutsche Pfade, Redirects von alten englischen URLs | `/(app)/heute` etc., Redirects wo nötig | Konsistente IA für deutschsprachige Mockups. |
 | Kalender | Leichtgewichtige Planung, Konflikte sichtbar | Wochenraster + Konfliktlogik + Detailkarten (Weiterentwicklung im Projektverlauf) | Fokus auf **Transparenz** statt automatischer Planung. |
-| Demo & Studie | Reproduzierbare Szenarien | Rollen (`familienplanner`, `taskplanner`, `evalrunner`) mit Aufgaben-Set, `POST /api/data/demo`, Seed-User, Study-Sheets `.md` | Ohne Demo-Daten wäre Evaluation fragil; Sheets sind **druckbar** für Probanden. |
+| Demo & Studie | Reproduzierbare Szenarien | Rollen (`familienplanner`, `taskplanner`, `evalrunner`) mit Aufgaben-Set, `POST /api/data/demo`, Seed-User, Study-Sheets `.md` | Ohne Demo-Daten wäre Evaluation fragil; Sheets sind **druckbar** für Testpersonen. |
 | Admin / Reset | Nicht zwingend in NEXT_PROMPT | Admin-Pseudonym via `FLUXPLAN_ADMIN_PSEUDONYMS`, `reset-demo-users` (inkl. G01/G02 löschen), `reset-guest-users`, CLI `reset:test-users`; Gast-Workshop G01/G02 + Session-Reset-Verhalten | Praxisbedarf: zwischen Testläufen **schnell** konsistente DB-Zustände herstellen. |
 | Logout / User-Wechsel | Nicht explizit im alten Prompt | `POST /api/study/logout`, UI „Session beenden“ | Ohne Logout ist Multi-User-Testing am selben Rechner unnötig frickelig. |
 | Build / Qualität | Stabiler Prototyp | `npm run lint`; `npm run build` soll grün sein | „Buildfähiger Prototyp“ ist in Verteidigung/Paper verteidigbar. |
@@ -639,7 +640,7 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
    - **Konsequenz:** Shell/Breakpoints und Kalender-UX weiterentwickelt; Ungeplant-Liste mit **Heute** (Dialog) vs. **Planen** (Zeit setzen) differenziert; Konflikt-Karten detaillierter.
 
 7. **Admin und Multi-Tester-Reset**  
-   - **Bedarf:** Zwischen Probanden wieder **definierte** DB-Zustände ohne manuelle SQL-Arbeit.  
+   - **Bedarf:** Zwischen Testläufen wieder **definierte** DB-Zustände ohne manuelle SQL-Arbeit.  
    - **Konsequenz:** Admin-Pseudonym (`FLUXPLAN_ADMIN_PSEUDONYMS`, Standard `admin`), UI „Alle Demo-Testuser zurücksetzen“ inkl. **G01/G02** (`POST /api/data/reset-demo-users`), zusätzlich **„Gast-User zurücksetzen“** (`POST /api/data/reset-guest-users`), CLI `npm run reset:test-users` + `prisma:seed`. Migration entfernt **alte** Gast-Pseudonyme `G`+Ziffern außer **G01/G02**.
 
 8. **Session beenden / Pseudonym wechseln**  
@@ -679,7 +680,8 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 docker compose up -d --build
 docker compose logs -f app
 docker compose logs e2e   # Playwright-Ausgabe (läuft einmal nach App-Start)
-docker compose down
+npm run docker:down       # stoppt + löscht Projekt-Volumes (DB/E2E-node_modules), spart Docker-Speicher
+npm run docker:down:soft  # nur stoppen, Volumes behalten
 
 # Nur E2E erneut (App/DB laufen)
 docker compose run --rm e2e

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SessionLogoutButton } from "@/components/study/session-logout-button";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
 
 type MeResponse = {
@@ -17,7 +18,7 @@ export function StudySessionBanner() {
 
   useEffect(() => {
     function load() {
-      fetch("/api/me", { cache: "no-store" })
+      studyApiFetch("/api/me", { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => setMe(data))
         .catch(() => setMe({ user: null, session: null }));
@@ -41,7 +42,15 @@ export function StudySessionBanner() {
                     {" "}
                     · Session: <span className="font-medium text-foreground">{me.session.sessionCode}</span>
                   </>
-                ) : null}
+                ) : (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <span className="text-amber-700 dark:text-amber-500">
+                      Keine gültige Session (Code ungültig oder veraltet) — unten neu starten.
+                    </span>
+                  </>
+                )}
               </>
             ) : (
               "Noch keine Session gestartet."
@@ -53,7 +62,7 @@ export function StudySessionBanner() {
             <SessionLogoutButton
               variant="secondary"
               onDone={() => {
-                fetch("/api/me", { cache: "no-store" })
+                studyApiFetch("/api/me", { cache: "no-store" })
                   .then((r) => r.json())
                   .then((data) => setMe(data))
                   .catch(() => setMe({ user: null, session: null }));

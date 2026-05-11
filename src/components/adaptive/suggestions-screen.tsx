@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Sparkles, Sliders, ShieldOff } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import {
   FLUXPLAN_PREFERENCES_CHANGED,
@@ -62,7 +63,7 @@ function SuggestionsScreenInner() {
       const ac = new AbortController();
       const t = setTimeout(() => ac.abort(), timeoutMs);
       try {
-        const res = await fetch(url, { cache: "no-store", signal: ac.signal });
+        const res = await studyApiFetch(url, { cache: "no-store", signal: ac.signal });
         if (!res.ok) return {} as Record<string, unknown>;
         return ((await res.json()) as Record<string, unknown>) ?? {};
       } catch {

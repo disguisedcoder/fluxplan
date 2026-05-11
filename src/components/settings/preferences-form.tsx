@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
 import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
+import { isDemoTestPseudonym } from "@/lib/demo";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -26,23 +28,24 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
   const [prefs, setPrefs] = useState<Preferences>({});
   const [busy, setBusy] = useState(false);
   const [isBaseline, setIsBaseline] = useState(serverBaseline);
-  const [showGuestDemoSetup, setShowGuestDemoSetup] = useState(false);
+  const [showDemoSetupCard, setShowDemoSetupCard] = useState(false);
 
   const load = useCallback(async () => {
-    const r = await fetch("/api/preferences", { cache: "no-store" });
+    const r = await studyApiFetch("/api/preferences", { cache: "no-store" });
     if (!r.ok) return;
     const data = await r.json();
     setPrefs(data.preferences ?? {});
   }, []);
 
-  const refreshGuestDemoVisibility = useCallback(async () => {
-    const r = await fetch("/api/me", { cache: "no-store" });
+  const refreshDemoSetupVisibility = useCallback(async () => {
+    const r = await studyApiFetch("/api/me", { cache: "no-store" });
     if (!r.ok) {
-      setShowGuestDemoSetup(false);
+      setShowDemoSetupCard(false);
       return;
     }
     const d = (await r.json()) as { user?: { pseudonym?: string } | null };
-    setShowGuestDemoSetup(isGuestStudyPseudonym(d.user?.pseudonym));
+    const p = d.user?.pseudonym;
+    setShowDemoSetupCard(isGuestStudyPseudonym(p) || isDemoTestPseudonym(p));
   }, []);
 
   useEffect(() => {
@@ -52,14 +55,14 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refreshGuestDemoVisibility();
-  }, [refreshGuestDemoVisibility]);
+    void refreshDemoSetupVisibility();
+  }, [refreshDemoSetupVisibility]);
 
   useEffect(() => {
-    const onMe = () => void refreshGuestDemoVisibility();
+    const onMe = () => void refreshDemoSetupVisibility();
     window.addEventListener(STUDY_ME_CHANGED_EVENT, onMe);
     return () => window.removeEventListener(STUDY_ME_CHANGED_EVENT, onMe);
-  }, [refreshGuestDemoVisibility]);
+  }, [refreshDemoSetupVisibility]);
 
   useEffect(() => {
     queueMicrotask(() => setIsBaseline(serverBaseline));
@@ -67,7 +70,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
 
   useEffect(() => {
     function syncSessionVariant() {
-      void fetch("/api/me", { cache: "no-store" })
+      void studyApiFetch("/api/me", { cache: "no-store" })
         .then((r) => r.json())
         .then((d: { session?: { variant?: string | null } | null }) => {
           setIsBaseline(d.session?.variant === "baseline");
@@ -81,7 +84,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
   async function update(key: string, value: unknown) {
     setBusy(true);
     try {
-      const res = await fetch("/api/preferences", {
+      const res = await studyApiFetch("/api/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key, value }),
@@ -164,15 +167,15 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
       <AdminResetDemoUsersCard />
       <AdminResetGuestUsersCard />
 
-      {showGuestDemoSetup ? (
+      {showDemoSetupCard ? (
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">
             <div>
-              <div className="text-sm font-semibold tracking-tight">Demo-Setup (nur Gast G01 / G02)</div>
+              <div className="text-sm font-semibold tracking-tight">Demo-Setup (Gast G01 / G02 oder Codes F01–E05)</div>
               <p className="text-xs text-muted-foreground">
                 {isBaseline
-                  ? "Lädt pro Rolle ein größeres Aufgaben-Set (inkl. Konflikte/Beispiele). Vorschläge bleiben in der Baseline deaktiviert."
-                  : "Mit adaptiver Gast-Session hast du oft schon den Workshop-Stand (Aufgaben + alle Beispiel-Vorschläge). Optional kannst du hier durch ein rollengrößeres Demo-Set ersetzen."}
+                  ? "Lädt die rollenspezifische Demo (F = Familienplanner, T = Taskplanner, E = Eval-Runner): Aufgaben-Set inkl. Beispielen. Vorschläge bleiben in der Baseline deaktiviert."
+                  : "Lädt bzw. ersetzt die Session durch die rollenspezifische Demo inkl. Workshop-Präferenzen und adaptiven Beispielen (wie nach „Daten zurücksetzen“ bei Demo-Codes)."}
               </p>
             </div>
             <DemoSeedButton onDone={load} />

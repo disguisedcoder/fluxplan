@@ -21,3 +21,9 @@ export const DEMO_TEST_PSEUDONYMS = [
 ] as const;
 
 export type DemoTestPseudonym = (typeof DEMO_TEST_PSEUDONYMS)[number];
+
+export function isDemoTestPseudonym(pseudonym: string | null | undefined): boolean {
+  if (!pseudonym) return false;
+  const p = pseudonym.trim().toUpperCase();
+  return (DEMO_TEST_PSEUDONYMS as readonly string[]).includes(p);
+}

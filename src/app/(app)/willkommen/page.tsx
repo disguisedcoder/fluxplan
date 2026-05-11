@@ -12,7 +12,7 @@ export default async function WillkommenPage() {
     <div className="space-y-8">
       <PageHeader
         title="Willkommen bei FluxPlan"
-        subtitle="Prinzipien und Demo findest du unten. „Start“ in der Sidebar führt immer zu deiner gewählten Startansicht (Heute, Kalender, Aufgaben, Erstellen)."
+        subtitle="Prinzipien und Demo findest du unten. „Start“ in der Sidebar führt zu deiner gespeicherten Startansicht — solange du noch keine gewählt hast (z. B. nach erstem Login oder Daten-Reset), landest du hier wieder auf Willkommen."
         right={
           userId ? (
             <Link href="/start" className={buttonVariants({ size: "default" })}>

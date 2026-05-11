@@ -1,8 +1,9 @@
 import type { DemoRoleDefinition } from "../types";
 import { at } from "../time";
+import { buildTwoMonthTimelineTasks } from "../two-month-timeline";
 
 export function familienplannerRole(now = new Date()): DemoRoleDefinition {
-  const tasks = [
+  const core = [
     {
       title: "Kita-Abholung organisieren",
       priority: "high",
@@ -174,11 +175,14 @@ export function familienplannerRole(now = new Date()): DemoRoleDefinition {
     },
   ] as const;
 
+  const timeline = buildTwoMonthTimelineTasks("familienplanner", now);
+  const tasks = [...core, ...timeline];
+
   return {
     key: "familienplanner",
     label: "Familienplanner",
     description: "Kalendernah, Termine und Konflikte, Erinnerungs-Muster und Ansichtswechsel.",
-    tasks: [...tasks],
+    tasks,
     viewEvents: [
       { from: "/heute", to: "/kalender" },
       { from: "/kalender", to: "/heute" },
@@ -194,7 +198,7 @@ export function familienplannerRole(now = new Date()): DemoRoleDefinition {
       { screen: "task_created", taskTitle: "Geburtstagsfeier planen", metadata: { source: "demo" } },
       { screen: "/heute", taskTitle: "Kita-Abholung organisieren", metadata: { trigger: "demo" } },
     ],
-    eventLogMetadata: { role: "familienplanner", taskCount: tasks.length },
+    eventLogMetadata: { role: "familienplanner", taskCount: tasks.length, timelineDays: timeline.length },
   };
 }
 

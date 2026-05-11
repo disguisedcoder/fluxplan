@@ -1,15 +1,30 @@
 import type { Prisma } from "@prisma/client";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
+import { buildGuestMixedTimelineTasks } from "./two-month-timeline";
+
+export type GuestWorkshopCore = {
+  tRich: { id: string };
+  tMinA: { id: string };
+  tMinB: { id: string };
+  tBlock1: { id: string };
+  tBlock2: { id: string };
+  tBlock3: { id: string };
+  tRuck: { id: string };
+  tSlot: { id: string };
+  kalenderCountInTail: number;
+  proposedReminder: Date;
+  totalEst: number;
+};
+
 /**
- * Workshop-Gast (G01/G02, adaptiv): konsistente Demo-Daten + **alle** Regeltypen als **pending** Vorschläge,
- * plus Navigation & Aufgaben, die zu den Texten passen. Nach „Daten zurücksetzen“ wird derselbe Stand
- * wiederhergestellt; die **Eingriffsstufe** bleibt beim Session-Reset erhalten (`preserveGuestWorkshopInterventionLevel`).
+ * Gemeinsamer Inhalt für **alle** Gast-Sessions (Baseline & Adaptive):
+ * Kern-Workshop-Aufgaben, 2-Monats-Timeline, Navigationstrail — **ohne** adaptive Vorschläge.
  */
-export async function seedGuestAdaptiveShowcase(
+export async function seedGuestWorkshopSharedContent(
   tx: Prisma.TransactionClient,
   opts: { userId: string; studySessionId: string },
-): Promise<void> {
+): Promise<GuestWorkshopCore> {
   const { userId, studySessionId } = opts;
 
   const day = new Date();
@@ -20,9 +35,9 @@ export async function seedGuestAdaptiveShowcase(
     data: {
       userId,
       studySessionId,
-      title: "Workshop: Aufgabe mit allen Zusatzfeldern",
+      title: "Workshop: Große Aufgabe mit allen Details",
       description:
-        "Liste, Tags, Dauer und Beschreibung sind gesetzt — passt zum Chip-Vorschlag und zum Fokus-Hinweis.",
+        "Liste, Tags, Dauer und Beschreibung sind ausgefüllt — typisch für etwas, das man vorbereitet und später abhakt.",
       status: TaskStatus.open,
       priority: TaskPriority.high,
       dueDate: day,
@@ -38,7 +53,7 @@ export async function seedGuestAdaptiveShowcase(
       data: {
         userId,
         studySessionId,
-        title: "Workshop: Einfach A (nur Titel)",
+        title: "Workshop: Kurz notiert (A)",
         status: TaskStatus.open,
         priority: TaskPriority.low,
         dueDate: null,
@@ -48,7 +63,7 @@ export async function seedGuestAdaptiveShowcase(
       data: {
         userId,
         studySessionId,
-        title: "Workshop: Einfach B (nur Titel)",
+        title: "Workshop: Kurz notiert (B)",
         status: TaskStatus.open,
         priority: TaskPriority.low,
         dueDate: null,
@@ -61,7 +76,7 @@ export async function seedGuestAdaptiveShowcase(
       data: {
         userId,
         studySessionId,
-        title: "Workshop: Kalendertag Block 1 (geschätzt)",
+        title: "Workshop: Vormittag länger einplanen (1)",
         status: TaskStatus.open,
         priority: TaskPriority.medium,
         dueDate: day,
@@ -72,7 +87,7 @@ export async function seedGuestAdaptiveShowcase(
       data: {
         userId,
         studySessionId,
-        title: "Workshop: Kalendertag Block 2 (geschätzt)",
+        title: "Workshop: Vormittag länger einplanen (2)",
         status: TaskStatus.open,
         priority: TaskPriority.medium,
         dueDate: day,
@@ -83,7 +98,7 @@ export async function seedGuestAdaptiveShowcase(
       data: {
         userId,
         studySessionId,
-        title: "Workshop: Kalendertag Block 3 (geschätzt)",
+        title: "Workshop: Vormittag länger einplanen (3)",
         status: TaskStatus.open,
         priority: TaskPriority.medium,
         dueDate: day,
@@ -96,7 +111,7 @@ export async function seedGuestAdaptiveShowcase(
     data: {
       userId,
       studySessionId,
-      title: "Workshop: Rückmeldung (ohne Erinnerung)",
+      title: "Workshop: Rückmeldung bis heute Abend",
       status: TaskStatus.open,
       priority: TaskPriority.high,
       dueDate: eveningSlot,
@@ -109,7 +124,7 @@ export async function seedGuestAdaptiveShowcase(
     data: {
       userId,
       studySessionId,
-      title: "Workshop: Termin-Slot heute Nachmittag",
+      title: "Workshop: Termin heute Nachmittag",
       status: TaskStatus.open,
       priority: TaskPriority.medium,
       dueDate: new Date(day.getTime() + 15 * 60 * 60 * 1000),
@@ -117,7 +132,23 @@ export async function seedGuestAdaptiveShowcase(
     },
   });
 
-  /** Letzte 8 Einträge: viele Wechsel zu `/kalender` — passt zur Startansicht-Vorschau (Gast-Schwellen). */
+  const timelineInputs = buildGuestMixedTimelineTasks(day);
+  await tx.task.createMany({
+    data: timelineInputs.map((t) => ({
+      userId,
+      studySessionId,
+      title: `Workshop: ${t.title}`,
+      description: null,
+      status: TaskStatus.open,
+      priority: (t.priority ?? "medium") as TaskPriority,
+      dueDate: t.dueDate ?? null,
+      reminderAt: t.reminderAt ?? null,
+      listName: t.listName ?? "Workshop",
+      tags: [...(t.tags ?? []), "workshop"],
+      estimatedMinutes: t.estimatedMinutes ?? null,
+    })),
+  });
+
   const viewTo: string[] = [
     "/heute",
     "/kalender",
@@ -156,6 +187,34 @@ export async function seedGuestAdaptiveShowcase(
   const proposedReminder = new Date(Date.now() + 2 * 60 * 60 * 1000);
   const totalEst = 200 * 3;
 
+  return {
+    tRich: { id: tRich.id },
+    tMinA: { id: tMinA.id },
+    tMinB: { id: tMinB.id },
+    tBlock1: { id: tBlock1.id },
+    tBlock2: { id: tBlock2.id },
+    tBlock3: { id: tBlock3.id },
+    tRuck: { id: tRuck.id },
+    tSlot: { id: tSlot.id },
+    kalenderCountInTail,
+    proposedReminder,
+    totalEst,
+  };
+}
+
+/**
+ * Workshop-Gast **adaptiv**: gemeinsamer Kalender-Inhalt + **alle** Regeltypen als **pending** Vorschläge.
+ *
+ * **Daten zurücksetzen (Gast):** Session wird geleert, **Werk-Preferences** gesetzt, dieser Stand **neu** inkl. aller Vorschläge **pending**.
+ */
+export async function seedGuestAdaptiveShowcase(
+  tx: Prisma.TransactionClient,
+  opts: { userId: string; studySessionId: string },
+): Promise<void> {
+  const { userId, studySessionId } = opts;
+
+  const core = await seedGuestWorkshopSharedContent(tx, opts);
+
   const drafts: Array<{
     ruleKey: string;
     type: string;
@@ -173,7 +232,7 @@ export async function seedGuestAdaptiveShowcase(
         suggestedStartView: "/kalender",
         signal: {
           targetId: "kalender",
-          count: kalenderCountInTail,
+          count: core.kalenderCountInTail,
           sampleSize: 8,
           threshold: 3,
           guest: true,
@@ -185,10 +244,10 @@ export async function seedGuestAdaptiveShowcase(
       type: "task_form_chips",
       title: "Felder schneller hinzufügen?",
       explanation:
-        "Demo (Gast): Die Aufgabe „…alle Zusatzfeldern“ nutzt Liste, Tags, Dauer und Beschreibung — vorgeschlagene Chips passen dazu; erst nach Annahme wirksam.",
+        "Demo (Gast): Die Aufgabe „Große Aufgabe mit allen Details“ nutzt Liste, Tags, Dauer und Beschreibung — vorgeschlagene Chips passen dazu; erst nach Annahme wirksam.",
       payload: {
         chipKeys: ["list", "tags", "duration", "description"],
-        signal: { guest: true, sampleSize: 4, anchorTaskId: tRich.id },
+        signal: { guest: true, sampleSize: 4, anchorTaskId: core.tRich.id },
       },
     },
     {
@@ -196,7 +255,7 @@ export async function seedGuestAdaptiveShowcase(
       type: "task_form_optional_fold",
       title: "Zusatzfelder zunächst ausblenden?",
       explanation:
-        "Demo (Gast): Zwei sehr kompakte Aufgaben stehen neben ausführlicheren — typisches Muster für „Formular kompakter“. Du entscheidest.",
+        "Demo (Gast): Zwei kurze Einträge stehen neben einer ausführlicheren Aufgabe — typisches Muster für „Formular kompakter“. Du entscheidest.",
       payload: { optionalUsageRate: 0.15, sampleSize: 8, guest: true },
     },
     {
@@ -213,7 +272,7 @@ export async function seedGuestAdaptiveShowcase(
       title: "Heute könnten diese Aufgaben im Fokus stehen",
       explanation:
         "Demo (Gast): Vorschlag ohne Datenänderung — passend zu Priorität, Rückmeldung und Kalendertag-Last.",
-      payload: { taskIds: [tRuck.id, tRich.id, tBlock1.id] },
+      payload: { taskIds: [core.tRuck.id, core.tRich.id, core.tBlock1.id] },
     },
     {
       ruleKey: "reminder_preference",
@@ -222,8 +281,8 @@ export async function seedGuestAdaptiveShowcase(
       explanation:
         "Demo (Gast): „Rückmeldung“ hat noch keine Erinnerung — nach Annahme setzt FluxPlan den Vorschlag (du kannst ablehnen).",
       payload: {
-        taskId: tRuck.id,
-        proposedReminderAt: proposedReminder.toISOString(),
+        taskId: core.tRuck.id,
+        proposedReminderAt: core.proposedReminder.toISOString(),
       },
     },
     {
@@ -233,9 +292,9 @@ export async function seedGuestAdaptiveShowcase(
       explanation:
         "Demo (Gast): Drei große Blöcke am selben Tag + weiterer Slot — Hinweis ohne automatische Verschiebung.",
       payload: {
-        taskId: tBlock1.id,
-        totalEstimatedMinutes: totalEst,
-        relatedTaskIds: [tBlock2.id, tBlock3.id, tSlot.id],
+        taskId: core.tBlock1.id,
+        totalEstimatedMinutes: core.totalEst,
+        relatedTaskIds: [core.tBlock2.id, core.tBlock3.id, core.tSlot.id],
       },
     },
   ];
@@ -269,11 +328,11 @@ export async function seedGuestAdaptiveShowcase(
         reason: "guest_showcase_seeded",
         createdCount: drafts.length,
         taskSummary: {
-          richProfile: tRich.id,
-          calendarBlocks: [tBlock1.id, tBlock2.id, tBlock3.id],
-          minimalPair: [tMinA.id, tMinB.id],
-          feedback: tRuck.id,
-          slot: tSlot.id,
+          richProfile: core.tRich.id,
+          calendarBlocks: [core.tBlock1.id, core.tBlock2.id, core.tBlock3.id],
+          minimalPair: [core.tMinA.id, core.tMinB.id],
+          feedback: core.tRuck.id,
+          slot: core.tSlot.id,
         },
       } as Prisma.InputJsonValue,
     },

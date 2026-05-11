@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
+
 const DEFAULT_LEVEL = 2;
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
@@ -28,7 +30,10 @@ export type EngineConfig = {
   snoozeByRuleKey: Record<string, Date>;
 };
 
-export async function loadEngineConfig(userId: string): Promise<EngineConfig> {
+export async function loadEngineConfig(
+  userId: string,
+  studySessionId?: string | null,
+): Promise<EngineConfig> {
   const prefs = await prisma.userPreference.findMany({ where: { userId } });
 
   let adaptiveEnabled = true;
@@ -57,6 +62,7 @@ export async function loadEngineConfig(userId: string): Promise<EngineConfig> {
       status: "snoozed",
       respondedAt: { gte: snoozeWindowStart },
       ruleKey: { not: "reminder_preference" },
+      ...whereAdaptiveSuggestionStudySession(studySessionId),
     },
     select: { ruleKey: true, respondedAt: true },
     orderBy: { respondedAt: "desc" },

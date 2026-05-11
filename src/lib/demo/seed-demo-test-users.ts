@@ -1,6 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
+import { makeStudySessionCode } from "@/lib/study/make-session-code";
+
 import { getDemoRole, roleFromPseudonym } from "./index";
 import { DEMO_TEST_PSEUDONYMS } from "./test-pseudonyms";
 
@@ -108,7 +110,7 @@ export async function seedDemoTestUsers(prisma: PrismaClient, now = new Date()) 
       .create({
         data: {
           userId: user.id,
-          sessionCode: `S-${pseudonym}-${now.toISOString().replaceAll(":", "").replaceAll("-", "").slice(0, 15)}`,
+          sessionCode: makeStudySessionCode(pseudonym),
           variant: "adaptive",
           notes: `Seed-Testuser (${def.key})`,
         },

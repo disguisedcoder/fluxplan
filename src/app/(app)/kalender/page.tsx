@@ -8,7 +8,7 @@ export default function KalenderPage() {
     <div>
       <PageHeader
         title="Kalender"
-        subtitle="Liste und Zeitbezug greifen sichtbar ineinander. Konflikte werden markiert, nicht autonom aufgelöst."
+        subtitle="Monats- oder Wochenansicht per Umschalter. Klick auf eine Aufgabe öffnet die Bearbeitung. Konflikte werden markiert, nicht autonom aufgelöst."
         right={
           <Link href="/erstellen" className={buttonVariants()}>
             Neue Aufgabe (mit Zeit)

@@ -30,7 +30,9 @@
     "reset:test-users": "tsx scripts/reset-test-users.ts",
     "prisma:studio": "prisma studio",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down -v --remove-orphans",
+    "docker:down:soft": "docker compose down --remove-orphans",
+    "docker:down:full": "docker compose down -v --remove-orphans && docker volume prune -f && docker builder prune -f"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

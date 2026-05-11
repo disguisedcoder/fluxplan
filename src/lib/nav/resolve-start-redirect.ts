@@ -1,30 +1,15 @@
-import { redirect } from "next/navigation";
-
-import { getStudyCookies } from "@/lib/auth/study-session";
 import { prisma } from "@/lib/db/prisma";
-import { resolveStartViewFromPreferences } from "@/lib/settings/start-view";
-
-export function readSeenWelcomePref(value: unknown): boolean {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "object" && value !== null && "value" in value) {
-    const inner = (value as { value?: unknown }).value;
-    if (typeof inner === "boolean") return inner;
-  }
-  return false;
-}
+import { getSavedStartViewHref, normalizeStartViewHref } from "@/lib/settings/start-view";
 
 /**
- * Route `/start`: Einstieg in die gewählte Startansicht (Heute, Kalender, …).
- * Ohne Session → `/willkommen`.
+ * Ziel-URL für `/start` (ohne `redirect()` in einer Server-Page): wird vom Route-Handler
+ * `GET /start` genutzt, damit kein RSC-`performance.measure`-Fehler bei sofortigem Redirect
+ * (Next 16 / Turbopack, s. vercel/next.js#86060).
  *
- * Wichtig: `startView` muss auch dann greifen, wenn `seenWelcome` (noch) nicht gesetzt ist,
- * sonst wirkt „Startansicht übernehmen“ kaputt (Start führt wieder zur Willkommensseite).
+ * Ohne Session → `/willkommen`. Ohne gespeicherte `startView` ebenfalls `/willkommen`.
  */
-export async function redirectFromStartRoute(): Promise<never> {
-  const { userId } = await getStudyCookies();
-  if (!userId) {
-    redirect("/willkommen");
-  }
+export async function getStartRedirectHref(userId: string | null): Promise<string> {
+  if (!userId) return "/willkommen";
 
   const rows = await prisma.userPreference.findMany({
     where: { userId },
@@ -33,5 +18,7 @@ export async function redirectFromStartRoute(): Promise<never> {
   const prefs: Record<string, unknown> = {};
   for (const r of rows) prefs[r.key] = r.value;
 
-  redirect(resolveStartViewFromPreferences(prefs));
+  const saved = getSavedStartViewHref(prefs);
+  if (!saved) return "/willkommen";
+  return normalizeStartViewHref(saved);
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
@@ -39,6 +40,7 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
         ruleKey: "adaptive_task_creation",
         type: "task_form_chips",
         status: "pending",
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
       },
       select: { id: true },
     });
@@ -50,6 +52,7 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
         ruleKey: "adaptive_optional_fold",
         type: "task_form_optional_fold",
         status: "pending",
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
       },
       select: { id: true },
     });

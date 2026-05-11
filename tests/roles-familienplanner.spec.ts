@@ -83,6 +83,7 @@ test("@study @adaptive familienplanner shows time overlap hint in week planner",
     )
     .catch(() => {});
   await expect(page.getByText("Lade Termine …")).not.toBeVisible({ timeout: 90_000 });
+  await page.getByRole("button", { name: "Woche" }).click();
   await page.getByRole("button", { name: "Diese Woche" }).click();
   let found = false;
   for (let w = 0; w < 8; w += 1) {

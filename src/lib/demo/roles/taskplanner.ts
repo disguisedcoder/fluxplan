@@ -1,8 +1,9 @@
 import type { DemoRoleDefinition } from "../types";
 import { at } from "../time";
+import { buildTwoMonthTimelineTasks } from "../two-month-timeline";
 
 export function taskplannerRole(now = new Date()): DemoRoleDefinition {
-  const tasks = [
+  const core = [
     {
       title: "Kapitel 2 lesen",
       priority: "high",
@@ -169,11 +170,14 @@ export function taskplannerRole(now = new Date()): DemoRoleDefinition {
     },
   ] as const;
 
+  const timeline = buildTwoMonthTimelineTasks("taskplanner", now);
+  const tasks = [...core, ...timeline];
+
   return {
     key: "taskplanner",
     label: "Taskplanner",
     description: "Aufgabengetrieben: Prioritäten, Tags/Kategorien, Suche/Filter, Quick-Add & Parser.",
-    tasks: [...tasks],
+    tasks,
     viewEvents: [
       { from: "/heute", to: "/aufgaben" },
       { from: "/aufgaben", to: "/heute" },
@@ -189,7 +193,7 @@ export function taskplannerRole(now = new Date()): DemoRoleDefinition {
       { screen: "task_created", taskTitle: "Kapitel 2 lesen", metadata: { source: "demo" } },
       { screen: "task_created", taskTitle: "Quick Add Beispiele sammeln", metadata: { source: "demo" } },
     ],
-    eventLogMetadata: { role: "taskplanner", taskCount: tasks.length },
+    eventLogMetadata: { role: "taskplanner", taskCount: tasks.length, timelineDays: timeline.length },
   };
 }
 

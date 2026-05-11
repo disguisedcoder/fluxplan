@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 
 export function QuickAddInput({
   placeholder = "Schnelle Eingabe …",
@@ -23,7 +24,7 @@ export function QuickAddInput({
     if (trimmed.length === 0) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await studyApiFetch("/api/tasks", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ title: trimmed, priority: "medium" }),

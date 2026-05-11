@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import { normalizeStartViewHref } from "@/lib/settings/start-view";
@@ -91,7 +92,12 @@ export const viewPreferenceRule: AdaptiveRule = {
     if (!ctx.screen) return null;
 
     const existing = await prisma.adaptiveSuggestion.findFirst({
-      where: { userId: ctx.userId, ruleKey: "view_preference", status: "pending" },
+      where: {
+        userId: ctx.userId,
+        ruleKey: "view_preference",
+        status: "pending",
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
+      },
       select: { id: true },
     });
     if (existing) return null;
@@ -104,6 +110,7 @@ export const viewPreferenceRule: AdaptiveRule = {
         ruleKey: "view_preference",
         status: "accepted",
         respondedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
       },
       select: { id: true },
     });

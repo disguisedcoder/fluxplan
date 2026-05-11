@@ -9,6 +9,7 @@ import {
   overlappingOpenTasksForDraft,
   OVERLAP_HINT_FALLBACK_MINUTES,
 } from "@/lib/planning/task-time-overlap";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 
 type Props = {
   date: string;
@@ -23,7 +24,7 @@ export function TaskScheduleOverlapHint({ date, time, estimatedMinutes, excludeT
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/tasks?status=open", { cache: "no-store" })
+    studyApiFetch("/api/tasks?status=open", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { tasks?: Task[] } | null) => {
         if (cancelled || !data?.tasks) return;

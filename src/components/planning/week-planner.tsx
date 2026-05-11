@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Calendar as CalIcon, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,32 @@ import {
 import type { Task } from "@/components/tasks/types";
 import { addDays, startOfLocalDay } from "./date";
 
-const HOUR_HEIGHT = 56; // px per hour
-// Voller Tag (00:00–24:00) als scrollbare Achse.
+const WEEKDAY_LABELS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+
+/** Feste Locale für sichtbare Datumsstrings: Node-SSR und Browser sollen identisch formatieren. */
+const PLANNING_LOCALE = "de-DE";
+
+// Voller Tag (00:00–24:00) für Konflikt- und Frei-Slot-Berechnung.
 const HOUR_START = 0;
 const HOUR_END = 24; // exclusive
+const HOUR_HEIGHT = 56; // px pro Stunde (Wochenraster)
+
+type CalendarViewTab = "month" | "week";
+
+type ScheduledTask = {
+  task: Task;
+  startMinutes: number;
+  durationMinutes: number;
+};
+
+type LaidOutTask = ScheduledTask & { col: number; cols: number };
 
 export function WeekPlanner() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
+  const [viewTab, setViewTab] = useState<CalendarViewTab>("month");
+  const [monthAnchor, setMonthAnchor] = useState(() => firstOfMonth(startOfLocalDay(new Date())));
+  const [weekStart, setWeekStart] = useState(() => mondayOf(startOfLocalDay(new Date())));
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -33,7 +51,7 @@ export function WeekPlanner() {
     setLoading(true);
     try {
       // Kalender braucht i. d. R. nur offene Aufgaben (schneller als alles inkl. Done/Archiv).
-      const res = await fetch("/api/tasks?status=open", { cache: "no-store" });
+      const res = await studyApiFetch("/api/tasks?status=open", { cache: "no-store" });
       if (res.status === 401) {
         setTasks([]);
         return;
@@ -50,12 +68,47 @@ export function WeekPlanner() {
     load();
   }, [load]);
 
-  const days = useMemo(
+  const gridDays = useMemo(() => monthGridDayCells(monthAnchor), [monthAnchor]);
+  const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart],
   );
 
-  const tasksByDay = useMemo(() => buildTasksByDay(tasks, days), [tasks, days]);
+  const daysForTasks = useMemo(() => {
+    const base = viewTab === "month" ? gridDays : weekDays;
+    return mergeDayKeysWithToday(base);
+  }, [viewTab, gridDays, weekDays]);
+
+  const tasksByDay = useMemo(() => buildTasksByDay(tasks, daysForTasks), [tasks, daysForTasks]);
+
+  /** Monats-Navigation: Woche mitziehen, damit Tab-Wechsel nicht auf veralteter Woche „zurückspringt“. */
+  const setMonthAnchorSynced = useCallback((d: Date) => {
+    const m = firstOfMonth(d);
+    setMonthAnchor(m);
+    setWeekStart(mondayOf(m));
+  }, []);
+
+  /** Wochen-Navigation: Monats-Anker mitziehen. */
+  const setWeekStartSynced = useCallback((d: Date) => {
+    const w = mondayOf(d);
+    setWeekStart(w);
+    setMonthAnchor(firstOfMonth(w));
+  }, []);
+
+  const setViewTabSynced = useCallback(
+    (tab: CalendarViewTab) => {
+      if (tab === viewTab) return;
+      if (tab === "week") {
+        const w = mondayOf(startOfLocalDay(new Date()));
+        setWeekStart(w);
+        setMonthAnchor(firstOfMonth(w));
+      } else {
+        setMonthAnchor(firstOfMonth(weekStart));
+      }
+      setViewTab(tab);
+    },
+    [viewTab, weekStart],
+  );
   const conflicts = useMemo(() => detectConflicts(tasksByDay), [tasksByDay]);
   const conflictGroups = useMemo(() => buildConflictGroups(tasksByDay), [tasksByDay]);
   const unplanned = useMemo(() => tasks.filter((t) => !t.dueDate && t.status !== "done"), [tasks]);
@@ -63,7 +116,7 @@ export function WeekPlanner() {
   async function planTaskAt(taskId: string, when: Date) {
     setBusyId(taskId);
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
+      const res = await studyApiFetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ dueDate: when.toISOString() }),
@@ -82,7 +135,7 @@ export function WeekPlanner() {
   async function clearPlannedTime(taskId: string) {
     setBusyId(taskId);
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
+      const res = await studyApiFetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ dueDate: null }),
@@ -103,23 +156,46 @@ export function WeekPlanner() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 min-w-0 space-y-4">
           <CalendarHeader
+            viewTab={viewTab}
+            onViewTab={setViewTabSynced}
+            monthAnchor={monthAnchor}
+            onMonthChange={setMonthAnchorSynced}
             weekStart={weekStart}
-            onChange={setWeekStart}
+            onWeekStartChange={setWeekStartSynced}
             conflictCount={conflicts.size}
           />
           <Card className="fp-card overflow-hidden">
             <CardContent className="p-0">
-              <div className="max-h-[72vh] overflow-auto">
-                <WeekGrid
-                  days={days}
-                  tasksByDay={tasksByDay}
-                  conflictIds={conflicts}
-                  loading={loading}
-                  onEditTask={(t) => {
-                    setEditTask(t);
-                    setEditOpen(true);
-                  }}
-                />
+              <div
+                className={cn(
+                  "max-h-[72vh] overflow-auto",
+                  viewTab === "month" && "p-3 sm:p-4",
+                )}
+              >
+                {viewTab === "month" ? (
+                  <MonthGrid
+                    gridDays={gridDays}
+                    viewMonthIndex={monthAnchor.getMonth()}
+                    tasksByDay={tasksByDay}
+                    conflictIds={conflicts}
+                    loading={loading}
+                    onEditTask={(t) => {
+                      setEditTask(t);
+                      setEditOpen(true);
+                    }}
+                  />
+                ) : (
+                  <WeekGrid
+                    days={weekDays}
+                    tasksByDay={tasksByDay}
+                    conflictIds={conflicts}
+                    loading={loading}
+                    onEditTask={(t) => {
+                      setEditTask(t);
+                      setEditOpen(true);
+                    }}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -145,7 +221,7 @@ export function WeekPlanner() {
               onClearTime={clearPlannedTime}
             />
           ) : null}
-          <FreeSlotsCard tasksByDay={tasksByDay} weekStart={weekStart} />
+          <FreeSlotsCard tasksByDay={tasksByDay} />
         </aside>
       </div>
 
@@ -168,30 +244,61 @@ export function WeekPlanner() {
 }
 
 function CalendarHeader({
+  viewTab,
+  onViewTab,
+  monthAnchor,
+  onMonthChange,
   weekStart,
-  onChange,
+  onWeekStartChange,
   conflictCount,
 }: {
+  viewTab: CalendarViewTab;
+  onViewTab: (tab: CalendarViewTab) => void;
+  monthAnchor: Date;
+  onMonthChange: (d: Date) => void;
   weekStart: Date;
-  onChange: (d: Date) => void;
+  onWeekStartChange: (d: Date) => void;
   conflictCount: number;
 }) {
-  const end = addDays(weekStart, 6);
-  const sameMonth = weekStart.getMonth() === end.getMonth();
-  const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, {
+  const monthTitle = monthAnchor.toLocaleDateString(PLANNING_LOCALE, {
+    month: "long",
+    year: "numeric",
+  });
+  const weekEnd = addDays(weekStart, 6);
+  const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+  const fmtWeekStart = (d: Date) =>
+    d.toLocaleDateString(PLANNING_LOCALE, {
       day: "2-digit",
       month: sameMonth ? undefined : "short",
     });
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <div className="text-sm text-muted-foreground">Kalenderwoche</div>
-        <div className="text-lg font-semibold tracking-tight">
-          {fmt(weekStart)} – {end.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-0.5"
+          role="tablist"
+          aria-label="Kalenderansicht"
+        >
+          <Button
+            type="button"
+            size="sm"
+            variant={viewTab === "month" ? "secondary" : "ghost"}
+            className="h-8 rounded-md px-3 shadow-none"
+            onClick={() => onViewTab("month")}
+          >
+            Monat
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={viewTab === "week" ? "secondary" : "ghost"}
+            className="h-8 rounded-md px-3 shadow-none"
+            onClick={() => onViewTab("week")}
+          >
+            Woche
+          </Button>
         </div>
-      </div>
-      <div className="flex items-center gap-2">
         {conflictCount > 0 ? (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5" />
@@ -203,30 +310,185 @@ function CalendarHeader({
             Keine Konflikte
           </span>
         )}
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => onChange(addDays(weekStart, -7))}
-          aria-label="Vorherige Woche"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onChange(mondayOf(new Date()))}
-        >
-          Diese Woche
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => onChange(addDays(weekStart, 7))}
-          aria-label="Nächste Woche"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {viewTab === "month" ? (
+          <>
+            <div>
+              <div className="text-sm text-muted-foreground">Monat</div>
+              <div className="text-lg font-semibold tracking-tight capitalize">{monthTitle}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => onMonthChange(addMonths(monthAnchor, -1))}
+                aria-label="Vorheriger Monat"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onMonthChange(firstOfMonth(new Date()))}>
+                Dieser Monat
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => onMonthChange(addMonths(monthAnchor, 1))}
+                aria-label="Nächster Monat"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <div className="text-sm text-muted-foreground">Kalenderwoche</div>
+              <div className="text-lg font-semibold tracking-tight">
+                {fmtWeekStart(weekStart)} –{" "}
+                {weekEnd.toLocaleDateString(PLANNING_LOCALE, {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => onWeekStartChange(addDays(weekStart, -7))}
+                aria-label="Vorherige Woche"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onWeekStartChange(mondayOf(new Date()))}>
+                Diese Woche
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => onWeekStartChange(addDays(weekStart, 7))}
+                aria-label="Nächste Woche"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MonthGrid({
+  gridDays,
+  viewMonthIndex,
+  tasksByDay,
+  conflictIds,
+  loading,
+  onEditTask,
+}: {
+  gridDays: Date[];
+  viewMonthIndex: number;
+  tasksByDay: Map<string, ScheduledTask[]>;
+  conflictIds: Set<string>;
+  loading: boolean;
+  onEditTask: (task: Task) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">Lade Termine …</div>
+    );
+  }
+  return (
+    <div className="min-w-0 space-y-2">
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-muted-foreground">
+        {WEEKDAY_LABELS_SHORT.map((label) => (
+          <div key={label} className="py-1">
+            {label}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {gridDays.map((d) => (
+          <MonthDayCell
+            key={isoKey(d)}
+            day={d}
+            inViewMonth={d.getMonth() === viewMonthIndex}
+            items={tasksByDay.get(isoKey(d)) ?? []}
+            conflictIds={conflictIds}
+            onEditTask={onEditTask}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MonthDayCell({
+  day,
+  inViewMonth,
+  items,
+  conflictIds,
+  onEditTask,
+}: {
+  day: Date;
+  inViewMonth: boolean;
+  items: ScheduledTask[];
+  conflictIds: Set<string>;
+  onEditTask: (task: Task) => void;
+}) {
+  const isToday = isSameDay(day, new Date());
+  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+  return (
+    <div
+      className={cn(
+        "flex min-h-[112px] flex-col rounded-lg border border-border/50 bg-card p-1.5 text-left sm:min-h-[128px] sm:p-2",
+        !inViewMonth && "opacity-45",
+        isToday && "ring-1 ring-primary/35",
+        isWeekend && inViewMonth && "bg-muted/25",
+      )}
+    >
+      <div
+        className={cn(
+          "mb-1 flex shrink-0 items-center justify-between text-[11px] font-semibold tabular-nums sm:text-xs",
+          isToday ? "text-primary" : "text-foreground",
+        )}
+      >
+        <span>{day.getDate()}</span>
+        {items.length > 0 ? (
+          <span className="font-normal text-muted-foreground">{items.length}</span>
+        ) : null}
+      </div>
+      <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+        {items.map((it) => {
+          const cat = pickPrimaryCategory(it.task);
+          const tone = categoryToneFor(cat);
+          const baseClass = categoryBadgeClass(tone);
+          const conflict = conflictIds.has(it.task.id);
+          return (
+            <li key={it.task.id} className="min-w-0">
+              <button
+                type="button"
+                onClick={() => onEditTask(it.task)}
+                className={cn(
+                  "flex w-full flex-col items-start gap-0 rounded-md border px-1 py-0.5 text-left text-[10px] leading-tight transition-colors hover:brightness-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:text-[11px]",
+                  baseClass,
+                  conflict && "ring-1 ring-amber-400 ring-offset-1 ring-offset-background",
+                )}
+              >
+                <span className="w-full truncate font-medium">{it.task.title}</span>
+                <span className="w-full tabular-nums text-muted-foreground">
+                  {formatHM(it.startMinutes)}
+                  {conflict ? " · überlappt" : ""}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -295,7 +557,7 @@ function DayHeaderCell({ d }: { d: Date }) {
       )}
     >
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        {d.toLocaleDateString(undefined, { weekday: "short" })}
+        {d.toLocaleDateString(PLANNING_LOCALE, { weekday: "short" })}
       </div>
       <div className={cn("mt-0.5 text-sm font-semibold tabular-nums", isToday && "text-primary")}>
         {d.getDate()}
@@ -345,14 +607,6 @@ function DayColumn({
   );
 }
 
-type ScheduledTask = {
-  task: Task;
-  startMinutes: number;
-  durationMinutes: number;
-};
-
-type LaidOutTask = ScheduledTask & { col: number; cols: number };
-
 function EventChip({
   item,
   conflict,
@@ -392,7 +646,8 @@ function EventChip({
     >
       <div className="truncate font-medium">{task.title}</div>
       <div className="opacity-80">
-        {formatHM(startMinutes)}{conflict ? " · überlappt" : ""}
+        {formatHM(startMinutes)}
+        {conflict ? " · überlappt" : ""}
       </div>
     </button>
   );
@@ -577,15 +832,9 @@ function ConflictDetailsCard({
   );
 }
 
-function FreeSlotsCard({
-  tasksByDay,
-  weekStart,
-}: {
-  tasksByDay: Map<string, ScheduledTask[]>;
-  weekStart: Date;
-}) {
+function FreeSlotsCard({ tasksByDay }: { tasksByDay: Map<string, ScheduledTask[]> }) {
   const today = isoKey(new Date());
-  const items = tasksByDay.get(today) ?? tasksByDay.get(isoKey(weekStart)) ?? [];
+  const items = tasksByDay.get(today) ?? [];
   const freeSlots = computeFreeSlots(items);
   return (
     <Card className="fp-card">
@@ -623,8 +872,8 @@ function PlanningExplainerCard() {
       <CardContent className="space-y-2 p-5">
         <div className="text-sm font-semibold tracking-tight">Planungslogik</div>
         <ul className="space-y-1.5 text-sm text-muted-foreground">
-          <li>· Aufgaben ohne Datum bleiben links unsichtbar im Grid und sichtbar in der Liste rechts.</li>
-          <li>· Überlappende Termine werden orange markiert, aber nicht verschoben.</li>
+          <li>· Aufgaben ohne Datum erscheinen nicht im Raster, sondern in der Seitenleiste unter „Ungeplante Aufgaben“.</li>
+          <li>· Monat: Aufgaben je Tag als Liste; Woche: Stundenraster. Überlappende Termine werden markiert, aber nicht verschoben.</li>
           <li>· Vorschläge der Anpassungen erscheinen separat und reversibel.</li>
         </ul>
       </CardContent>
@@ -703,7 +952,6 @@ function layoutOverlaps(items: ScheduledTask[]): LaidOutTask[] {
     colForId.set(it.task.id, col);
   }
 
-  // Build overlap components so each component shares the same cols-count.
   const byId = new Map(sorted.map((it) => [it.task.id, it] as const));
   const overlaps = (a: ScheduledTask, b: ScheduledTask) => {
     const ae = a.startMinutes + a.durationMinutes;
@@ -764,7 +1012,7 @@ function buildConflictGroups(map: Map<string, ScheduledTask[]>): ConflictGroup[]
     if (ids.size === 0) continue;
 
     const day = new Date(`${dayKey}T00:00:00`);
-    const dayLabel = day.toLocaleDateString(undefined, {
+    const dayLabel = day.toLocaleDateString(PLANNING_LOCALE, {
       weekday: "short",
       day: "2-digit",
       month: "short",
@@ -816,11 +1064,39 @@ function defaultPlanTime(day: Date) {
   return d;
 }
 
+function firstOfMonth(d: Date) {
+  const x = startOfLocalDay(d);
+  x.setDate(1);
+  return x;
+}
+
+function addMonths(monthFirst: Date, delta: number) {
+  const x = startOfLocalDay(monthFirst);
+  const next = new Date(x.getFullYear(), x.getMonth() + delta, 1);
+  return startOfLocalDay(next);
+}
+
 function mondayOf(d: Date) {
   const x = startOfLocalDay(d);
   const day = x.getDay() || 7; // Sunday = 7
   x.setDate(x.getDate() - (day - 1));
   return x;
+}
+
+function monthGridDayCells(monthFirst: Date): Date[] {
+  const first = firstOfMonth(monthFirst);
+  const start = mondayOf(first);
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}
+
+function mergeDayKeysWithToday(gridDays: Date[]): Date[] {
+  const byKey = new Map<string, Date>();
+  for (const d of gridDays) {
+    byKey.set(isoKey(d), d);
+  }
+  const today = startOfLocalDay(new Date());
+  byKey.set(isoKey(today), today);
+  return [...byKey.values()];
 }
 
 function isSameDay(a: Date, b: Date) {

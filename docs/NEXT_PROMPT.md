@@ -61,11 +61,12 @@ NICHT 1:1 kopieren, aber:
 
 ## 3) Routing & Navigation (an Mockups anpassen)
 
-Aktuelle Routen: `/today`, `/tasks`, `/planning`, `/adaptive`, `/study`, `/settings`.
-Soll-Struktur (deutsch, mockup-konform):
+**Ist (App):** deutsche Routen mit Redirects von alten englischen Pfaden (`/today` → `/heute` usw.). Legacy-Hinweis in älteren Mockups: `/today`, `/tasks`, `/planning`, `/adaptive`, `/study`, `/settings`.
+
+Routing (deutsch, produktnah):
 
 - `/` → redirect `/start` (oder `/heute`, falls Onboarding bereits gemacht).
-- `/start` → Willkommen / Onboarding-Karte (Mockup 01).
+- `/start` → **nur Server-Redirect** (`GET` Route Handler) auf `startView` oder `/willkommen` — **kein** eigener Willkommens-Screen; Inhalt „Willkommen“ liegt unter **`/willkommen`** (Mockup 01 dort abbilden).
 - `/heute` → Today (Mockup 02 + 08).
 - `/aufgaben` → Aufgaben (Liste/Filter).
 - `/kalender` → Aufgaben & Kalender (Mockup 03 + 09).
@@ -93,7 +94,9 @@ Tablet:
 
 Für JEDE Seite gilt: Loading State, Empty State, Fehler-Toast, Tastatur-/Screenreader-tauglich, responsive (Desktop / Tablet / Mobile).
 
-### 4.1 `/start` (Mockup 01)
+### 4.1 `/willkommen` (Mockup 01; `/start` ist nur Redirect)
+**Hinweis:** In der Implementierung ist `/start` ein Redirect-Endpunkt ohne UI. Die folgenden Akzeptanzkriterien gelten für **`/willkommen`** (bzw. den ersten Screen nach erfolgreicher Session, falls ihr `/start` doch als Page nachzieht).
+
 - H1 „Willkommen bei FluxPlan“, Subline „Planung zuerst. Anpassungen erst, wenn sie sinnvoll sind.“
 - Linke Karte „So funktioniert der Einstieg“ mit 3 Punkten + Tags „Stabile Basis“, „Erklärbar“, „Rückgängig“.
 - Rechte Karten: „Heute“ (mit 1–2 Beispielaufgaben aus Seed) + „Was direkt sichtbar ist“ (Status-Stats: „Regeln 0 aktiv“, „Undo bereit“).

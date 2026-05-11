@@ -9,6 +9,8 @@ import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
+import { DEFAULT_START_HREF } from "@/lib/settings/start-view";
 import { cn } from "@/lib/utils";
 
 const PRINCIPLE_TAGS = [
@@ -45,7 +47,7 @@ export function OnboardingHero() {
   const [showGuestDemoStories, setShowGuestDemoStories] = useState(false);
 
   const refreshGuest = useCallback(async () => {
-    const r = await fetch("/api/me", { cache: "no-store" });
+    const r = await studyApiFetch("/api/me", { cache: "no-store" });
     if (!r.ok) {
       setShowGuestDemoStories(false);
       return;
@@ -60,17 +62,24 @@ export function OnboardingHero() {
   }, [refreshGuest]);
 
   async function markSeenAndGo() {
-    await fetch("/api/preferences", {
+    const headers = { "content-type": "application/json" };
+    await studyApiFetch("/api/preferences", {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify({ key: "seenWelcome", value: true }),
+    }).catch(() => {});
+    // Ohne `startView` leitet `/start` wieder auf Willkommen — Standard-Startansicht nach Tour.
+    await studyApiFetch("/api/preferences", {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ key: "startView", value: { href: DEFAULT_START_HREF } }),
     }).catch(() => {});
     router.push("/start");
     router.refresh();
   }
 
   async function loadDemo(storyKey: "family" | "task") {
-    const res = await fetch("/api/data/demo", {
+    const res = await studyApiFetch("/api/data/demo", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ storyKey }),
@@ -87,6 +96,11 @@ export function OnboardingHero() {
       return;
     }
     toast.success("Demo-Daten geladen.");
+    await studyApiFetch("/api/preferences", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key: "startView", value: { href: DEFAULT_START_HREF } }),
+    }).catch(() => {});
     router.push("/start");
     router.refresh();
   }

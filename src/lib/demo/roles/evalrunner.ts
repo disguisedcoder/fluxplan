@@ -1,8 +1,9 @@
 import type { DemoRoleDefinition } from "../types";
 import { at } from "../time";
+import { buildTwoMonthTimelineTasks } from "../two-month-timeline";
 
 export function evalrunnerRole(now = new Date()): DemoRoleDefinition {
-  const tasks = [
+  const core = [
     {
       title: "Trigger: View-Wechsel 1",
       priority: "low",
@@ -146,11 +147,14 @@ export function evalrunnerRole(now = new Date()): DemoRoleDefinition {
     },
   ] as const;
 
+  const timeline = buildTwoMonthTimelineTasks("evalrunner", now);
+  const tasks = [...core, ...timeline];
+
   return {
     key: "evalrunner",
     label: "Eval-Runner",
     description: "Kleines, reproduzierbares Set für Suggestion-Lifecycle, Konflikte, Export & Reset.",
-    tasks: [...tasks],
+    tasks,
     // view_preference needs ≥4 hits to one VIEW_TARGETS route at intervention level 2 (threshold 4).
     viewEvents: [
       { from: "/heute", to: "/kalender" },
@@ -169,7 +173,7 @@ export function evalrunnerRole(now = new Date()): DemoRoleDefinition {
       { screen: "task_created", taskTitle: "Konflikt-Block 1", metadata: { source: "demo" } },
       { screen: "/heute", taskTitle: "Fokus: Wichtige Aufgabe", metadata: { trigger: "demo" } },
     ],
-    eventLogMetadata: { role: "evalrunner", taskCount: tasks.length },
+    eventLogMetadata: { role: "evalrunner", taskCount: tasks.length, timelineDays: timeline.length },
   };
 }
 

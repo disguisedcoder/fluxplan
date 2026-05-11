@@ -7,7 +7,7 @@ FluxPlan ist ein **human-centered, adaptiver Aufgaben- und Planungs-Prototyp** m
 - **Study/Evaluation ready**: Logging in eigener PostgreSQL-DB + Export als JSON/CSV.
 
 > Ausführliche Anleitung + Technologie-Erklärung: siehe [`docs/DOKUMENTATION.md`](docs/DOKUMENTATION.md).  
-> **UI-Features, Trigger & sichtbare Effekte** (für Moderation/BA): [`docs/UI-FEATURES-KATALOG.md`](docs/UI-FEATURES-KATALOG.md) · Study Sheets / Runner: [`docs/study-sheets/README.md`](docs/study-sheets/README.md).
+> **UI-Features, Trigger & sichtbare Effekte** (für Moderation/BA): [`docs/UI-FEATURES-KATALOG.md`](docs/UI-FEATURES-KATALOG.md) · Study Sheets & Ablauf: [`docs/study-sheets/README.md`](docs/study-sheets/README.md).
 
 ## Stack
 - **Next.js 16 (App Router)** + **TypeScript** + **React 19**
@@ -20,7 +20,7 @@ FluxPlan ist ein **human-centered, adaptiver Aufgaben- und Planungs-Prototyp** m
 | Pfad | Inhalt |
 | --- | --- |
 | `/` | Weiterleitung auf `/start` |
-| `/start` | Weiterleitung auf die **Standardansicht** (`startView`, sonst `/heute`); ohne Willkommen → `/willkommen` |
+| `/start` | **`GET`-Route-Handler** → HTTP-Redirect auf die **Standardansicht** (`startView`); ohne gesetzte Startansicht → `/willkommen` (Logik: `getStartRedirectHref` / `src/app/(app)/start/route.ts`) |
 | `/willkommen` | Tour, Prinzipien; **Demo-Story-Buttons** nur für Pseudonyme **G01** / **G02** (optional) |
 | `/heute` | Heute-Dashboard (To‑Do‑Liste, Agenda, Mini-Kalender, Schnellzugriff/Shortcuts) |
 | `/aufgaben` | Liste, Suche, Quickfilter, Sortierung, Kategorie-Gruppen |
@@ -133,11 +133,19 @@ Der App-Container führt `prisma generate`, `prisma migrate deploy` und `prisma 
 
 App läuft auf `http://localhost:3000`, PostgreSQL auf `localhost:5432`.
 
-Stop:
+**Stack stoppen & Docker-Speicher für dieses Projekt freigeben** (löscht u. a. Postgres-Volume `fluxplan_db` und `e2e_node_modules`; beim nächsten `up` werden Migrate + Seed erneut ausgeführt):
 
 ```bash
-docker compose down
+npm run docker:down
 ```
+
+Nur Container/Netzwerk beenden, **Named Volumes behalten** (DB + E2E-`node_modules` bleiben):
+
+```bash
+npm run docker:down:soft
+```
+
+Wenn du nach vielen Builds **viele verwaiste Volumes** (lange Hash-Namen, `LINKS 0`) hast: optional **`npm run docker:down:full`** — entfernt danach **alle** unbenutzten Volumes und den Build-Cache **systemweit** (kann andere Docker-Projekte betreffen; nur nutzen, wenn dir das bewusst ist).
 
 ## E2E Tests (Playwright, Demo/Gast)
 ### Mit Docker Compose (empfohlen)
@@ -238,7 +246,7 @@ npm run test:e2e:api
 
 **Brauchst du das für die Bachelorarbeit?** Oft **nein**: Wenn du **lokal** mit Docker Compose entwickelst, die Studie am **eigenen Rechner** oder im **Labor** fährst und **Playwright** (lokal oder im `e2e`-Container) als Qualitätssicherung nutzt, reicht das für einen **Prototyp** und eine **Evaluation** ohne öffentliche URL.
 
-**Sinnvoll wird Hosting**, wenn du z. B. eine **öffentliche Demo-URL** brauchst (Betreuer von außen, Remote-Probanden ohne Install), **dauerhaft** etwas online halten willst oder CI gegen **Staging** statt nur gegen Docker lokal laufen soll.
+**Sinnvoll wird Hosting**, wenn du z. B. eine **öffentliche Demo-URL** brauchst (Betreuende von außen, Remote-Teilnehmende ohne Install), **dauerhaft** etwas online halten willst oder CI gegen **Staging** statt nur gegen Docker lokal laufen soll.
 
 Wenn du es doch nutzen willst:
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
+import { isDemoTestPseudonym, roleFromPseudonym } from "@/lib/demo";
 
 type Role = "familienplanner" | "taskplanner" | "evalrunner";
 
@@ -18,10 +20,26 @@ export function DemoSeedButton({ onDone }: { onDone?: () => void }) {
   const [role, setRole] = useState<Role>("taskplanner");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    studyApiFetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { user?: { pseudonym?: string } | null } | null) => {
+        if (cancelled || !d?.user?.pseudonym) return;
+        if (isDemoTestPseudonym(d.user.pseudonym)) {
+          setRole(roleFromPseudonym(d.user.pseudonym));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function run() {
     setBusy(true);
     try {
-      const res = await fetch("/api/data/demo", {
+      const res = await studyApiFetch("/api/data/demo", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ role, resetFirst: true }),

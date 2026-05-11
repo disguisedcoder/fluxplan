@@ -88,7 +88,7 @@ Quellen:
 
 - Regel: `src/lib/adaptive/rules/viewPreferenceRule.ts`
 - Apply/Undo: `src/app/api/suggestions/[id]/respond/route.ts` (`applySuggestion`/`undoSuggestion`)
-- Start-Redirect: `src/lib/nav/resolve-start-redirect.ts` + `src/lib/settings/start-view.ts`
+- Start-Redirect: Ziel-URL `getStartRedirectHref` in `src/lib/nav/resolve-start-redirect.ts`; Auslieferung per **`GET`** `src/app/(app)/start/route.ts` (kein RSC-`page.tsx`, u. a. wegen Turbopack/`performance.measure` bei sofortigem Redirect); erlaubte Pfade / Normalisierung `src/lib/settings/start-view.ts`
 
 Praktische Wirkung:
 
@@ -284,7 +284,7 @@ Empfehlung:
 
 - Rolle `evalrunner` ist am ehesten dafür gebaut, Suggestion-Lifecycle + Konflikte schnell sichtbar zu machen.
 
-**Gast-Workshop (`G01`/`G02`, adaptive Session):** Beim Session-Start setzt `seedGuestAdaptiveShowcase` Aufgaben + **sieben** pending Vorschläge (je Regeltyp) — **ohne** Demo-Button. Nach **Daten zurücksetzen** wird derselbe Showcase erneut gesät; **Eingriffsstufe** bleibt.
+**Gast-Workshop (`G01`/`G02`, adaptive Session):** Beim Session-Start setzt `seedGuestAdaptiveShowcase` Aufgaben + **sieben** pending Vorschläge (je Regeltyp) — **ohne** Demo-Button. Nach **Daten zurücksetzen** werden Showcase und **Werk-Preferences** (u. a. Eingriffsstufe **2**) neu gesetzt; alle Beispiel-Vorschläge wieder **pending**.
 
 **`adaptive_optional_fold` auslösen (ohne Zufall):**
 

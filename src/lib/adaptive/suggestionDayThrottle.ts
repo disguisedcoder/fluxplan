@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 
+import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
+
 /** Lokaler Kalendertag (Server-Zeitzone), konsistent mit dailyFocusRule. */
 export function startOfLocalDay(now = new Date()): Date {
   const d = new Date(now);
@@ -15,6 +17,7 @@ export function startOfLocalDay(now = new Date()): Date {
 export async function hasAcceptedOrRejectedSuggestionToday(
   userId: string,
   ruleKey: string,
+  studySessionId: string | null | undefined,
   now = new Date(),
 ): Promise<boolean> {
   const since = startOfLocalDay(now);
@@ -24,6 +27,7 @@ export async function hasAcceptedOrRejectedSuggestionToday(
       ruleKey,
       status: { in: ["accepted", "rejected"] },
       respondedAt: { not: null, gte: since },
+      ...whereAdaptiveSuggestionStudySession(studySessionId),
     },
     select: { id: true },
   });

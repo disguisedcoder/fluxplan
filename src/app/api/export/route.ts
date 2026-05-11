@@ -24,8 +24,8 @@ export async function GET(req: Request) {
         select: { id: true, pseudonym: true, createdAt: true, studyModeEnabled: true },
       }),
       sessionId
-        ? prisma.studySession.findUnique({
-            where: { id: sessionId },
+        ? prisma.studySession.findFirst({
+            where: { id: sessionId, userId },
             select: { id: true, sessionCode: true, startedAt: true, endedAt: true, variant: true },
           })
         : Promise.resolve(null),

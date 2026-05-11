@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Bell, Calendar as CalIcon } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,7 +29,7 @@ export function TaskCard({ task, onChanged }: { task: Task; onChanged: () => voi
   async function toggleDone(next: boolean) {
     setBusy(true);
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
+      const res = await studyApiFetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: next ? "done" : "open" }),

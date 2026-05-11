@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CalendarClock, ChevronDown, ChevronUp, Clock, Plus, Tag, Type, X } from "lucide-react";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,7 +62,7 @@ export function ProgressiveTaskForm() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/preferences", { cache: "no-store" })
+    studyApiFetch("/api/preferences", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { preferences?: Record<string, unknown> } | null) => {
         if (cancelled || !data?.preferences) return;
@@ -156,7 +157,7 @@ export function ProgressiveTaskForm() {
             ? Number(estimatedMinutes)
             : null,
       };
-      const res = await fetch("/api/tasks", {
+      const res = await studyApiFetch("/api/tasks", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -171,7 +172,7 @@ export function ProgressiveTaskForm() {
       }
 
       if (reminderIso) {
-        fetch("/api/events", {
+        studyApiFetch("/api/events", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({

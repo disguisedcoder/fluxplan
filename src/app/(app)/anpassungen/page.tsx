@@ -6,13 +6,14 @@ import { prisma } from "@/lib/db/prisma";
 import { SuggestionsScreen } from "@/components/adaptive/suggestions-screen";
 
 export default async function AnpassungenPage() {
-  const { sessionId } = await getStudyCookies();
-  const session = sessionId
-    ? await prisma.studySession.findUnique({
-        where: { id: sessionId },
-        select: { variant: true },
-      })
-    : null;
+  const { userId, sessionId } = await getStudyCookies();
+  const session =
+    userId && sessionId
+      ? await prisma.studySession.findFirst({
+          where: { id: sessionId, userId },
+          select: { variant: true },
+        })
+      : null;
   const isBaseline = session?.variant === "baseline";
 
   if (isBaseline) {

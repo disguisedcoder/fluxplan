@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { dispatchStudyMeChanged } from "@/lib/study/me-invalidate";
 
@@ -26,7 +27,7 @@ export function SessionLogoutButton({
   async function logout() {
     setBusy(true);
     try {
-      const res = await fetch("/api/study/logout", { method: "POST" });
+      const res = await studyApiFetch("/api/study/logout", { method: "POST", cache: "no-store" });
       if (!res.ok) {
         toast.error("Abmelden fehlgeschlagen.");
         return;
@@ -34,8 +35,8 @@ export function SessionLogoutButton({
       toast.success("Session beendet. Du kannst mit einem neuen User-Code oder als Gast neu starten.");
       dispatchStudyMeChanged();
       onDone?.();
-      router.refresh();
       router.push("/");
+      router.refresh();
     } finally {
       setBusy(false);
     }

@@ -36,36 +36,49 @@ test.describe("@adaptive @study familienplanner — Adaptive-UI (Oberfläche + E
     await expect(page.getByRole("heading", { name: "Aktive Regeln" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Keine Regeln gefunden")).not.toBeVisible();
     // Regel-`name` aus DB; `key`-Badge bleibt stabil (z. B. daily_focus).
+    // `.or()` kann Titel + Mono-Badge treffen — strict mode braucht eine Locator-Instanz → `.first()`.
+    const panel = page.getByTestId("fp-personalization-panel");
     await expect(
-      page.getByText("Fokusvorschlag", { exact: true }).or(page.getByText("daily_focus", { exact: true })),
+      panel
+        .getByText("Fokusvorschlag", { exact: true })
+        .or(panel.getByText("daily_focus", { exact: true }))
+        .first(),
     ).toBeVisible({ timeout: 60_000 });
     await expect(
-      page.getByText("Ansichtspräferenz", { exact: true }).or(page.getByText("view_preference", { exact: true })),
+      panel
+        .getByText("Ansichtspräferenz", { exact: true })
+        .or(panel.getByText("view_preference", { exact: true }))
+        .first(),
     ).toBeVisible();
     await expect(
-      page
+      panel
         .getByText("Erinnerungs-Präferenz", { exact: true })
-        .or(page.getByText("reminder_preference", { exact: true })),
+        .or(panel.getByText("reminder_preference", { exact: true }))
+        .first(),
     ).toBeVisible();
     await expect(
-      page
+      panel
         .getByText("Kalender-Konflikthinweis", { exact: true })
-        .or(page.getByText("calendar_conflict", { exact: true })),
+        .or(panel.getByText("calendar_conflict", { exact: true }))
+        .first(),
     ).toBeVisible();
     await expect(
-      page
+      panel
         .getByText("Adaptives Aufgabenformular", { exact: true })
-        .or(page.getByText("adaptive_task_creation", { exact: true })),
+        .or(panel.getByText("adaptive_task_creation", { exact: true }))
+        .first(),
     ).toBeVisible();
     await expect(
-      page
+      panel
         .getByText("Formular: Zusatzfelder einklappen", { exact: true })
-        .or(page.getByText("adaptive_optional_fold", { exact: true })),
+        .or(panel.getByText("adaptive_optional_fold", { exact: true }))
+        .first(),
     ).toBeVisible();
     await expect(
-      page
+      panel
         .getByText("Formular: Zusatzfelder wieder ausklappen", { exact: true })
-        .or(page.getByText("adaptive_optional_unfold", { exact: true })),
+        .or(panel.getByText("adaptive_optional_unfold", { exact: true }))
+        .first(),
     ).toBeVisible();
 
     const evalResponse = page.waitForResponse(
@@ -79,7 +92,7 @@ test.describe("@adaptive @study familienplanner — Adaptive-UI (Oberfläche + E
     await evalResponse;
 
     await tablist.getByRole("tab", { name: "Pausen" }).click();
-    await expect(page.getByText("Pausierte Regeln")).toBeVisible();
+    await expect(page.getByText("Pausierte Regeln", { exact: true })).toBeVisible();
     await expect(page.getByText("Aktuell keine Regel pausiert.")).toBeVisible();
   });
 

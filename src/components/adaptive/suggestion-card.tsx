@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExplanationPopover } from "./explanation-popover";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 
 export function SuggestionCard({
@@ -29,7 +30,7 @@ export function SuggestionCard({
   async function respond(action: "accept" | "reject" | "snooze" | "undo") {
     setBusy(true);
     try {
-      const res = await fetch(`/api/suggestions/${suggestion.id}/respond`, {
+      const res = await studyApiFetch(`/api/suggestions/${suggestion.id}/respond`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
@@ -116,7 +117,7 @@ export function SuggestionCard({
             <ExplanationPopover
               explanation={suggestion.explanation}
               onOpen={() => {
-                fetch("/api/events", {
+                studyApiFetch("/api/events", {
                   method: "POST",
                   headers: { "content-type": "application/json" },
                   body: JSON.stringify({

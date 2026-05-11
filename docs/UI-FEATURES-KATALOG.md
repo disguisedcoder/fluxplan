@@ -1,7 +1,7 @@
 # FluxPlan – UI-Features-Katalog
 
-**Zielgruppe:** Studienleitung, Moderation, Entwicklung, Bachelorarbeit (Nachvollziehbarkeit).  
-**Nicht** als ausgedrucktes Blatt für Probanden gedacht — die [Study Sheets](study-sheets/README.md) bleiben bewusst „blind“ gegenüber konkreten Hilfen.
+**Zielgruppe:** Moderation, Entwicklung, Bachelorarbeit (Nachvollziehbarkeit).  
+**Nicht** als ausgedrucktes Blatt für Testpersonen gedacht — die [Study Sheets](study-sheets/README.md) bleiben bewusst „blind“ gegenüber konkreten Hilfen.
 
 Dieses Dokument beschreibt **was in der UI sichtbar ist**, **welche Aktionen die Engine oder die Oberfläche auslösen**, und **welche sichtbaren Änderungen** daraus folgen (Baseline vs. Adaptive).
 
@@ -33,7 +33,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | **„Session beenden“** | `/einstellungen` | Klick | Cookies gelöscht, erneuter Start nötig |
 | **Demo-Daten laden** | `/einstellungen` — Karte **nur** für **`G01`/`G02`** („Demo-Setup (nur Gast …)“) | Rolle wählen, Button | Aufgaben/Interaktionen/ggf. Reset; danach oft Engine-Läufe. **F01–E05:** gleiche Logik über **`POST /api/data/demo`** (Skript/Runner), nicht über diese Karte |
 | **Export JSON/CSV** | `/einstellungen` | Button | Download |
-| **Daten zurücksetzen** | `/einstellungen` | Roter Bereich + Bestätigung | **Session:** Aufgaben/Vorschläge/Logs dieser Session + ausgewählte adaptive Outcome-Prefs; **G01/G02 + adaptiv:** Eingriffsstufe bleibt, Workshop neu gesät. **Ohne Session-Cookies:** User-weit Tasks/Suggestions/Interactions/**alle** Preferences; `EventLog` bleibt |
+| **Daten zurücksetzen** | `/einstellungen` | Roter Bereich + Bestätigung | **Session:** Aufgaben/Vorschläge/Logs dieser Session + ausgewählte adaptive Outcome-Prefs; **G01/G02:** Workshop + **Werk-Defaults** (Eingriffsstufe 2, `adaptive.enabled` je Variante), adaptive: alle Demo-Vorschläge wieder **pending**. **Ohne Session-Cookies:** User-weit Tasks/Suggestions/Interactions/**alle** Preferences; `EventLog` bleibt |
 | **Admin: Demo-Testuser** | `/einstellungen` nur Admin-Pseudonym | Bestätigung `RESET_DEMO_USERS` | Löscht F01–E05 **und** G01/G02; legt **15** Demo-Rollenuser neu an (**G01/G02** nicht automatisch wieder) |
 | **Admin: Gast-User** | `/einstellungen` nur Admin-Pseudonym | Bestätigung `RESET_GUEST_USERS` | Löscht nur **G01** und **G02** |
 | **Adaptives Vorschlags-Banner** (nur Adaptive) | Hauptseiten unter `AppShell` (außer `/anpassungen`, `/`) | Navigation: `view_changed` + Evaluate; Banner-Mount lädt pending | Karte mit Ja / Nicht jetzt / Ablehnen; Logging `suggestion_seen` / `why_clicked` mit aktuellem Pfad als `screen` |
@@ -46,7 +46,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 
 | UI | Trigger | Sichtbare Änderung |
 | --- | --- | --- |
-| Weiterleitung | App-Logik nach Session/Willkommen-Status | Landet auf `startView` oder `/willkommen` |
+| Weiterleitung | Sidebar **Start**, `router.push("/start")` oder direkt `GET /start` | **HTTP-Redirect** (Route-Handler `src/app/(app)/start/route.ts`, Zielberechnung `getStartRedirectHref` in `resolve-start-redirect.ts`): mit Session auf gespeicherte **Startansicht** (`startView`, s. `start-view.ts`) oder **`/willkommen`**, wenn noch keine Startansicht gesetzt; ohne Session zuerst Middleware → App-Start mit `next` |
 | Willkommen-Tour | Erstbesuch / fehlendes „Willkommen“ | Erklärt Prinzipien; **Demo-Story-Buttons** nur für **G01/G02** |
 
 ### 3.2 `/heute` (Heute-Dashboard)
@@ -77,6 +77,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 
 | UI | Trigger | Sichtbare Wirkung |
 | --- | --- | --- |
+| Tabs **Monat** / **Woche** | Umschalten oben | **Monat:** Kalender-Raster (inkl. Nachbarmonat-Tage im Gitter). **Woche:** Mo–So-Raster mit Stunden; **beim Wechsel auf „Woche“** springt die Ansicht auf die **Kalenderwoche um den heutigen Tag** (nicht die Woche, die nur den Monatsersten enthält). Mit **Monats-** bzw. **Wochen-Pfeilen** bleiben Monats-Anker und Wochenbeginn gekoppelt (`week-planner.tsx`). |
 | Wochenraster | Tasks mit `dueDate` | Chips pro Slot |
 | **Konflikt-Markierung („überlappt“)** | Zwei (oder mehr) Aufgaben **überlappen sich in der Zeit** am selben Tag (Wochenraster: voller Tag sichtbar; Dauer aus `estimatedMinutes` oder Fallback **45 min** im Code `week-planner.tsx`) | Hervorhebung am Chip (z. B. Ring); **gleich in Baseline und Adaptive** — hängt **nicht** von der Session-Variante ab |
 | Ungeplante Aufgaben | Tasks ohne Datum | Rechte Spalte; Aktionen Planen/Heute |
@@ -139,7 +140,7 @@ Die Engine wird u. a. getriggert durch:
 
 ---
 
-## 5. Häufige Missverständnisse (für Moderation)
+## 5. Häufige Missverständnisse (für Moderation & Nachbereitung)
 
 | Thema | Klarstellung |
 | --- | --- |
@@ -169,4 +170,4 @@ Die Engine wird u. a. getriggert durch:
 
 ## 7. Versionhinweis
 
-Stand: Beschreibung deckt u. a. **7 adaptive Regeln**, **globales Vorschlags-Banner**, **Überlappungs-Hinweis beim Erstellen**, **paritätes Bearbeiten-Formular**, **optional eingeklappte Zusatzfelder**, **visuell differenzierte Vorschlagskarten**, **Fokusliste** (ohne `daily_focus`: keine Überfälligen in der Top-Liste; mit Annahme: rot für überfällig + heute) und **Mini-Kalender-Layout mit fester Ziffernhöhe** ab. Bei größeren UI-Änderungen dieses Dokument mitpflegen.
+Stand: Beschreibung deckt u. a. **7 adaptive Regeln**, **globales Vorschlags-Banner**, **Überlappungs-Hinweis beim Erstellen**, **paritätes Bearbeiten-Formular**, **optional eingeklappte Zusatzfelder**, **visuell differenzierte Vorschlagskarten**, **Fokusliste** (ohne `daily_focus`: keine Überfälligen in der Top-Liste; mit Annahme: rot für überfällig + heute), **Mini-Kalender-Layout mit fester Ziffernhöhe**, **`GET /start`-Redirect** und **Kalender-Tabs Monat/Woche** (Woche = Kalenderwoche um heute) ab. Bei größeren UI-Änderungen dieses Dokument mitpflegen.

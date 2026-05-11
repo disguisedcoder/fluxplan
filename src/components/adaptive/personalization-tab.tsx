@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdaptiveRule } from "./types";
 import type { Preferences } from "./suggestions-screen";
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 import { InterventionLevelSlider } from "@/components/settings/intervention-level-slider";
 import {
@@ -45,7 +46,7 @@ export function PersonalizationTab({
   async function evaluateNow() {
     setEvaluating(true);
     try {
-      const res = await fetch("/api/adaptive/evaluate", {
+      const res = await studyApiFetch("/api/adaptive/evaluate", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ screen: "/anpassungen", metadata: { trigger: "manual" } }),
@@ -72,7 +73,7 @@ export function PersonalizationTab({
   async function toggleRule(key: string, enabled: boolean) {
     setBusyKey(key);
     try {
-      const res = await fetch("/api/rules", {
+      const res = await studyApiFetch("/api/rules", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key, enabled }),
@@ -91,7 +92,7 @@ export function PersonalizationTab({
     const clamped = clampInterventionLevel(value);
     setLevelBusy(true);
     try {
-      const res = await fetch("/api/preferences", {
+      const res = await studyApiFetch("/api/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key: "adaptive.interventionLevel", value: clamped }),
@@ -245,7 +246,7 @@ function ReminderSnoozePrefsCard({
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/preferences", {
+      const res = await studyApiFetch("/api/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key: REMINDER_SNOOZE_DAYS_PREF_KEY, value: n }),
@@ -264,7 +265,7 @@ function ReminderSnoozePrefsCard({
   async function clearVertagen() {
     setBusy(true);
     try {
-      const res = await fetch("/api/preferences", {
+      const res = await studyApiFetch("/api/preferences", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key: REMINDER_SNOOZE_UNTIL_PREF_KEY, value: null }),

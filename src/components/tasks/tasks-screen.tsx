@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
+import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -88,25 +89,38 @@ export function TasksScreen() {
     return p.toString();
   }, [q, status, priority]);
 
-  async function load() {
+  /** Nach async: nur anwenden, wenn Filter noch dieselben sind (sonst verworfene/stale Requests). */
+  const queryStringRef = useRef(queryString);
+  const statusRef = useRef(status);
+  queryStringRef.current = queryString;
+  statusRef.current = status;
+
+  async function load(signal?: AbortSignal) {
+    const qsSnapshot = queryString;
+    const statusSnapshot = status;
     setLoading(true);
     try {
-      const res = await fetch(`/api/tasks${queryString ? `?${queryString}` : ""}`, {
+      const res = await studyApiFetch(`/api/tasks${queryString ? `?${queryString}` : ""}`, {
         cache: "no-store",
+        signal,
       });
+      if (signal?.aborted) return;
+      if (queryStringRef.current !== qsSnapshot || statusRef.current !== statusSnapshot) return;
       if (res.status === 401) {
         setTasks([]);
         return;
       }
       const data = await res.json();
+      if (queryStringRef.current !== qsSnapshot || statusRef.current !== statusSnapshot) return;
       setTasks(data.tasks ?? []);
 
       // Best practice: "Offen" bleibt ruhig, aber erledigte Tasks sind 1 Klick entfernt
       // (und als eingeklappte Sektion sichtbar, damit man sie wiederfindet).
-      if (status === "open") {
-        void fetch("/api/tasks?status=done", { cache: "no-store" })
+      if (statusSnapshot === "open") {
+        void studyApiFetch("/api/tasks?status=done", { cache: "no-store", signal })
           .then((r) => (r.ok ? r.json() : null))
           .then((d) => {
+            if (queryStringRef.current !== qsSnapshot || statusRef.current !== statusSnapshot) return;
             const rows = (d?.tasks ?? []) as Task[];
             // Neueste zuerst (API sortiert nicht zwingend nach completedAt).
             rows.sort(
@@ -115,19 +129,27 @@ export function TasksScreen() {
             setRecentDone(rows.slice(0, 10));
           })
           .catch(() => {
+            if (queryStringRef.current !== qsSnapshot || statusRef.current !== statusSnapshot) return;
             setRecentDone([]);
           });
       } else {
         setRecentDone([]);
       }
+    } catch (e) {
+      if (signal?.aborted || (e instanceof DOMException && e.name === "AbortError")) return;
+      if (queryStringRef.current !== qsSnapshot || statusRef.current !== statusSnapshot) return;
+      // Netzwerk / Dev-Server-Neuaufbau — kein Throw (sonst rotes Overlay), Session-Cookies bleiben.
     } finally {
-      setLoading(false);
+      if (queryStringRef.current === qsSnapshot && statusRef.current === statusSnapshot) {
+        setLoading(false);
+      }
     }
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
+    const ac = new AbortController();
+    void load(ac.signal);
+    return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryString]);
 
@@ -136,7 +158,7 @@ export function TasksScreen() {
   useEffect(() => {
     if (logTimer.current) window.clearTimeout(logTimer.current);
     logTimer.current = window.setTimeout(() => {
-      fetch("/api/events", {
+      studyApiFetch("/api/events", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -593,7 +615,7 @@ function CompactTaskRow({ task, onChanged }: { task: Task; onChanged: () => void
   async function toggleDone(next: boolean) {
     setBusy(true);
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
+      const res = await studyApiFetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: next ? "done" : "open" }),
