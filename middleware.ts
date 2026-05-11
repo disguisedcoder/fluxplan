@@ -1,6 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { getPublicOriginFromRequest } from "@/lib/http/public-origin";
+
 const PUBLIC_PATH_PREFIXES = ["/api", "/_next", "/favicon.ico", "/robots.txt", "/sitemap.xml"];
 
 export function middleware(req: NextRequest) {
@@ -16,8 +18,8 @@ export function middleware(req: NextRequest) {
   const userId = req.cookies.get("fp_userId")?.value;
   if (userId) return NextResponse.next();
 
-  const url = req.nextUrl.clone();
-  url.pathname = "/";
+  const origin = getPublicOriginFromRequest(req);
+  const url = new URL("/", origin);
   url.searchParams.set("next", pathname);
   return NextResponse.redirect(url);
 }
