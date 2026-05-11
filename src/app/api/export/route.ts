@@ -4,6 +4,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
 import { getStudyCookies } from "@/lib/auth/study-session";
+import {
+  whereAdaptiveSuggestionsForActiveStudySession,
+  whereTaskInteractionsForActiveStudySession,
+  whereTasksForActiveStudySession,
+} from "@/lib/data/session-content-delete";
 import { toCsv } from "@/lib/export/csv";
 import { isHttpError } from "@/lib/http/errors";
 
@@ -16,6 +21,10 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const parsedFormat = FormatSchema.safeParse(url.searchParams.get("format"));
     const format: z.infer<typeof FormatSchema> = parsedFormat.success ? parsedFormat.data : "json";
+
+    const taskScope = whereTasksForActiveStudySession(userId, sessionId);
+    const interactionScope = whereTaskInteractionsForActiveStudySession(userId, sessionId);
+    const suggestionScope = whereAdaptiveSuggestionsForActiveStudySession(userId, sessionId);
 
     const [user, activeSession, sessions, tasks, interactions, suggestions, eventLogs, preferenceRows] =
       await Promise.all([
@@ -34,9 +43,9 @@ export async function GET(req: Request) {
         orderBy: { startedAt: "asc" },
         select: { id: true, sessionCode: true, startedAt: true, endedAt: true, variant: true },
       }),
-      prisma.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-      prisma.taskInteraction.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-      prisma.adaptiveSuggestion.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+      prisma.task.findMany({ where: taskScope, orderBy: { createdAt: "asc" } }),
+      prisma.taskInteraction.findMany({ where: interactionScope, orderBy: { createdAt: "asc" } }),
+      prisma.adaptiveSuggestion.findMany({ where: suggestionScope, orderBy: { createdAt: "asc" } }),
       prisma.eventLog.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },

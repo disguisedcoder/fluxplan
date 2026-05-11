@@ -5,6 +5,7 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { CreateTaskSchema, TaskPrioritySchema, TaskStatusSchema } from "@/lib/validation/tasks";
 import { runAdaptiveEngine } from "@/lib/adaptive/adaptiveEngine";
 import { getStudyCookies } from "@/lib/auth/study-session";
+import { whereTasksForActiveStudySession } from "@/lib/data/session-content-delete";
 import { Prisma } from "@prisma/client";
 import { isHttpError } from "@/lib/http/errors";
 import { z } from "zod";
@@ -24,20 +25,21 @@ export async function GET(req: Request) {
       ? parsedPriority.data
       : undefined;
 
+    const { sessionId } = await getStudyCookies();
+    const scope = whereTasksForActiveStudySession(userId, sessionId);
+    const filters: Prisma.TaskWhereInput[] = [scope];
+    if (status) filters.push({ status });
+    if (priority) filters.push({ priority });
+    if (q) {
+      filters.push({
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
+      });
+    }
     const tasks = await prisma.task.findMany({
-      where: {
-        userId,
-        ...(status ? { status } : {}),
-        ...(priority ? { priority } : {}),
-        ...(q
-          ? {
-              OR: [
-                { title: { contains: q, mode: "insensitive" } },
-                { description: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
+      where: filters.length === 1 ? filters[0]! : { AND: filters },
       orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
     });
 

@@ -10,6 +10,34 @@ export type SessionContentDeleteOptions = {
   preserveGuestWorkshopInterventionLevel?: boolean;
 };
 
+/**
+ * Filter für Listen/Export bei gesetzter Study-Session: nur aktuelle Session plus Altlasten ohne Session
+ * (gleiche Semantik wie `deleteContentForStudySession`).
+ */
+export function whereTasksForActiveStudySession(
+  userId: string,
+  studySessionId: string | null,
+): Prisma.TaskWhereInput {
+  if (!studySessionId) return { userId };
+  return { userId, OR: [{ studySessionId }, { studySessionId: null }] };
+}
+
+export function whereTaskInteractionsForActiveStudySession(
+  userId: string,
+  studySessionId: string | null,
+): Prisma.TaskInteractionWhereInput {
+  if (!studySessionId) return { userId };
+  return { userId, OR: [{ studySessionId }, { studySessionId: null }] };
+}
+
+export function whereAdaptiveSuggestionsForActiveStudySession(
+  userId: string,
+  studySessionId: string | null,
+): Prisma.AdaptiveSuggestionWhereInput {
+  if (!studySessionId) return { userId };
+  return { userId, OR: [{ studySessionId }, { studySessionId: null }] };
+}
+
 /** Löscht nur Inhalte, die zur angegebenen StudySession gehören (nicht andere Sessions desselben Users). */
 export async function deleteContentForStudySession(
   tx: Prisma.TransactionClient,

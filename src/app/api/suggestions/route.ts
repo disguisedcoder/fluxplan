@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireUserId } from "@/lib/auth/require-user";
 import { getStudyCookies } from "@/lib/auth/study-session";
+import { whereAdaptiveSuggestionsForActiveStudySession } from "@/lib/data/session-content-delete";
 import { z } from "zod";
 import { isHttpError } from "@/lib/http/errors";
 
@@ -20,10 +21,10 @@ export async function GET(req: Request) {
       ? parsedStatus.data
       : undefined;
 
+    const scope = whereAdaptiveSuggestionsForActiveStudySession(userId, sessionId);
     const suggestions = await prisma.adaptiveSuggestion.findMany({
       where: {
-        userId,
-        ...(sessionId ? { studySessionId: sessionId } : {}),
+        ...scope,
         ...(status ? { status } : {}),
       },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],

@@ -19,9 +19,10 @@ test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", a
 
   // Ensure there is at least one pending suggestion for a visible card.
   await evaluateAdaptive(api, "/heute");
-  await expectEventuallyToBeTruthy(async () => {
+  const pendingTitle = await expectEventuallyToBeTruthy(async () => {
     const pending = await listSuggestions(api, "pending");
-    return pending.suggestions[0] ?? null;
+    const s = pending.suggestions[0];
+    return s?.title?.trim() ? s.title : null;
   }, { timeoutMs: 30_000, intervalMs: 1_000, message: "pending suggestion needed for why_clicked" });
 
   // Liste/Vorschläge wurden vor Evaluate geladen — neu laden, damit die Karte im DOM ist.
@@ -29,6 +30,7 @@ test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", a
   await expect(page.getByRole("heading", { level: 1, name: "Anpassungen" })).toBeVisible();
   const pendingCard = page.locator(".fp-card").filter({ hasText: "Aktive Vorschläge" });
   await expect(pendingCard.getByText("Lade …")).toBeHidden({ timeout: 60_000 });
+  await expect(page.getByText(pendingTitle, { exact: false }).first()).toBeVisible({ timeout: 30_000 });
   await expect(
     page.getByRole("button", { name: "Warum sehe ich das?" }).first(),
   ).toBeVisible({ timeout: 30_000 });
