@@ -46,6 +46,24 @@ Im Zweifel: **Katalog §4** öffnen — dort ist regelbasiert beschrieben, **wo*
 
 ---
 
+## Exportdaten einordnen
+
+Keine große quantitative Exportdaten-Auswertung versprechen. Der Export ist trotzdem sinnvoll, weil er zeigt, dass FluxPlan technisch auf Evaluation vorbereitet ist und einfache Nutzungsdaten ergänzend erfassen kann.
+
+Brauchbare Kennzahlen:
+
+- Anzahl erstellter Aufgaben
+- Anzahl erledigter Aufgaben
+- Navigationswechsel
+- angezeigte Vorschläge
+- angenommene, abgelehnte und vertagte Vorschläge
+- `why_clicked`
+- Export-Summary
+
+Diese Daten eignen sich als **ergänzende technische Nutzungsdaten**, aber nicht als alleinige UX-Bewertung. Für die UX-Einordnung den Kurzfragebogen auf den Aufgaben-Sheets und Beobachtungsnotizen heranziehen.
+
+---
+
 ## Druckempfehlung
 
 - **Testperson:** nur `familienplanner.md` / `taskplanner.md` / `evalrunner.md` (eine Rolle).

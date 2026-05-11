@@ -151,7 +151,20 @@ Wenn kein Banner auffällt:
 3. Dann normal weiterarbeiten. Kein Vorschlag ist kein Fehler.
 
 ## Abschluss
-Wenn du fertig bist: kurz **`Ich bin fertig.`** melden (wie vereinbart).
+Wenn du fertig bist: kurz **`Ich bin fertig.`** melden (wie vereinbart). Bitte löse selbst keinen Export aus.
 
-Kurze Abschlussfrage:
-Hat Adaptive dir Arbeit abgenommen oder eher zusätzliche Entscheidungen erzeugt?
+## Kurzfragebogen
+Skala: **1 = stimme gar nicht zu**, **5 = stimme voll zu**.
+
+Bitte bewerte jede Aussage mit einer Zahl von 1 bis 5.
+
+1. Ich konnte mich in FluxPlan schnell orientieren.
+2. Die wichtigsten Funktionen waren ohne Erklärung auffindbar.
+3. Die Oberfläche wirkte ruhig und nicht überladen.
+4. Ich konnte nachvollziehen, warum FluxPlan einen Vorschlag angezeigt hat.
+5. Ich hatte das Gefühl, die Kontrolle über meine Planung zu behalten.
+6. Die Optionen Annehmen, Nicht jetzt, Ablehnen und Rückgängig waren verständlich.
+7. Die Vorschläge wirkten hilfreich für meine Aufgabenplanung.
+8. Die Vorschläge haben mich eher unterstützt als abgelenkt.
+9. Der Bereich Anpassungen hat ausreichend transparent gemacht, was das System berücksichtigt.
+10. Ich würde eine solche kontrollierte Vorschlagslogik eher nutzen als automatische Umplanung.

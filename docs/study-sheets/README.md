@@ -4,6 +4,7 @@ Diese Sheets sind für **Testpersonen** gedacht. Jede Rolle bekommt **ein** Shee
 
 - **Phase 0:** Aufgaben-Stand sicherstellen (Demo/API/Seed/Gast-Workshop — je nach Code) → **nicht** von Hand nachbauen.
 - **Phase 1+:** klar getrennt, ob **nur bestehende Zeilen** genutzt werden oder (nur Taskplanner) an markierten Stellen **✏️ selbst angelegt** wird.
+- **Kurzfragebogen:** 10 Aussagen auf einer 1–5-Skala als ergänzende UX-Einordnung nach der Nutzung.
 - Spielerischer Ton; **keine** Nennung von Studienbedingungen oder konkreten Hilfs-Features — fairer Vergleich.
 
 Die Texte **nennen keine Bedingung** (z. B. Baseline vs. anderes) und **keine internen Regelnamen** — damit der **Vergleich fair** bleibt. Sie beschreiben aber den **Ablauf**, damit adaptive Oberflächen (Banner, `Anpassungen`, mehrere Vorschläge) in der Praxis überhaupt sichtbar werden können.
@@ -37,7 +38,7 @@ Alternativ relativ zum Sheet: `![…](../assets/diagrams/mein-diagramm.png)`.
 ## Hinter den Kulissen (nicht an Testpersonen ausgeben)
 
 - **UI-Katalog:** alle Funktionen, **was in der UI passiert**, **Trigger**, **sichtbare Veränderungen** (Baseline vs. Adaptive): [`../UI-FEATURES-KATALOG.md`](../UI-FEATURES-KATALOG.md)
-- **Moderation & technischer Ablauf:** Checkliste, Druckempfehlung, Verweis auf Trigger: [`MODERATION-UND-RUNNER.md`](MODERATION-UND-RUNNER.md)
+- **Moderation & technischer Ablauf:** Checkliste, Exportdaten-Einordnung, Druckempfehlung, Verweis auf Trigger: [`MODERATION-UND-RUNNER.md`](MODERATION-UND-RUNNER.md)
 
 Technische Regelnamen und Schwellen stehen im **UI-Katalog** und in **`MODERATION-UND-RUNNER.md`**.
 
