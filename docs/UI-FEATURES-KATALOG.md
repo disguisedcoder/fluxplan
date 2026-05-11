@@ -53,7 +53,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 
 | UI-Bereich | Trigger | Sichtbare Wirkung |
 | --- | --- | --- |
-| **Fokusliste (To‑Do)** | Lädt `GET /api/tasks?status=open` + Preference `adaptive.dailyFocusListHighlight` | **Ohne** angenommenen Fokus-Hinweis (`daily_focus`): Liste **ohne Überfällige** — Reihenfolge **heute fällig** → **später fällig** (nach Datum) → undatierte Auffüller (bis 5). **Mit** Hinweis (nach „Verstanden“/Annehmen): **überfällig** → **heute** → Auffüller wie oben. **Zeilenoptik** bei aktivem Hinweis: überfällig + heute = rosa hervorgehoben + Metatext „Überfällig …“ / „Heute fällig …“; sonst dieselben Einträge **neutral** (kein rotes Row-Styling). Später fällig / ohne Datum: neutral (`today-dashboard.tsx`) |
+| **To‑Do‑Liste** | Lädt `GET /api/tasks?status=open` + Preference `adaptive.dailyFocusListHighlight` | **Ohne** angenommenen Fokus-Hinweis (`daily_focus`): Liste **ohne Überfällige** — Reihenfolge **heute fällig** → **später fällig** (nach Datum) → undatierte Auffüller (bis 5). **Mit** Hinweis (nach „Verstanden“/Annehmen): **überfällig** → **heute** → Auffüller wie oben. **Zeilenoptik** bei aktivem Hinweis: überfällig + heute = rosa hervorgehoben + Metatext „Überfällig …“ / „Heute fällig …“; sonst dieselben Einträge **neutral** (kein rotes Row-Styling). Später fällig / ohne Datum: neutral (`today-dashboard.tsx`) |
 | **„Gerade erledigt“** | Task auf erledigt | Kurze Liste mit „Rückgängig“-Button |
 | **Quick-Add** | Eingabe + Absenden | Neue Aufgabe erscheint nach Reload in Liste |
 | **Agenda „Heute im Überblick“** | Tasks mit Uhrzeit heute | Zeitleiste |
@@ -129,8 +129,8 @@ Die Engine wird u. a. getriggert durch:
 | `ruleKey` | Typischer `type` | Typische Auslöser (vereinfacht) | Wo sieht man es? | Was ändert sich sichtbar? |
 | --- | --- | --- | --- | --- |
 | `view_preference` | `start_view` | Wiederholte Wechsel zu **Kernrouten** `/heute`, `/kalender`, `/aufgaben`, `/erstellen` (andere Seiten zählen nicht); **Gewinner** = am häufigsten in einem gleitenden Fenster, sofern Schwelle erreicht (**Gast G01/G02:** Fenster **8** Events, Basis-Schwelle **3**; **sonst:** Fenster **28**, Basis **7** — effektive Schwelle kann durch Eingriffsstufe steigen, siehe `viewPreferenceRule.ts`) | Banner (Hauptseiten), `/anpassungen` | **Annehmen:** Startansicht gespeichert; ggf. Sprung zur neuen Startseite; Sidebar „Start“ zeigt neue Zielseite |
-| `reminder_preference` | `reminder_suggestion` | Wiederholtes Muster mit Erinnerungen | `/anpassungen`, ggf. Banner | **Annehmen:** Erinnerungszeit an konkreter Aufgabe in DB; in UI in Aufgaben/Kalender sichtbar. **Nicht jetzt:** Pause bis konfiguriertes Datum (Personalisierung → Tage; Preference `adaptive.reminderSuggestionSnoozeUntil`). **Hinweis:** Auf `/heute` sortiert die Fokusliste nach **Fälligkeitsdatum** (`dueDate`); **rote Zeilen-Hervorhebung** für überfällig/heute nur, wenn `adaptive.dailyFocusListHighlight` aktiv ist — **unabhängig** davon, ob eine Erinnerung gesetzt ist |
-| `daily_focus` | `daily_focus` | Viele relevante offene/heutige Aufgaben | Banner, `/anpassungen` | **Annehmen:** setzt `adaptive.dailyFocusListHighlight` — Fokusliste zeigt dann auch **überfällige** Einträge und hebt überfällig + heute **rot** hervor. **Ohne** Annahme: Überfällige **nicht** in der Fokusliste (nur heute + später + undatiert). Button oft **„Verstanden“** |
+| `reminder_preference` | `reminder_suggestion` | Wiederholtes Muster mit Erinnerungen | `/anpassungen`, ggf. Banner | **Annehmen:** Erinnerungszeit an konkreter Aufgabe in DB; in UI in Aufgaben/Kalender sichtbar. **Nicht jetzt:** Pause bis konfiguriertes Datum (Personalisierung → Tage; Preference `adaptive.reminderSuggestionSnoozeUntil`). **Hinweis:** Auf `/heute` sortiert die To‑Do‑Liste nach **Fälligkeitsdatum** (`dueDate`); **rote Zeilen-Hervorhebung** für überfällig/heute nur, wenn `adaptive.dailyFocusListHighlight` aktiv ist — **unabhängig** davon, ob eine Erinnerung gesetzt ist |
+| `daily_focus` | `daily_focus` | Viele relevante offene/heutige Aufgaben | Banner, `/anpassungen` | **Annehmen:** setzt `adaptive.dailyFocusListHighlight` — To‑Do‑Liste zeigt dann auch **überfällige** Einträge und hebt überfällig + heute **rot** hervor. **Ohne** Annahme: Überfällige **nicht** in der To‑Do‑Liste (nur heute + später + undatiert). Button oft **„Verstanden“** |
 | `calendar_conflict` | `calendar_conflict` | Nach **task_created**: Summe `estimatedMinutes` der **offenen** Aufgaben an diesem Tag **≥ 8 h** (nicht = Überlappung im Raster) | `/anpassungen`, ggf. Banner | Nur **Vorschlagstext**; **keine** zusätzliche Markierung im Wochenraster |
 | `adaptive_task_creation` | `task_form_chips` | Nach mehreren Aufgaben: Muster in **optionalen** Feldern (Kategorie, Tags, Dauer, Erinnerung, Beschreibung); Gast (`G01`/`G02`): letzte „reiche“ Aufgabe | `/anpassungen`, ggf. Banner | **Annehmen:** Preference `adaptive.taskFormChips` → vorgemerkte Chips auf `/erstellen` und im Bearbeiten-Dialog |
 | `adaptive_optional_fold` | `task_form_optional_fold` | Wenig Nutzung optionaler Felder; kein offener Chip-Vorschlag; Gast: zwei minimale Aufgaben hintereinander | `/anpassungen`, ggf. Banner | **Annehmen:** `taskFormOptionalFold` — Zusatzfelder eingeklappt |
@@ -145,7 +145,7 @@ Die Engine wird u. a. getriggert durch:
 | Thema | Klarstellung |
 | --- | --- |
 | Konflikte im Kalender (orange / „überlappt“) | Nur **Überlappung** zweier Zeitfenster (`week-planner`); **gleich in Baseline und Adaptive**. Die Regel **`calendar_conflict`** ist **zusätzlich** (8 h Tageslast) und nur ein **Hinweis** unter Anpassungen — **kein** extra Pixel im Raster |
-| Fokusliste | **Nicht** vom `daily_focus`-Payload gesteuert; **Annehmen** schaltet nur die Preference `adaptive.dailyFocusListHighlight` (rote Hervorhebung + Einblenden Überfälliger in der Top-Liste). Reihenfolge folgt **Fälligkeitsdatum**; Erinnerungsfelder steuern die Liste nicht |
+| To‑Do‑Liste | **Nicht** vom `daily_focus`-Payload gesteuert; **Annehmen** schaltet nur die Preference `adaptive.dailyFocusListHighlight` (rote Hervorhebung + Einblenden Überfälliger in der Top-Liste). Reihenfolge folgt **Fälligkeitsdatum**; Erinnerungsfelder steuern die Liste nicht |
 | Chip-Vorschlag vs. Einklappen | **`adaptive_optional_fold`** wartet, solange ein **`task_form_chips`** noch **pending** ist |
 | Gast-Pseudonym **nur** `G01`, `G02` | In der Engine **lockerere Schwellen** / verkürzte Muster (`isGuestStudyUser`) |
 | Baseline + eingeklappte Felder | Schalter **„Zusatzfelder“** in Einstellungen wirkt **ohne** Engine |
@@ -156,7 +156,7 @@ Die Engine wird u. a. getriggert durch:
 
 | Thema | Pfad |
 | --- | --- |
-| Heute: Fokusliste (Buckets + Zeilenfarben) | `src/components/planning/today-dashboard.tsx` |
+| Heute: To‑Do‑Liste (Buckets + Zeilenfarben) | `src/components/planning/today-dashboard.tsx` |
 | Mini-Monat (Punkte, Ausrichtung) | `src/components/planning/mini-month-calendar.tsx` |
 | Globales Vorschlags-Banner | `src/components/adaptive/pending-suggestion-banner.tsx`, `src/components/shell/app-shell.tsx` |
 | Überlappung Erstellen/Bearbeiten | `src/lib/planning/task-time-overlap.ts`, `src/components/tasks/task-schedule-overlap-hint.tsx` |
@@ -170,4 +170,4 @@ Die Engine wird u. a. getriggert durch:
 
 ## 7. Versionhinweis
 
-Stand: Beschreibung deckt u. a. **7 adaptive Regeln**, **globales Vorschlags-Banner**, **Überlappungs-Hinweis beim Erstellen**, **paritätes Bearbeiten-Formular**, **optional eingeklappte Zusatzfelder**, **visuell differenzierte Vorschlagskarten**, **Fokusliste** (ohne `daily_focus`: keine Überfälligen in der Top-Liste; mit Annahme: rot für überfällig + heute), **Mini-Kalender-Layout mit fester Ziffernhöhe**, **`GET /start`-Redirect** und **Kalender-Tabs Monat/Woche** (Woche = Kalenderwoche um heute) ab. Bei größeren UI-Änderungen dieses Dokument mitpflegen.
+Stand: Beschreibung deckt u. a. **7 adaptive Regeln**, **globales Vorschlags-Banner**, **Überlappungs-Hinweis beim Erstellen**, **paritätes Bearbeiten-Formular**, **optional eingeklappte Zusatzfelder**, **visuell differenzierte Vorschlagskarten**, **To‑Do‑Liste** (ohne `daily_focus`: keine Überfälligen in der Top-Liste; mit Annahme: rot für überfällig + heute), **Mini-Kalender-Layout mit fester Ziffernhöhe**, **`GET /start`-Redirect** und **Kalender-Tabs Monat/Woche** (Woche = Kalenderwoche um heute) ab. Bei größeren UI-Änderungen dieses Dokument mitpflegen.

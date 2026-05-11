@@ -1,46 +1,49 @@
 # FluxPlan – Aufgaben-Sheet · Rolle Familienplanner
 ## Familien-Captain: Der Tag hat Pläne, du hast FluxPlan
 
-Du bist heute die Person, die alles im Blick behalten soll: Termine, Einkauf, kleine Erledigungen und diese eine Aufgabe, die sonst garantiert erst um 22:47 wieder einfällt.
+Du bist heute die Person, die alles im Blick behalten soll: Termine, Einkauf, kleine Erledigungen und diese eine Aufgabe, die sonst garantiert erst viel zu spät wieder einfällt.
 
 Es geht nicht darum, perfekt zu planen. Nutze FluxPlan so, als würdest du einen vollen Alltag sortieren wollen.
 
 ## Vorab
 - Bitte keine echten privaten Daten eingeben.
 - Erfundenes Alltagschaos ist ausdrücklich erlaubt.
-- Du testest zwei Phasen:
-  - Phase 1: Baseline – normale Aufgaben- und Planungs-App ohne adaptive Vorschläge.
-  - Phase 2: Adaptive – FluxPlan darf Vorschläge machen, aber du entscheidest immer selbst.
-- In **Baseline** gibt es keinen nutzbaren Bereich **Anpassungen** (der Menüpunkt springt zurück zu **Heute**). Ab **Adaptive** ist **Anpassungen** normal erreichbar.
-- Die **Start-Aufgaben** sind vorbereitet (Demo/Seed/Setup); bitte nicht alles von Hand neu aufbauen.
-- Beim Umstieg auf Adaptive denselben Pseudonym-Code verwenden.
-- Nichts zurücksetzen.
-- Am Ende nichts exportieren. Melde dich kurz, wenn du durch bist (wie vereinbart).
+- Du arbeitest nacheinander mit zwei Varianten:
+  - **Phase 1: Baseline** – FluxPlan ist eine normale Aufgaben- und Planungs-App ohne Vorschläge.
+  - **Phase 2: Adaptive** – FluxPlan darf dir Vorschläge anzeigen, aber du entscheidest immer selbst.
+- In **Baseline** ist der Bereich **Anpassungen** nicht nutzbar. Wenn du ihn auswählst, springt FluxPlan zurück zu **Heute**. Das ist in dieser Phase normal.
+- Ab **Adaptive** ist **Anpassungen** erreichbar. Dort findest du Vorschläge, Erklärungen und den Verlauf deiner Entscheidungen.
+- Die **Start-Aufgaben** sind vorbereitet. Bitte baue sie nicht von Hand neu auf.
+- Beim Umstieg auf Adaptive verwendest du denselben Pseudonym-Code wie vorher.
+- Bitte nichts zurücksetzen und am Ende nichts exportieren.
+- Wenn du fertig bist, melde kurz: **Ich bin fertig.**
 
 ## Phase 0 – Start und vorbereitete Aufgaben
 1. Öffne FluxPlan.
-2. Gib deinen zugeteilten Code ein (z. B. `F01`).
-3. Wähle die Variante wie angesagt (**Baseline** / **Adaptive**) und starte die Session.
-4. Prüfe, dass die **Start-Aufgaben** für dich sichtbar sind (Setup vor dem Test). Wenn nicht, kurz melden — danach öffnest du **Heute**.
+2. Gib deinen zugeteilten Code ein, z. B. `F01`.
+3. Wähle die Variante wie angesagt: **Baseline** oder **Adaptive**.
+4. Starte die Session.
+5. Prüfe, ob die vorbereiteten **Start-Aufgaben** sichtbar sind.
+6. Wenn keine Start-Aufgaben sichtbar sind, melde dich kurz. Wenn alles passt, öffne **Heute**.
 
-Kurzer Check: Du solltest mehrere Familien-Aufgaben sehen. Wenn nicht, kurz Bescheid sagen.
+Kurzer Check: Du solltest mehrere Familien-Aufgaben sehen, zum Beispiel zu Kita, Schule, Einkauf, Geburtstag oder Terminen.
 
-## Phase 1 – Baseline: Erstmal ohne Mitdenken der App
-Ziel: Du lernst die normale App kennen und erzeugst genug echte Nutzung, damit später ein Vergleich möglich ist.
+## Phase 1 – Baseline: Erstmal ohne Vorschläge
+Ziel: Du lernst die normale App kennen und nutzt genug Funktionen, damit später ein Vergleich möglich ist.
 
 ### Runde 1: Überblick gewinnen
-1. Öffne `Heute`.
-2. Schau dir die Fokusliste an. Sie ist deine „Was sollte ich als Nächstes anschauen?“-Ecke.
-3. Öffne `Aufgaben`.
+1. Öffne **Heute**.
+2. Schau dir die **To‑Do‑Liste** an. Das ist die kurze Aufgabenliste für Dinge, die gerade wichtig sein könnten.
+3. Öffne **Aufgaben**.
 4. Suche nach `Geburtstag`, `Kita`, `Schule` oder `Einkauf`.
-5. Nutze einmal Filter oder Sortierung.
-6. Öffne `Kalender` und schau, ob der Tag eher nach „passt schon“ oder „das wird sportlich“ aussieht.
+5. Nutze einmal einen Filter oder eine Sortierung. Filter schränken die Liste ein, Sortierung ändert die Reihenfolge.
+6. Öffne **Kalender** und schau, ob der Tag eher ruhig oder voll wirkt.
 
 ### Runde 2: Bestehende Aufgaben bearbeiten
 Erledige diese Aktionen mit den vorbereiteten Aufgaben:
 
 1. Markiere zwei Aufgaben als erledigt.
-2. Öffne eine erledigte Aufgabe wieder.
+2. Öffne eine erledigte Aufgabe wieder, also setze sie zurück auf offen. Falls du sie nicht sofort findest, nutze in **Aufgaben** die Ansicht für alle oder erledigte Aufgaben.
 3. Bearbeite eine bestehende Aufgabe und ändere Priorität, Datum oder Kategorie.
 4. Bearbeite eine zweite Aufgabe und ändere den Titel leicht.
 5. Plane eine Aufgabe ohne Datum ein, falls du eine findest. Wenn nicht: ändere bei einer Aufgabe das Datum.
@@ -54,42 +57,48 @@ Lege fünf neue Aufgaben an. Sie dürfen frei erfunden sein.
 4. Aufgabe mit Kategorie oder Tag: `Familienkalender für Wochenende checken`
 5. Wegwerf-Aufgabe: `Bitte wieder löschen`
 
+Ein **Tag** ist hier nur ein Schlagwort, zum Beispiel `kita`, `einkauf` oder `schule`.
+
 Danach:
 1. Lösche die Aufgabe `Bitte wieder löschen`.
-2. Öffne wieder `Heute`.
+2. Öffne wieder **Heute**.
 3. Markiere eine deiner neuen Aufgaben als erledigt.
-4. Öffne `Kalender` und prüfe, ob deine neuen Aufgaben auftauchen.
+4. Öffne **Kalender** und prüfe, ob deine neuen Aufgaben auftauchen.
 
 ## Mini-Pause
-Nimm dir 1 Minute und beantworte innerlich:
+Nimm dir 1 Minute und überlege:
 Was hat dir geholfen, dich zu orientieren? Was war eher unklar?
 
 Du musst nichts aufschreiben, außer du wirst ausdrücklich darum gebeten.
 
 ## Phase 2 – Auf Adaptive umstellen
-Jetzt darf FluxPlan vorsichtig mitdenken.
+Jetzt darf FluxPlan Vorschläge machen. Wichtig: FluxPlan soll nichts heimlich umplanen. Änderungen passieren nur, wenn du einen Vorschlag annimmst.
 
-1. Öffne `Einstellungen`.
+1. Öffne **Einstellungen**.
 2. Gib denselben Pseudonym-Code ein wie vorher.
-3. Wähle `Adaptive`.
-4. Bestätige Adaptive.
-5. Übernimm die vorgeschlagene Eingriffsstufe.
-6. Starte/übernimm die neue Phase.
+3. Wähle **Adaptive**.
+4. Bestätige die adaptive Variante.
+5. Übernimm die vorgeschlagene **Eingriffsstufe**. Damit ist nur gemeint, wie zurückhaltend oder häufig FluxPlan Vorschläge machen soll.
+6. Starte oder übernimm die neue Phase.
 7. Setze den vorbereiteten Aufgaben-Stand nicht zurück, außer du wurdest ausdrücklich dazu angewiesen.
-8. Öffne `Heute` und prüfe, ob deine bisherigen Aufgaben noch da sind.
+8. Öffne **Heute** und prüfe, ob deine bisherigen Aufgaben noch da sind.
 
-## Phase 2A – Adaptive warmfahren
-Damit FluxPlan Muster erkennen kann, benutze die App jetzt etwas gezielter. **Zählen nur** Wechsel zu **`Heute`**, **`Aufgaben`**, **`Kalender`**, **`Erstellen`**. Für spätere Vorschläge zur **Startansicht** soll **`Heute`** hier **am häufigsten** vorkommen — **Richtwert: mindestens siebenmal** `Heute` öffnen, die anderen Kernseiten jeweils seltener (z. B. immer wieder kurz woanders, dann zurück zu `Heute`).
+## Phase 2A – Muster durch Seitenwechsel erzeugen
+FluxPlan kann manche Vorschläge erst machen, nachdem du ein paar Seiten benutzt hast.
 
-1. Wechsle einmal zu `Aufgaben`.
-2. Wechsle zu `Kalender`.
-3. Wechsle zurück zu `Heute`.
-4. Wechsle zu `Erstellen`.
-5. Wechsle zurück zu `Aufgaben`.
-6. Wechsle nochmal zu `Heute`.
-7. Wiederhole Navigationswechsel, bis **`Heute` klar am häufigsten** war (siehe Richtwert oben).
+Für diesen Schritt zählen nur diese vier Kernseiten: **Heute**, **Aufgaben**, **Kalender**, **Erstellen**.
 
-Das ist kein Sporttest, nur ein kleiner Navigationskreis mit Absicht.
+Öffne **Heute** in dieser Phase am häufigsten. Richtwert: mindestens siebenmal **Heute** öffnen, während du die anderen Kernseiten seltener nutzt.
+
+1. Öffne **Aufgaben**.
+2. Öffne **Kalender**.
+3. Öffne wieder **Heute**.
+4. Öffne **Erstellen**.
+5. Öffne wieder **Aufgaben**.
+6. Öffne wieder **Heute**.
+7. Wiederhole den Wechsel, bis **Heute** klar am häufigsten vorkam.
+
+Das ist kein Geschwindigkeitstest. Es geht nur darum, FluxPlan ein Nutzungsmuster zu zeigen.
 
 ## Phase 2B – Neue Aufgaben mit Muster anlegen
 Lege jetzt sechs neue Aufgaben an.
@@ -119,38 +128,50 @@ Lege jetzt sechs neue Aufgaben an.
 Wenn du ein Feld nicht findest, ist das kein Problem. Lege die Aufgabe trotzdem an.
 
 ## Phase 2C – Vorschläge bewusst testen
-Es können **mehrere** Vorschläge gleichzeitig **offen** sein — **Banner** oben und/oder Karten unter **`Anpassungen`**.
+Vorschläge können oben als Banner auf vielen Hauptseiten erscheinen oder als Karten im Bereich **Anpassungen**.
 
-Wenn etwas Vorgeschlagen wird:
+Wenn ein Vorschlag sichtbar ist:
 
 1. Lies einen Vorschlag vollständig.
-2. Klicke auf `Warum?`, falls sichtbar.
-3. Entscheide dich bei **mehreren** Vorschlägen nacheinander bewusst: annehmen, `Nicht jetzt`, oder ablehnen.
-4. Wenn `Rückgängig` oder `Undo` sichtbar ist, teste es einmal — der Vorschlag kann wieder **offen** werden.
-5. Bei **vertagt** oder **abgelehnt**: `Wieder öffnen` suchen und einmal testen, falls angeboten.
-6. Öffne `Anpassungen` und prüfe Verlauf und Erklärung.
-7. Tab **`Personalisierung`**: kurz prüfen, ob **Erinnerungs-Vorschläge vertagen** (Tage) angezeigt wird — nur ansehen.
+2. Klicke auf **Warum?**, falls der Button sichtbar ist.
+3. Entscheide dich bei mehreren Vorschlägen nacheinander bewusst.
+4. Teste **Rückgängig** oder **Undo**, falls sichtbar. Danach kann derselbe Vorschlag wieder offen erscheinen.
+5. Probiere bei weiteren Vorschlägen unterschiedliche Antworten aus:
+   - **Annehmen** heißt: FluxPlan setzt den Vorschlag um.
+   - **Nicht jetzt** heißt: Der Vorschlag wird vorerst verschoben.
+   - **Ablehnen** heißt: Du möchtest diesen Vorschlag nicht übernehmen.
+6. Wenn etwas verschoben oder abgelehnt ist, suche nach **Wieder öffnen** und teste es einmal, falls es angeboten wird.
+7. Öffne **Anpassungen** und prüfe, ob Status, Verlauf und Erklärung verständlich sind.
+8. Öffne im Bereich **Anpassungen** auch den Tab **Personalisierung**. Schau kurz, ob dort eine Einstellung zu Erinnerungs-Vorschlägen angezeigt wird. Du musst dort nichts ändern.
 
 Wenn dir kein Banner auffällt:
-1. Öffne **`Anpassungen`** — offene Karten haben einen **farbig markierten** Rand.
-2. Sonst: `Heute`, Aufgabe mit Datum, `Kalender` ↔ `Heute`, Phase 2A kurz wiederholen.
-3. Dann einfach weitermachen. Kein Vorschlag ist kein Fehler.
+
+1. Öffne **Anpassungen**. Dort können trotzdem Vorschlagskarten warten.
+2. Wenn auch dort nichts offen ist: Öffne **Heute**, lege eine Aufgabe mit Datum an, wechsle kurz zwischen **Kalender** und **Heute** und wiederhole ein paar Seitenwechsel aus Phase 2A.
+3. Dann einfach weitermachen. Kein sichtbarer Vorschlag ist kein Fehler.
 
 ## Abschluss
-Wenn du fertig bist: kurz **`Ich bin fertig.`** melden (wie vereinbart). Bitte löse selbst keinen Export aus.
+Wenn du fertig bist: kurz **Ich bin fertig.** melden. Bitte löse selbst keinen Export aus.
 
 ## Kurzfragebogen
 Skala: **1 = stimme gar nicht zu**, **5 = stimme voll zu**.
 
-Bitte bewerte jede Aussage mit einer Zahl von 1 bis 5.
+Bitte bewerte jede Aussage mit einer Zahl von 1 bis 5. Wenn du eine Aussage wirklich nicht beurteilen kannst, schreibe **nicht beurteilt** daneben, statt zu raten.
 
-1. Ich konnte mich in FluxPlan schnell orientieren.
-2. Die wichtigsten Funktionen waren ohne Erklärung auffindbar.
+1. Ich konnte mich in FluxPlan schnell zurechtfinden.
+2. Ich habe die wichtigsten Funktionen ohne längere Erklärung gefunden.
 3. Die Oberfläche wirkte ruhig und nicht überladen.
-4. Ich konnte nachvollziehen, warum FluxPlan einen Vorschlag angezeigt hat.
+4. Wenn FluxPlan einen Vorschlag angezeigt hat, konnte ich verstehen, warum er erschienen ist.
 5. Ich hatte das Gefühl, die Kontrolle über meine Planung zu behalten.
-6. Die Optionen Annehmen, Nicht jetzt, Ablehnen und Rückgängig waren verständlich.
-7. Die Vorschläge wirkten hilfreich für meine Aufgabenplanung.
+6. Die Buttons **Annehmen**, **Nicht jetzt**, **Ablehnen** und **Rückgängig** waren verständlich.
+7. Die Vorschläge wirkten für meine Aufgabenplanung hilfreich.
 8. Die Vorschläge haben mich eher unterstützt als abgelenkt.
-9. Der Bereich Anpassungen hat ausreichend transparent gemacht, was das System berücksichtigt.
-10. Ich würde eine solche kontrollierte Vorschlagslogik eher nutzen als automatische Umplanung.
+9. Der Bereich **Anpassungen** zeigte verständlich, welche Informationen FluxPlan für Vorschläge berücksichtigt.
+10. Ich würde eine App, die nur Vorschläge macht und mich entscheiden lässt, eher nutzen als eine App, die meine Planung automatisch verändert.
+
+## Offene Kurzfragen
+Bitte antworte jeweils kurz in 1 bis 2 Sätzen.
+
+1. Konntest du nachvollziehen, warum FluxPlan dir etwas vorgeschlagen hat? Woran hast du das gemerkt?
+2. Hat sich die adaptive Variante für dich eher wie Hilfe, Ablenkung oder neutral angefühlt? Bitte kurz begründen.
+3. Hat die adaptive Variante dir Arbeit abgenommen oder eher zusätzliche Entscheidungen erzeugt? Bitte kurz begründen.

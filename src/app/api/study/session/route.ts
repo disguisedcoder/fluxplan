@@ -7,7 +7,6 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { clampInterventionLevel } from "@/lib/settings/intervention-levels";
 import { StartStudySessionSchema, UpdateStudySessionSchema } from "@/lib/validation/study";
 import { HttpError, isHttpError } from "@/lib/http/errors";
-import { deleteContentForStudySession } from "@/lib/data/session-content-delete";
 import { seedGuestBaselineCalendar } from "@/lib/demo/guest-baseline-calendar-seed";
 import { seedGuestAdaptiveShowcase } from "@/lib/demo/guest-adaptive-showcase-seed";
 import { applyGuestWorkshopDefaultPreferences } from "@/lib/demo/guest-workshop-default-prefs";
@@ -172,16 +171,16 @@ export async function PATCH(req: Request) {
       if (isGuestStudyPseudonym(u?.pseudonym)) {
         const wasBaseline = existingSession?.variant === "baseline";
         if (wasBaseline) {
+          const taskCount = await prisma.task.count({ where: { userId, studySessionId: sessionId } });
           await prisma.$transaction(async (tx) => {
-            await deleteContentForStudySession(tx, userId, sessionId, {
-              preserveGuestWorkshopInterventionLevel: false,
-            });
             await applyGuestWorkshopDefaultPreferences(tx, {
               userId,
               variant: "adaptive",
               interventionLevel: patchLevel,
             });
-            await seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId });
+            if (taskCount === 0) {
+              await seedGuestAdaptiveShowcase(tx, { userId, studySessionId: sessionId });
+            }
           });
         } else {
           const taskCount = await prisma.task.count({ where: { userId, studySessionId: sessionId } });
@@ -197,12 +196,12 @@ export async function PATCH(req: Request) {
     if (variant === "baseline") {
       const u = await prisma.user.findUnique({ where: { id: userId }, select: { pseudonym: true } });
       if (isGuestStudyPseudonym(u?.pseudonym) && existingSession?.variant === "adaptive") {
+        const taskCount = await prisma.task.count({ where: { userId, studySessionId: sessionId } });
         await prisma.$transaction(async (tx) => {
-          await deleteContentForStudySession(tx, userId, sessionId, {
-            preserveGuestWorkshopInterventionLevel: false,
-          });
           await applyGuestWorkshopDefaultPreferences(tx, { userId, variant: "baseline" });
-          await seedGuestBaselineCalendar(tx, { userId, studySessionId: sessionId });
+          if (taskCount === 0) {
+            await seedGuestBaselineCalendar(tx, { userId, studySessionId: sessionId });
+          }
         });
       }
     }

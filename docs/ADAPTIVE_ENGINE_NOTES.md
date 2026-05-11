@@ -8,7 +8,7 @@ Dieses Dokument sammelt **konkret aus dem Code**:
 - **Was sie tun** (Suggestion-Typen, Datenänderungen, Undo)
 - **Wie/wo die Engine getriggert wird** (UI → API → Engine)
 - **Wie du sie in der Demo sofort triggern kannst**
-- **UX-Verbesserungen** (Fokusliste Done-Handling, Done-Tasks wiederfinden)
+- **UX-Verbesserungen** (To‑Do‑Liste Done-Handling, Done-Tasks wiederfinden)
 - **Naming-/Redundanz-Funde** (Menü, Suggestion-Texte, Begriffe)
 
 ---
@@ -126,7 +126,7 @@ Praktische Wirkung:
 - Engine kann Suggestion `ruleKey: "daily_focus"`, `type: "daily_focus"` erzeugen.
 - In `TodayDashboard` ist `daily_focus` explizit als **informational-only** behandelt:
   - der “Accept” Button ist “Verstanden” und soll **keine Task-Daten ändern** — er setzt nur die Preference `adaptive.dailyFocusListHighlight`.
-- Die tatsächliche **Fokusliste** wird clientseitig aus offenen Tasks abgeleitet (`deriveTodayBuckets()`), nicht aus Engine-Payload. **Ohne** diese Preference: Top-Liste **ohne überfällige** Aufgaben (nur heute, später fällig, dann undatierte Auffüller). **Mit** Preference: wie zuvor überfällig → heute → Auffüller; überfällige und heute **rot** hervorgehoben.
+- Die tatsächliche **To‑Do‑Liste** wird clientseitig aus offenen Tasks abgeleitet (`deriveTodayBuckets()`), nicht aus Engine-Payload. **Ohne** diese Preference: Top-Liste **ohne überfällige** Aufgaben (nur heute, später fällig, dann undatierte Auffüller). **Mit** Preference: wie zuvor überfällig → heute → Auffüller; überfällige und heute **rot** hervorgehoben.
 
 ### 2.4 `calendar_conflict` → Konflikthinweis
 
@@ -313,11 +313,11 @@ Empfehlung:
 
 ## 5) UX-Verbesserungen (aus deiner Anforderung)
 
-### 5.1 Fokusliste: “Done klicken” soll bestätigen + nicht sofort “weg”
+### 5.1 To‑Do‑Liste: “Done klicken” soll bestätigen + nicht sofort “weg”
 
 Ist-Stand:
 
-- In `TodayDashboard` verschwindet ein Task nach Check sofort aus der Fokusliste, weil:
+- In `TodayDashboard` verschwindet ein Task nach Check sofort aus der To‑Do‑Liste, weil:
   - Checkbox triggert `PATCH /api/tasks/[id] {status:"done"}` und danach `load()`; `load()` lädt nur `status=open` (`/api/tasks?status=open`).
   - Quelle: `src/components/planning/today-dashboard.tsx` → `FocusListItem.toggleDone()`
 
@@ -392,26 +392,26 @@ Empfehlung:
 
 - Gleich benennen (“Willkommen” oder “Info”) – sonst wirkt es wie zwei verschiedene Seiten.
 
-### 6.3 “Fokusliste” vs “Aufgaben”
+### 6.3 “To‑Do‑Liste” vs “Aufgaben”
 
 Ist-Realität:
 
-- Fokusliste ist **eine gefilterte Sicht** auf offene Tasks (überfällig/heute/auffüllen) auf `/heute`.
+- To‑Do‑Liste ist **eine gefilterte Sicht** auf offene Tasks (überfällig/heute/auffüllen) auf `/heute`.
 - Aufgaben ist die vollständige Liste `/aufgaben`.
 
 Verwirr-Potenzial:
 
-- Nutzer könnte denken Fokusliste sei eine separate Liste/Collection.
+- Nutzer könnte denken, die To‑Do‑Liste sei eine separate Liste/Collection.
 
 Empfehlung:
 
-- In Fokusliste-UI einen Subtext wie:
+- In der To‑Do‑Liste-UI einen Subtext wie:
   - “Aus offenen Aufgaben zusammengestellt”
   - und einen klaren Link “Alle Aufgaben (inkl. Erledigt)” (z.B. direkt auf Status=all).
 
 Fundstellen:
 
-- Fokusliste Rendering: `src/components/planning/today-dashboard.tsx` (Header “Fokusliste”)
+- To‑Do‑Liste Rendering: `src/components/planning/today-dashboard.tsx`
 - Aufgaben-Link existiert bereits: Link zu `/aufgaben` in `FocusListCard`
 
 ### 6.4 “Anpassungen” (UI) vs “Adaptive” (intern/legacy)
@@ -429,9 +429,9 @@ Empfehlung:
 
 ## 7) Kurze To‑Do Liste (aus diesem Dokument)
 
-- [ ] Fokusliste: Checkbox-Klick mit Confirm oder “Undo/Delay” umsetzen (`today-dashboard.tsx`)
+- [ ] To‑Do‑Liste: Checkbox-Klick mit Confirm oder “Undo/Delay” umsetzen (`today-dashboard.tsx`)
 - [ ] Done-Tasks sichtbar machen (TasksScreen default status/Quick Filter verbessern) (`tasks-screen.tsx`)
 - [x] Terminologie vereinheitlicht: „Startansicht“ (`willkommen/page.tsx`, `viewPreferenceRule.ts`, UI Texte)
 - [ ] Mobile Nav Label “Info” ↔ “Willkommen” angleichen (`app-shell.tsx`)
-- [ ] Fokusliste erklären als “Ausschnitt der Aufgaben” + Link zu “Alle inkl. erledigt”
+- [ ] To‑Do‑Liste erklären als “Ausschnitt der Aufgaben” + Link zu “Alle inkl. erledigt”
 

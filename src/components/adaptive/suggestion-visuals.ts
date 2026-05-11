@@ -36,7 +36,7 @@ export function getSuggestionVisualMeta(ruleKey: string): SuggestionVisualMeta {
         accent: "sky",
         categoryShort: "Überblick",
         strapline:
-          "Keine Aufgabenänderung: ohne Annahme blendet die Fokusliste auf „Heute“ Überfällige aus (nur heute und später); nach Annehmen erscheinen sie dort und werden rot hervorgehoben.",
+          "Keine Aufgabenänderung: ohne Annahme blendet die To‑Do‑Liste auf „Heute“ Überfällige aus (nur heute und später); nach Annehmen erscheinen sie dort und werden rot hervorgehoben.",
       };
     case "adaptive_task_creation":
       return {

@@ -4,7 +4,7 @@
 # Wann / Aktualisierung:
 #   - Nach jedem `npm run build` (postbuild → docs:pdf), nur auf Windows.
 #   - Manuell: dieses Skript ausführen.
-#   Erneuter Lauf überschreibt die PDFs in OutDir — immer nur die aktuelle Version, keine Duplikate.
+#   Erneuter kompletter Lauf entfernt alte PDFs in OutDir und schreibt die aktuelle Version neu.
 #   CI ohne Pandoc: SKIP_DOCS_PDF=1 npm run build
 #
 # Voraussetzungen:
@@ -128,6 +128,11 @@ else {
 if ($inputs.Count -eq 0) {
   Write-Warning "Keine Markdown-Dateien gefunden."
   exit 0
+}
+
+if (-not ($MarkdownFiles -and $MarkdownFiles.Count -gt 0)) {
+  Get-ChildItem -LiteralPath $OutDir -Filter "*.pdf" -File -ErrorAction SilentlyContinue |
+    Remove-Item -Force
 }
 
 foreach ($f in $inputs) {

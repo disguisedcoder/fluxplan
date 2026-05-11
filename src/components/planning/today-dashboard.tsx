@@ -192,7 +192,7 @@ function FocusListCard({
           <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
             {overdueCount > 0 && !emphasizeDueRows ? (
               <>
-                In dieser Fokusliste stehen aktuell keine heute oder später fälligen Aufgaben.{" "}
+                In dieser To‑Do‑Liste stehen aktuell keine heute oder später fälligen Aufgaben.{" "}
                 {overdueCount === 1
                   ? "Eine überfällige Aufgabe ist ausgeblendet"
                   : `${overdueCount} überfällige Aufgaben sind ausgeblendet`}{" "}
@@ -208,8 +208,13 @@ function FocusListCard({
             )}
           </div>
         ) : (
-          <ul className="space-y-2">
-            {tasks.slice(0, 5).map((t) => (
+          <ul
+            className={cn(
+              "space-y-2",
+              tasks.length > 5 && "max-h-[22rem] overflow-y-auto pr-1",
+            )}
+          >
+            {tasks.map((t) => (
               <FocusListItem
                 key={t.id}
                 task={t}
