@@ -4,8 +4,18 @@ import { familienplannerRole } from "./roles/familienplanner";
 import { taskplannerRole } from "./roles/taskplanner";
 import { evalrunnerRole } from "./roles/evalrunner";
 
+const PILOT_ROLE_BY_PSEUDONYM: Record<string, DemoRoleKey> = {
+  P01: "familienplanner",
+  P02: "taskplanner",
+  P03: "evalrunner",
+  P04: "familienplanner",
+  P05: "taskplanner",
+};
+
 export function roleFromPseudonym(pseudonym: string): DemoRoleKey {
   const p = pseudonym.trim().toUpperCase();
+  const pilotRole = PILOT_ROLE_BY_PSEUDONYM[p];
+  if (pilotRole) return pilotRole;
   if (p.startsWith("F")) return "familienplanner";
   if (p.startsWith("T")) return "taskplanner";
   if (p.startsWith("E")) return "evalrunner";

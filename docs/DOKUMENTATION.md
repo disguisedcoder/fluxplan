@@ -167,12 +167,12 @@ FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lang
 - **Taskplanner**: aufgabengetrieben, Kategorien/Tags, Suche/Filter, Quick-Add und Sprachparser.
 - **Eval-Runner**: reproduzierbarer Feature-Check (Vorschläge, Konflikte, Export/Reset).
 
-### Demo-Button (UI) — nur Gast **G01** / **G02**
+### Demo-Button (UI) — Gäste und Seed-Testuser
 
-1. Study Session starten (Gast-Eingabe oder Pseudonym `G01` / `G02`).
-2. `/einstellungen` → Karte **„Demo-Setup (nur Gast G01 / G02)“** → Rolle auswählen → **„Demo-Daten laden“**.
+1. Study Session starten (Gast-Eingabe, Pseudonym `G01` / `G02` oder Seed-Code `F01`–`P05`).
+2. `/einstellungen` → Karte **„Demo-Setup“** → Rolle auswählen → **„Demo-Daten laden“**.
 
-Das lädt ein **größeres Aufgaben-Set** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach Heuristik-Läufe aus. **Pseudonyme `F01`–`E05`:** diese Karte erscheint **nicht**; das Rollen-Set kommt über **Seed** (Basis-Aufgaben) und/oder **`POST /api/data/demo`** (Skript, Runner, `curl` — gleiche Payload wie unten).
+Das lädt ein **größeres Aufgaben-Set** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach Heuristik-Läufe aus. **Pseudonyme `F01`–`P05`:** das Rollen-Set kommt zusätzlich über **Seed** und wird beim **Daten zurücksetzen** für die aktuelle Session wiederhergestellt.
 
 **Adaptiver Gast:** Beim Session-Start legt der Server **ohne** Demo-Klick den **Workshop-Stand** an (Aufgaben + **sieben** pending Beispiel-Vorschläge). Die Demo-Karte ist dann **optional** (z. B. Baseline-Gast oder größeres Rollen-Set).
 
@@ -198,13 +198,14 @@ Jedes Sheet enthält:
 - ein vollständiges Aufgaben-Set (damit die Person nicht erst Daten eintippen muss)
 - einen kurzen Ablauf (8–15 Minuten), um Features gezielt zu triggern
 
-### Seed-Testuser (10–15 Pseudonyme)
+### Seed-Testuser (20 Pseudonyme)
 
-Für schnelle Tests erzeugt das Prisma-Seed aktuell 15 Pseudonyme:
+Für schnelle Tests erzeugt das Prisma-Seed aktuell 20 Pseudonyme:
 
 - `F01–F05` (Familienplanner)
 - `T01–T05` (Taskplanner)
 - `E01–E05` (Eval-Runner)
+- `P01–P05` (Pilot-Mix aus Familienplanner, Taskplanner und Eval-Runner)
 
 Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), damit sie sich nicht gegenseitig überschreiben.
 
@@ -214,16 +215,16 @@ Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), dami
 
 - `/einstellungen → Daten zurücksetzen` — siehe **§1.10** (session-scoped vs. User-Fallback; bei **G01/G02** Workshop inkl. Werk-Defaults neu, siehe dort).
 - **G01/G02:** erneut **„Demo-Daten laden“** (falls Karte sichtbar) — intern oft mit Reset, dann Rollen-Set.
-- **F01–E05:** Demo erneut über **`POST /api/data/demo`** (oder Admin/Runner), nicht über eine entfernte UI-Karte.
+- **F01–P05:** Demo erneut über **`POST /api/data/demo`** (oder Admin/Runner), nicht über eine entfernte UI-Karte.
 
-**Alle 15 Seed-Testuser auf einmal** (wenn mehrere Personen an `F01`–`E05` getestet haben und die DB wieder sauber sein soll):
+**Alle 20 Seed-Testuser auf einmal** (wenn mehrere Personen an `F01`–`P05` getestet haben und die DB wieder sauber sein soll):
 
 1. Im Ordner `fluxplan/` mit gültiger `DATABASE_URL` (wie bei Prisma):
    ```bash
    npm run reset:test-users
    npm run prisma:seed
    ```
-2. `reset:test-users` **löscht die User** `F01`–`F05`, `T01`–`T05`, `E01`–`E05` inkl. aller zugehörigen Daten (Cascade). `prisma:seed` legt sie mit den Standard-10-Aufgaben pro Rolle neu an.
+2. `reset:test-users` **löscht die User** `F01`–`F05`, `T01`–`T05`, `E01`–`E05`, `P01`–`P05` inkl. aller zugehörigen Daten (Cascade). `prisma:seed` legt sie mit ihren Standard-Aufgaben neu an.
 
 Liste der Pseudonyme im Code: `src/lib/demo/test-pseudonyms.ts`.
 
@@ -234,7 +235,7 @@ Für die Studie brauchst du manchmal **kein Terminal**: ein **Admin-Pseudonym** 
 1. In `.env` bzw. Docker (`docker-compose.yml`) setzen: `FLUXPLAN_ADMIN_PSEUDONYMS` — Standard ist **`admin`** (ein Eintrag reicht; mehrere möglich, kommagetrennt). Der Vergleich ist **case-insensitive** (`Admin` und `ADMIN` sind dasselbe).
 2. App neu starten (damit die Variable geladen wird).
 3. Unter `/einstellungen → Pseudonym & Session` als Pseudonym z. B. **`admin`** eintragen und **Session starten**.
-4. **„Alle Demo-Testuser zurücksetzen“** → Bestätigung `RESET_DEMO_USERS`: löscht **`F01`–`F05`, `T01`–`T05`, `E01`–`E05` und zusätzlich `G01`, `G02`**. Anschließend werden **nur die 15 Rollen-Pseudonyme** wie beim Seed neu angelegt (inkl. Standard-Aufgaben); **`G01`/`G02` erscheinen nicht automatisch wieder** — Gast-Slots sind frei, bis jemand erneut als Gast startet.
+4. **„Alle Demo-Testuser zurücksetzen“** → Bestätigung `RESET_DEMO_USERS`: löscht **`F01`–`F05`, `T01`–`T05`, `E01`–`E05`, `P01`–`P05` und zusätzlich `G01`, `G02`**. Anschließend werden **nur die 20 Rollen-Pseudonyme** wie beim Seed neu angelegt (inkl. Standard-Aufgaben); **`G01`/`G02` erscheinen nicht automatisch wieder** — Gast-Slots sind frei, bis jemand erneut als Gast startet.
 5. **„Gast-User zurücksetzen“** → Bestätigung `RESET_GUEST_USERS`: löscht **nur** `G01` und `G02` (Slots für neue Gast-Starts).
 
 **Dein Admin-Konto bleibt.**
@@ -321,7 +322,7 @@ Die Library setzt nur die Klasse `.dark` (oder entfernt sie) auf das `<html>`-El
   2. `prisma migrate` — verwandelt das Schema in echte SQL-Migrations und führt sie auf der DB aus.
   3. `@prisma/client` — der TypeScript-Client. Damit schreiben wir z. B. `prisma.task.findMany({ where: { userId } })` ohne SQL.
 - **Seed**: `prisma/seed.ts` füllt die DB mit Beispiel-Daten (User, Aufgaben, Vorschläge). Beim ersten Start im Container wird das automatisch ausgeführt.
-  - Zusätzlich werden 10–15 Test-Pseudonyme (`Fxx`, `Txx`, `Exx`) mit je einem Aufgaben-Set angelegt, um Features schnell prüfen zu können.
+  - Zusätzlich werden 20 Test-Pseudonyme (`Fxx`, `Txx`, `Exx`, `Pxx`) mit je einem Aufgaben-Set angelegt, um Features schnell prüfen zu können.
 
 ## 2.5 Auth: HTTP-only Cookies, kein OAuth
 
@@ -471,7 +472,7 @@ In `src/lib/hooks/use-shortcuts.ts` in `useGlobalNavigationShortcuts` einen Eint
 | Prisma-Fehler `did not initialize yet` | `npx prisma generate` (oder Container neu bauen) |
 | „Theme" wechselt nicht | Hard-Reload (`Strg+Shift+R`), `localStorage` ggf. leeren |
 | Vorschläge erscheinen nie | Eingriffsstufe ≥ 1 prüfen, Master-Toggle an, Tab Personalisierung → „Heuristiken jetzt prüfen" |
-| Demo-Button meldet „unauthorized“ / fehlt ganz | Zuerst **Study Session** starten; Karte **Demo-Setup** nur bei **`G01`/`G02`** — Codes **F/T/E:** Demo per **`POST /api/data/demo`** |
+| Demo-Button meldet „unauthorized“ / fehlt ganz | Zuerst **Study Session** starten; Karte **Demo-Setup** bei **`G01`/`G02`** und Seed-Codes **`F01`–`P05`**; sonst Demo per **`POST /api/data/demo`** |
 | Build-Warnung über Lockfile | Im `next.config.ts` `turbopack.root` setzen oder lockfile in `C:\Users\janse\` löschen |
 | `npm run build` bricht mit doppelten `export`/`POST` in einer Route | Route-Datei auf **eine** Implementierung prüfen (z. B. Merge-Artefakt); siehe Historie „Demo-Route“ unten |
 
@@ -629,7 +630,7 @@ Im Rahmen von Reviews/Tests kam u. a. folgendes Feedback (sinngemäß); die **te
 
 4. **Story-Rollen: Familienplanner vs. Taskplanner (+ Eval)**  
    - **Ziel:** Unterschiedliche Aufgaben-Sets, um **Konflikte**, **Erinnerungs-Muster**, **Listen/Filter** und **Adaptivität** gezielt zu triggern.  
-   - **Konsequenz:** Drei Rollen mit **Aufgaben-Sets** in `src/lib/demo/roles/*.ts`, zentral über `getDemoRole`/`roleFromPseudonym`; **druckbare** Study-Sheets unter `docs/study-sheets/*.md`; Seed legt **15 Pseudonyme** (`Fxx`, `Txx`, `Exx`) an.
+   - **Konsequenz:** Drei Rollen mit **Aufgaben-Sets** in `src/lib/demo/roles/*.ts`, zentral über `getDemoRole`/`roleFromPseudonym`; **druckbare** Study-Sheets unter `docs/study-sheets/*.md`; Seed legt **20 Pseudonyme** (`Fxx`, `Txx`, `Exx`, `Pxx`) an.
 
 5. **Demo: Daten setzen und Engine sofort prüfen**  
    - **Ziel:** Kein „Warten auf Zufall“ — nach Laden der Demo soll evaluierbar sein.  
@@ -690,7 +691,7 @@ docker compose run --rm e2e
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
-npm run reset:test-users   # nur die 15 Demo-Pseudonyme löschen; danach prisma:seed
+npm run reset:test-users   # nur die 20 Demo-Pseudonyme löschen; danach prisma:seed
 npm run pdf                # Windows: Uni-PDFs aus docs/ (Pandoc + MiKTeX; siehe docs/pdf-export/)
 npm run prisma:studio
 

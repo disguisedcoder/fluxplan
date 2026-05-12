@@ -48,8 +48,8 @@ Alte englische Pfade (`/today`, `/tasks`, `/planning`, `/adaptive`, `/settings`,
 | `GET /api/rules` · `PATCH /api/rules` | Regeln auflisten / einzeln deaktivieren |
 | `GET /api/preferences` · `PUT /api/preferences` | Adaptive-Master, Eingriffsstufe, Cooldowns |
 | `POST /api/data/reset` | Mit Session: session-scopes Löschen (siehe `docs/DOKUMENTATION.md` §1.10); ohne Session: User-weit |
-| `POST /api/data/demo` | Rollen-Demo (Reset optional); für **alle** Sessions nutzbar — UI-Karte **Demo-Setup** nur **G01/G02** |
-| `POST /api/data/reset-demo-users` | Admin: F01–E05 + G01/G02 löschen, 15 Demo-User neu seeden |
+| `POST /api/data/demo` | Rollen-Demo (Reset optional); für **alle** Sessions nutzbar — UI-Karte **Demo-Setup** für **G01/G02** und **F01–P05** |
+| `POST /api/data/reset-demo-users` | Admin: F01–P05 + G01/G02 löschen, 20 Demo-User neu seeden |
 | `POST /api/data/reset-guest-users` | Admin: nur G01/G02 löschen (`RESET_GUEST_USERS`) |
 | `GET /api/export?format=json\|csv` | Pseudonymer Daten-Export |
 | `POST /api/interactions` · `POST /api/events` | Interaktions- und Event-Logging |

@@ -76,7 +76,7 @@ export function AdminResetGuestUsersCard() {
           <p className="text-xs text-muted-foreground">
             Löscht nur die Workshop-Gast-Konten{" "}
             <span className="font-mono text-[11px]">{GUEST_STUDY_PSEUDONYMS.join(", ")}</span> inkl. Sessions, Aufgaben
-            und Vorschläge. Die F-/T-/E-Demo-User bleiben unverändert. Nächster „Als Gast starten“ vergibt wieder freie
+            und Vorschläge. Die F-/T-/E-/P-Demo-User bleiben unverändert. Nächster „Als Gast starten“ vergibt wieder freie
             Slots.
           </p>
         </div>
@@ -91,7 +91,7 @@ export function AdminResetGuestUsersCard() {
             <div className="space-y-3 text-sm">
               <p className="text-muted-foreground">
                 Es werden nur <span className="font-medium">G01</span> und <span className="font-medium">G02</span> aus
-                der Datenbank entfernt (Cascade). Demo-Testuser F01–E05 bleiben bestehen.
+                der Datenbank entfernt (Cascade). Demo-Testuser F01–P05 bleiben bestehen.
               </p>
               <p>
                 Tippe{" "}

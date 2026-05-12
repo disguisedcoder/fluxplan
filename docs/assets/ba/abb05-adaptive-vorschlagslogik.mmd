@@ -1,0 +1,73 @@
+sequenceDiagram
+    autonumber
+    actor Nutzer
+    participant UI as Browser / React-Oberfläche
+    participant Tasks as POST /api/tasks
+    participant Interactions as POST /api/interactions
+    participant Events as POST /api/events
+    participant Eval as POST /api/adaptive/evaluate
+    participant Engine as runAdaptiveEngine
+    participant DB as Prisma + PostgreSQL
+    participant Rules as Adaptive Regeln
+    participant Suggestions as GET /api/suggestions
+    participant Banner as Banner / Bereich Anpassungen
+    participant Respond as POST /api/suggestions/[id]/respond
+
+    Nutzer->>UI: Aufgabe erstellen oder Seite wechseln
+    alt Aufgabe erstellen
+        UI->>Tasks: Task-Daten senden
+        Tasks->>DB: Task speichern
+        Tasks->>DB: TaskInteraction(task_created) und EventLog(task_created)
+        Tasks->>Engine: runAdaptiveEngine(screen="task_created", taskId)
+    else Seite wechseln
+        UI->>Interactions: type="view_changed", screen
+        Interactions->>DB: TaskInteraction(view_changed)
+        Interactions->>Engine: runAdaptiveEngine(screen)
+        UI->>Events: eventType="view_changed"
+        Events->>DB: EventLog(view_changed)
+    else Probelauf oder Banner-Refresh
+        UI->>Eval: screen und metadata senden
+        Eval->>Engine: runAdaptiveEngine(screen, metadata)
+    end
+
+    Engine->>DB: Engine-Konfiguration laden
+    Engine->>DB: aktivierte AdaptiveRule-Einträge laden
+    Engine->>DB: Snooze, Cooldowns und bestehende offene Vorschläge prüfen
+    loop aktivierte und nicht pausierte Regeln
+        Engine->>Rules: evaluate(ctx)
+        Rules->>DB: Tasks, Interactions, Preferences oder Suggestions lesen
+        Rules-->>Engine: SuggestionDraft oder kein Vorschlag
+        opt Bedingung erfüllt und kein Duplikat
+            Engine->>DB: AdaptiveSuggestion(status="pending") speichern
+        end
+    end
+    Engine->>DB: TaskInteraction(engine_evaluated)
+
+    UI->>Suggestions: offene Vorschläge oder Verlauf laden
+    Suggestions->>DB: AdaptiveSuggestion.findMany
+    Suggestions-->>Banner: Vorschläge zurückgeben
+    Banner-->>Nutzer: Vorschlagskarte mit Erklärung und Aktionen
+    Note over Banner,Nutzer: FluxPlan plant nichts automatisch um und nutzt kein externes KI-System.
+
+    Nutzer->>Banner: Annehmen / Nicht jetzt / Ablehnen / Rückgängig
+    Banner->>Respond: action senden
+    alt Annehmen
+        Respond->>DB: applySuggestion setzt Task- oder UserPreference-Änderung
+        Respond->>DB: AdaptiveSuggestion status="accepted"
+        Respond->>DB: TaskInteraction(suggestion_accepted)
+    else Nicht jetzt
+        Respond->>DB: AdaptiveSuggestion status="snoozed"
+        opt Erinnerungsvorschlag
+            Respond->>DB: UserPreference adaptive.reminderSuggestionSnoozeUntil setzen
+        end
+        Respond->>DB: TaskInteraction(suggestion_snoozed)
+    else Ablehnen
+        Respond->>DB: AdaptiveSuggestion status="rejected"
+        Respond->>DB: TaskInteraction(suggestion_rejected)
+        Respond->>DB: ggf. rule.cooldown.<ruleKey> setzen
+    else Rückgängig
+        Respond->>DB: undoSuggestion setzt gespeicherte Änderung zurück, falls implementiert
+        Respond->>DB: AdaptiveSuggestion wieder status="pending"
+        Respond->>DB: TaskInteraction(suggestion_undone)
+    end
+    Respond-->>Banner: aktualisierter Vorschlag

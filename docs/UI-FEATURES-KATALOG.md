@@ -31,10 +31,10 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | **Theme Hell/Dunkel** | Sidebar + `/einstellungen` | Klick Theme-Toggle / Darstellung | Farbschema wechselt (CSS-Variablen) |
 | **Session / Pseudonym** | `/einstellungen` | Session starten | Ohne Session: APIs 401, keine persönlichen Daten |
 | **„Session beenden“** | `/einstellungen` | Klick | Cookies gelöscht, erneuter Start nötig |
-| **Demo-Daten laden** | `/einstellungen` — Karte **nur** für **`G01`/`G02`** („Demo-Setup (nur Gast …)“) | Rolle wählen, Button | Aufgaben/Interaktionen/ggf. Reset; danach oft Engine-Läufe. **F01–E05:** gleiche Logik über **`POST /api/data/demo`** (Skript/Runner), nicht über diese Karte |
+| **Demo-Daten laden** | `/einstellungen` — Karte für **`G01`/`G02`** und Demo-Codes **`F01`–`P05`** | Rolle wählen, Button | Aufgaben/Interaktionen/ggf. Reset; danach oft Engine-Läufe. Für andere Codes gleiche Logik über **`POST /api/data/demo`** (Skript/Runner). |
 | **Export JSON/CSV** | `/einstellungen` | Button | Download |
 | **Daten zurücksetzen** | `/einstellungen` | Roter Bereich + Bestätigung | **Session:** Aufgaben/Vorschläge/Logs dieser Session + ausgewählte adaptive Outcome-Prefs; **G01/G02:** Workshop + **Werk-Defaults** (Eingriffsstufe 2, `adaptive.enabled` je Variante), adaptive: alle Demo-Vorschläge wieder **pending**. **Ohne Session-Cookies:** User-weit Tasks/Suggestions/Interactions/**alle** Preferences; `EventLog` bleibt |
-| **Admin: Demo-Testuser** | `/einstellungen` nur Admin-Pseudonym | Bestätigung `RESET_DEMO_USERS` | Löscht F01–E05 **und** G01/G02; legt **15** Demo-Rollenuser neu an (**G01/G02** nicht automatisch wieder) |
+| **Admin: Demo-Testuser** | `/einstellungen` nur Admin-Pseudonym | Bestätigung `RESET_DEMO_USERS` | Löscht F01–P05 **und** G01/G02; legt **20** Demo-Rollenuser neu an (**G01/G02** nicht automatisch wieder) |
 | **Admin: Gast-User** | `/einstellungen` nur Admin-Pseudonym | Bestätigung `RESET_GUEST_USERS` | Löscht nur **G01** und **G02** |
 | **Adaptives Vorschlags-Banner** (nur Adaptive) | Hauptseiten unter `AppShell` (außer `/anpassungen`, `/`) | Navigation: `view_changed` + Evaluate; Banner-Mount lädt pending | Karte mit Ja / Nicht jetzt / Ablehnen; Logging `suggestion_seen` / `why_clicked` mit aktuellem Pfad als `screen` |
 
@@ -114,7 +114,7 @@ Technische Details: [`DOKUMENTATION.md`](DOKUMENTATION.md) §1.6–1.7, [`ADAPTI
 | **Vorschläge** Master + **Eingriffsstufe** | Nur Adaptive sichtbar voll | Schalter und Slider |
 | **Aufgabe anlegen: Zusatzfelder** | Schalter | Speichert `taskFormOptionalFold` — **sofort** wirksam auf Erstellen + Bearbeiten-Dialog (eingeklappt wenn an) |
 | Darstellung | Theme-Buttons | Hell/Dunkel/System |
-| Export / Demo / Reset / Admin | Buttons | Demo-Karte nur G01/G02; sonst wie oben + Admin Gast-Reset |
+| Export / Demo / Reset / Admin | Buttons | Demo-Karte für G01/G02 und Demo-Codes; sonst wie oben + Admin Gast-Reset |
 
 ---
 

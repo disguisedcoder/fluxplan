@@ -75,10 +75,10 @@ export function AdminResetDemoUsersCard() {
         <div>
           <div className="text-sm font-semibold tracking-tight">Admin: Demo-Testuser</div>
           <p className="text-xs text-muted-foreground">
-            Löscht die 15 Demo-User-Codes{" "}
+            Löscht die {DEMO_TEST_PSEUDONYMS.length} Demo-User-Codes{" "}
             <span className="font-mono text-[11px]">{DEMO_TEST_PSEUDONYMS.join(", ")}</span> sowie die Gast-Codes{" "}
             <span className="font-mono text-[11px]">{GUEST_STUDY_PSEUDONYMS.join(", ")}</span> inkl. Daten; die
-            F-/T-/E-User legt das System wie beim Seed neu an. Dein Admin-Konto ({me.user?.pseudonym}) bleibt unberührt.
+            Demo-User legt das System wie beim Seed neu an. Dein Admin-Konto ({me.user?.pseudonym}) bleibt unberührt.
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -91,7 +91,7 @@ export function AdminResetDemoUsersCard() {
             </DialogHeader>
             <div className="space-y-3 text-sm">
               <p className="text-muted-foreground">
-                Das betrifft <span className="font-medium">F01–F05, T01–T05, E01–E05</span> sowie{" "}
+                Das betrifft <span className="font-medium">F01–F05, T01–T05, E01–E05, P01–P05</span> sowie{" "}
                 <span className="font-medium">G01, G02</span> (Gast-Workshop). Andere User-Codes bleiben in der
                 Datenbank.
               </p>

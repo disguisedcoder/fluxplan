@@ -1,5 +1,6 @@
 /**
- * Löscht alle Demo-/Studien-Testuser (F01–F05, T01–T05, E01–E05) inkl. zugehöriger Daten (Cascade).
+ * Löscht alle Demo-/Studien-Testuser (F01–F05, T01–T05, E01–E05, P01–P05)
+ * inkl. zugehöriger Daten (Cascade).
  *
  * Danach neu anlegen:
  *   npm run prisma:seed

@@ -1,0 +1,89 @@
+erDiagram
+    USER ||--o{ TASK : "hat"
+    USER ||--o{ STUDY_SESSION : "startet"
+    USER ||--o{ ADAPTIVE_SUGGESTION : "erhaelt"
+    USER ||--o{ USER_PREFERENCE : "speichert"
+    USER ||--o{ TASK_INTERACTION : "erzeugt"
+    USER ||--o{ EVENT_LOG : "erzeugt"
+
+    STUDY_SESSION o|--o{ TASK : "gruppiert optional"
+    STUDY_SESSION o|--o{ ADAPTIVE_SUGGESTION : "gruppiert optional"
+    STUDY_SESSION o|--o{ TASK_INTERACTION : "gruppiert optional"
+    STUDY_SESSION o|--o{ EVENT_LOG : "gruppiert optional"
+
+    ADAPTIVE_RULE ||--o{ ADAPTIVE_SUGGESTION : "erzeugt"
+    TASK o|--o{ TASK_INTERACTION : "kann betreffen"
+
+    USER {
+        string id PK
+        string pseudonym UK
+        boolean studyModeEnabled
+        datetime createdAt
+    }
+
+    TASK {
+        string id PK
+        string userId FK
+        string studySessionId FK
+        string title
+        string status
+        string priority
+        string dueDate
+        string reminderAt
+        string completedAt
+    }
+
+    STUDY_SESSION {
+        string id PK
+        string userId FK
+        string sessionCode UK
+        string variant
+        string startedAt
+        string endedAt
+    }
+
+    ADAPTIVE_RULE {
+        string id PK
+        string key UK
+        string name
+        boolean enabled
+    }
+
+    ADAPTIVE_SUGGESTION {
+        string id PK
+        string userId FK
+        string studySessionId FK
+        string ruleKey FK
+        string type
+        string status
+        string payload
+        string respondedAt
+    }
+
+    USER_PREFERENCE {
+        string id PK
+        string userId FK
+        string key UK
+        string value
+        string updatedAt
+    }
+
+    TASK_INTERACTION {
+        string id PK
+        string userId FK
+        string studySessionId FK
+        string taskId FK
+        string type
+        string metadata
+        string createdAt
+    }
+
+    EVENT_LOG {
+        string id PK
+        string userId FK
+        string sessionId FK
+        string eventType
+        string screen
+        string metadata
+        string createdAt
+    }

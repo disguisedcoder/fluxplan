@@ -14,9 +14,9 @@ Die Texte **nennen keine Bedingung** (z. B. Baseline vs. anderes) und **keine in
 - **Nur zwei** Gast-Konten: über **„Als Gast starten“** vergibt der Server nacheinander `G01`, `G02`. Sind beide User-Zeilen in der DB belegt, schlägt ein weiterer Gast-Start fehl (eigener Code oder Admin-Reset der Gast-Konten).
 - **Adaptiv:** Beim Start legt der Server automatisch den **Workshop** an (Kernaufgaben + **zwei Monate** verteilte Termine + **sieben** pending Beispiel-Vorschläge) — **kein** Pflicht-Schritt „Demo-Daten laden“.
 - **Baseline-Gast:** derselbe Kalender-Workshop **automatisch** (Kern + Timeline, **ohne** Vorschläge). Optional: **Demo-Setup** für größeres Rollen-Set (`G01`/`G02` only).
-- **API:** `POST /api/data/demo` bleibt für **alle** eingeloggten Sessions nutzbar (Skripte, F-/T-/E-Codes); die UI-Karte ist nur für Gäste sichtbar.
+- **API:** `POST /api/data/demo` bleibt für **alle** eingeloggten Sessions nutzbar (Skripte, F-/T-/E-/P-Codes); die UI-Karte ist für Gäste und Demo-Codes sichtbar.
 - **Daten zurücksetzen** (Session): leert die Session; bei **G01/G02** wird der Workshop inkl. **Werk-Defaults** neu gesetzt (adaptive: alle Demo-Vorschläge wieder **pending**).
-- **Admin:** **„Gast-User zurücksetzen“** (`RESET_GUEST_USERS`) löscht nur G01/G02; **„Alle Demo-Testuser zurücksetzen“** setzt F01–E05 neu **und** entfernt G01/G02.
+- **Admin:** **„Gast-User zurücksetzen“** (`RESET_GUEST_USERS`) löscht nur G01/G02; **„Alle Demo-Testuser zurücksetzen“** setzt F01–P05 neu **und** entfernt G01/G02.
 - **Willkommen:** Demo-Story-Buttons nur für G01/G02 (optional; ersetzt die Session-Daten).
 
 Die **Schritt-für-Schritt-Phasen** in `familienplanner.md` / `taskplanner.md` / `evalrunner.md` gelten für **zugeteilte** Codes (F/, T/, E/). Gast-Teilnehmer:innen: **Koordination** (dieser Abschnitt + `MODERATION-UND-RUNNER.md`).

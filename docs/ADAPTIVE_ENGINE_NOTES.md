@@ -271,8 +271,8 @@ Quelle:
 
 Ablauf:
 
-- **UI:** `/einstellungen` → Demo-Setup → Rolle wählen → „Demo-Daten laden“ — Karte **nur** für **`G01`/`G02`**.
-- **API/Skript:** `POST /api/data/demo` mit `role` (und optional `resetFirst`) für **alle** Pseudonyme (z. B. F01, Seeds, E2E).
+- **UI:** `/einstellungen` → Demo-Setup → Rolle wählen → „Demo-Daten laden“ — Karte für **`G01`/`G02`** und Demo-Codes **`F01`–`P05`**.
+- **API/Skript:** `POST /api/data/demo` mit `role` (und optional `resetFirst`) für **alle** Pseudonyme (z. B. F01, P01, Seeds, E2E).
 
 Was passiert im Backend:
 

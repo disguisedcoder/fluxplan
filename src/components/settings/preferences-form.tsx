@@ -171,10 +171,10 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">
             <div>
-              <div className="text-sm font-semibold tracking-tight">Demo-Setup (Gast G01 / G02 oder Codes F01–E05)</div>
+              <div className="text-sm font-semibold tracking-tight">Demo-Setup (Gast G01 / G02 oder Codes F01–P05)</div>
               <p className="text-xs text-muted-foreground">
                 {isBaseline
-                  ? "Lädt die rollenspezifische Demo (F = Familienplanner, T = Taskplanner, E = Eval-Runner): Aufgaben-Set inkl. Beispielen. Vorschläge bleiben in der Baseline deaktiviert."
+                  ? "Lädt die rollenspezifische Demo (F = Familienplanner, T = Taskplanner, E = Eval-Runner, P = Pilot-Mix): Aufgaben-Set inkl. Beispielen. Vorschläge bleiben in der Baseline deaktiviert."
                   : "Lädt bzw. ersetzt die Session durch die rollenspezifische Demo inkl. Workshop-Präferenzen und adaptiven Beispielen (wie nach „Daten zurücksetzen“ bei Demo-Codes)."}
               </p>
             </div>

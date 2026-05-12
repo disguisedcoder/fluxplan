@@ -18,6 +18,11 @@ export const DEMO_TEST_PSEUDONYMS = [
   "E03",
   "E04",
   "E05",
+  "P01",
+  "P02",
+  "P03",
+  "P04",
+  "P05",
 ] as const;
 
 export type DemoTestPseudonym = (typeof DEMO_TEST_PSEUDONYMS)[number];
