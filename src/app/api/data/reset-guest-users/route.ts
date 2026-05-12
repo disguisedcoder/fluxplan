@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     });
     if (!user || !isAdminPseudonym(user.pseudonym)) {
       return NextResponse.json(
-        { error: "forbidden", message: "Nur Admin-User-Codes dürfen Gast-Konten zurücksetzen." },
+        { error: "forbidden", message: "Keine Berechtigung zum Zurücksetzen der Gast-Konten." },
         { status: 403 },
       );
     }

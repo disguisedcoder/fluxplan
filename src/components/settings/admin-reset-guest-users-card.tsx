@@ -18,7 +18,7 @@ import { GUEST_STUDY_PSEUDONYMS } from "@/lib/demo/guest-study";
 type Me = {
   user: { pseudonym: string } | null;
   session: unknown | null;
-  isAdmin?: boolean;
+  canManageStudyData?: boolean;
 };
 
 export function AdminResetGuestUsersCard() {
@@ -39,7 +39,7 @@ export function AdminResetGuestUsersCard() {
     load().catch(() => {});
   }, [load]);
 
-  if (!me?.isAdmin) return null;
+  if (!me?.canManageStudyData) return null;
 
   async function run() {
     setBusy(true);
@@ -50,7 +50,7 @@ export function AdminResetGuestUsersCard() {
         body: JSON.stringify({ confirm: "RESET_GUEST_USERS" }),
       });
       if (res.status === 403) {
-        toast.error("Kein Admin-User-Code.");
+        toast.error("Keine Berechtigung.");
         return;
       }
       if (!res.ok) {
@@ -72,7 +72,7 @@ export function AdminResetGuestUsersCard() {
     <Card className="fp-card border-sky-200/50 bg-sky-50/30 dark:border-sky-900/40 dark:bg-sky-950/20">
       <CardContent className="space-y-3 p-5">
         <div>
-          <div className="text-sm font-semibold tracking-tight">Admin: Gast-User (G01, G02)</div>
+          <div className="text-sm font-semibold tracking-tight">Interne Verwaltung: Gast-User (G01, G02)</div>
           <p className="text-xs text-muted-foreground">
             Löscht nur die Workshop-Gast-Konten{" "}
             <span className="font-mono text-[11px]">{GUEST_STUDY_PSEUDONYMS.join(", ")}</span> inkl. Sessions, Aufgaben

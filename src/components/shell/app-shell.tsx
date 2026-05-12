@@ -58,7 +58,7 @@ const MOBILE_NAV: NavItem[] = [
 type Me = {
   user: { pseudonym: string } | null;
   session: { sessionCode: string; variant?: string | null } | null;
-  isAdmin?: boolean;
+  canManageStudyData?: boolean;
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {

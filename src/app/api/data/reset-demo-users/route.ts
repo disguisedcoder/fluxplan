@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     });
     if (!user || !isAdminPseudonym(user.pseudonym)) {
       return NextResponse.json(
-        { error: "forbidden", message: "Nur Admin-User-Codes dürfen alle Demo-User zurücksetzen." },
+        { error: "forbidden", message: "Keine Berechtigung zum Zurücksetzen der Demo-User." },
         { status: 403 },
       );
     }

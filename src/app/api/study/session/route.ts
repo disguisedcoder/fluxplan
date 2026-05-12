@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       if (isGuest && !pseudonym) {
         throw new HttpError(
           409,
-          "Beide Gast-Codes (G01, G02) sind bereits angelegt. Bitte einen eigenen User-Code nutzen oder einen Admin die Demo-/Gast-Konten zurücksetzen lassen.",
+          "Beide Gast-Codes (G01, G02) sind bereits angelegt. Bitte einen eigenen User-Code nutzen.",
         );
       }
       const resolvedPseudonym = pseudonym!;

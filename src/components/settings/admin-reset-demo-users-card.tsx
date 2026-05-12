@@ -19,7 +19,7 @@ import { DEMO_TEST_PSEUDONYMS } from "@/lib/demo/test-pseudonyms";
 type Me = {
   user: { pseudonym: string } | null;
   session: unknown | null;
-  isAdmin?: boolean;
+  canManageStudyData?: boolean;
 };
 
 export function AdminResetDemoUsersCard() {
@@ -40,7 +40,7 @@ export function AdminResetDemoUsersCard() {
     load().catch(() => {});
   }, [load]);
 
-  if (!me?.isAdmin) return null;
+  if (!me?.canManageStudyData) return null;
 
   async function run() {
     setBusy(true);
@@ -51,7 +51,7 @@ export function AdminResetDemoUsersCard() {
         body: JSON.stringify({ confirm: "RESET_DEMO_USERS" }),
       });
       if (res.status === 403) {
-        toast.error("Kein Admin-User-Code.");
+        toast.error("Keine Berechtigung.");
         return;
       }
       if (!res.ok) {
@@ -73,12 +73,12 @@ export function AdminResetDemoUsersCard() {
     <Card className="fp-card border-amber-200/50 bg-amber-50/30 dark:border-amber-900/40 dark:bg-amber-950/20">
       <CardContent className="space-y-3 p-5">
         <div>
-          <div className="text-sm font-semibold tracking-tight">Admin: Demo-Testuser</div>
+          <div className="text-sm font-semibold tracking-tight">Interne Verwaltung: Demo-Testuser</div>
           <p className="text-xs text-muted-foreground">
             Löscht die {DEMO_TEST_PSEUDONYMS.length} Demo-User-Codes{" "}
             <span className="font-mono text-[11px]">{DEMO_TEST_PSEUDONYMS.join(", ")}</span> sowie die Gast-Codes{" "}
             <span className="font-mono text-[11px]">{GUEST_STUDY_PSEUDONYMS.join(", ")}</span> inkl. Daten; die
-            Demo-User legt das System wie beim Seed neu an. Dein Admin-Konto ({me.user?.pseudonym}) bleibt unberührt.
+            Demo-User legt das System wie beim Seed neu an. Dein aktueller User ({me.user?.pseudonym}) bleibt unberührt.
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

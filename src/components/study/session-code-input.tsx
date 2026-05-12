@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 type MeResponse = {
   user: { id: string; pseudonym: string; studyModeEnabled: boolean } | null;
   session: { id: string; sessionCode: string; startedAt: string; variant?: string | null } | null;
-  isAdmin?: boolean;
+  canManageStudyData?: boolean;
 };
 
 export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean }) {
@@ -254,8 +254,8 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
           <CardTitle>Study Session</CardTitle>
           <CardDescription>
             <span className="font-medium text-foreground">User-Code</span> frei wählen (z. B. Testperson{" "}
-            <span className="font-medium">F01</span>, Admin <span className="font-medium">admin</span>) — oder ohne
-            Eingabe als <span className="font-medium">Gast</span> starten. Keine echten Namen, keine Passwörter.
+            <span className="font-medium">F01</span> oder <span className="font-medium">P01</span>) — oder ohne Eingabe
+            als <span className="font-medium">Gast</span> starten. Keine echten Namen, keine Passwörter.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -284,7 +284,7 @@ export function SessionCodeInput({ allowGuest = false }: { allowGuest?: boolean 
               Für <span className="font-medium text-foreground">Session starten</span> nötig. Bei{" "}
               <span className="font-medium text-foreground">Als Gast starten</span> entfällt der User-Code — der Server
               vergibt nacheinander <span className="font-mono">G01</span>, <span className="font-mono">G02</span> (max.
-              zwei Gast-Konten; danach bitte eigenen Code oder Admin-Reset). Erlaubt bei eigenem Code: Buchstaben/Zahlen
+              zwei Gast-Konten; danach bitte eigenen Code nutzen). Erlaubt bei eigenem Code: Buchstaben/Zahlen
               sowie <span className="font-mono">_</span> und{" "}
               <span className="font-mono">-</span>.
             </div>

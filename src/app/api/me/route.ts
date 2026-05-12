@@ -48,7 +48,7 @@ export async function GET() {
     {
       user,
       session,
-      isAdmin: user ? isAdminPseudonym(user.pseudonym) : false,
+      canManageStudyData: user ? isAdminPseudonym(user.pseudonym) : false,
     },
     { headers: ME_NO_STORE },
   );

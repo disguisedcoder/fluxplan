@@ -10,7 +10,7 @@ import { STUDY_ME_CHANGED_EVENT } from "@/lib/study/me-invalidate";
 type MeResponse = {
   user: { id: string; pseudonym: string; studyModeEnabled: boolean } | null;
   session: { id: string; sessionCode: string; startedAt: string; variant?: string | null } | null;
-  isAdmin?: boolean;
+  canManageStudyData?: boolean;
 };
 
 export function StudySessionBanner() {
