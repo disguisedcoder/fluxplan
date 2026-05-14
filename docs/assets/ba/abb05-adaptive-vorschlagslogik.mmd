@@ -1,73 +1,40 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "30px", "fontFamily": "Arial", "primaryTextColor": "#111827", "lineColor": "#374151"}, "sequence": {"diagramMarginX": 24, "diagramMarginY": 18, "actorMargin": 72, "messageMargin": 52, "noteMargin": 10, "mirrorActors": false}}}%%
 sequenceDiagram
     autonumber
     actor Nutzer
-    participant UI as Browser / React-Oberfläche
-    participant Tasks as POST /api/tasks
-    participant Interactions as POST /api/interactions
-    participant Events as POST /api/events
-    participant Eval as POST /api/adaptive/evaluate
-    participant Engine as runAdaptiveEngine
+    participant UI as Browser / React
+    participant API as API-Schicht
+    participant Engine as Adaptive Engine
     participant DB as Prisma + PostgreSQL
-    participant Rules as Adaptive Regeln
-    participant Suggestions as GET /api/suggestions
-    participant Banner as Banner / Bereich Anpassungen
-    participant Respond as POST /api/suggestions/[id]/respond
 
     Nutzer->>UI: Aufgabe erstellen oder Seite wechseln
     alt Aufgabe erstellen
-        UI->>Tasks: Task-Daten senden
-        Tasks->>DB: Task speichern
-        Tasks->>DB: TaskInteraction(task_created) und EventLog(task_created)
-        Tasks->>Engine: runAdaptiveEngine(screen="task_created", taskId)
+        UI->>API: POST /api/tasks
     else Seite wechseln
-        UI->>Interactions: type="view_changed", screen
-        Interactions->>DB: TaskInteraction(view_changed)
-        Interactions->>Engine: runAdaptiveEngine(screen)
-        UI->>Events: eventType="view_changed"
-        Events->>DB: EventLog(view_changed)
-    else Probelauf oder Banner-Refresh
-        UI->>Eval: screen und metadata senden
-        Eval->>Engine: runAdaptiveEngine(screen, metadata)
+        UI->>API: POST /api/interactions + /api/events
     end
 
-    Engine->>DB: Engine-Konfiguration laden
-    Engine->>DB: aktivierte AdaptiveRule-Einträge laden
-    Engine->>DB: Snooze, Cooldowns und bestehende offene Vorschläge prüfen
-    loop aktivierte und nicht pausierte Regeln
-        Engine->>Rules: evaluate(ctx)
-        Rules->>DB: Tasks, Interactions, Preferences oder Suggestions lesen
-        Rules-->>Engine: SuggestionDraft oder kein Vorschlag
-        opt Bedingung erfüllt und kein Duplikat
-            Engine->>DB: AdaptiveSuggestion(status="pending") speichern
-        end
+    API->>DB: Task, Interaction oder Event speichern
+    API->>Engine: runAdaptiveEngine(screen, taskId, metadata)
+    Engine->>DB: Regeln, Konfiguration, Cooldowns und offene Vorschläge laden
+    loop aktive Regeln
+        Engine->>DB: Aufgaben, Interaktionen und Präferenzen prüfen
     end
-    Engine->>DB: TaskInteraction(engine_evaluated)
+    Engine->>DB: ggf. AdaptiveSuggestion(status="pending") speichern
 
-    UI->>Suggestions: offene Vorschläge oder Verlauf laden
-    Suggestions->>DB: AdaptiveSuggestion.findMany
-    Suggestions-->>Banner: Vorschläge zurückgeben
-    Banner-->>Nutzer: Vorschlagskarte mit Erklärung und Aktionen
-    Note over Banner,Nutzer: FluxPlan plant nichts automatisch um und nutzt kein externes KI-System.
+    UI->>API: GET /api/suggestions
+    API-->>UI: Vorschlagskarte mit Erklärung und Aktionen
+    Note over UI,API: FluxPlan plant nichts automatisch um und nutzt kein externes KI-System.
 
-    Nutzer->>Banner: Annehmen / Nicht jetzt / Ablehnen / Rückgängig
-    Banner->>Respond: action senden
+    Nutzer->>UI: Annehmen / Nicht jetzt / Ablehnen / Rückgängig
+    UI->>API: POST /api/suggestions/[id]/respond
     alt Annehmen
-        Respond->>DB: applySuggestion setzt Task- oder UserPreference-Änderung
-        Respond->>DB: AdaptiveSuggestion status="accepted"
-        Respond->>DB: TaskInteraction(suggestion_accepted)
+        API->>DB: applySuggestion und status="accepted"
     else Nicht jetzt
-        Respond->>DB: AdaptiveSuggestion status="snoozed"
-        opt Erinnerungsvorschlag
-            Respond->>DB: UserPreference adaptive.reminderSuggestionSnoozeUntil setzen
-        end
-        Respond->>DB: TaskInteraction(suggestion_snoozed)
+        API->>DB: status="snoozed" und ggf. Snooze-Präferenz
     else Ablehnen
-        Respond->>DB: AdaptiveSuggestion status="rejected"
-        Respond->>DB: TaskInteraction(suggestion_rejected)
-        Respond->>DB: ggf. rule.cooldown.<ruleKey> setzen
+        API->>DB: status="rejected" und ggf. rule.cooldown.<ruleKey>
     else Rückgängig
-        Respond->>DB: undoSuggestion setzt gespeicherte Änderung zurück, falls implementiert
-        Respond->>DB: AdaptiveSuggestion wieder status="pending"
-        Respond->>DB: TaskInteraction(suggestion_undone)
+        API->>DB: undoSuggestion und status wieder "pending"
     end
-    Respond-->>Banner: aktualisierter Vorschlag
+    API-->>UI: aktualisierter Vorschlag

@@ -77,20 +77,7 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
     return " ";
   });
 
-  // 3. list: "für Studium" / "in Studium"
-  working = working.replace(
-    /\s(für|fuer|in)\s+([A-ZÄÖÜ][\p{L}0-9 _-]{1,32})\b/giu,
-    (m, _kw, name) => {
-      if (!listName) {
-        listName = String(name).trim();
-        tokens.push({ kind: "list", raw: m.trim(), value: listName });
-        return " ";
-      }
-      return m;
-    },
-  );
-
-  // 4. duration: "90 min", "1h", "1,5 std", "30 minuten"
+  // 3. duration: "90 min", "1h", "1,5 std", "30 minuten"
   working = working.replace(
     /\s(\d+(?:[.,]\d+)?)\s*(min|minuten|h|std|stunden?)\b/gi,
     (m, num, unit) => {
@@ -103,6 +90,19 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
           tokens.push({ kind: "duration", raw: m.trim(), value: `${minutes} min` });
           return " ";
         }
+      }
+      return m;
+    },
+  );
+
+  // 4. list: "für Studium" / "in Studium"
+  working = working.replace(
+    /\s(für|fuer|in)\s+([A-ZÄÖÜ][\p{L}0-9 _-]{1,32})\b/giu,
+    (m, _kw, name) => {
+      if (!listName) {
+        listName = String(name).trim();
+        tokens.push({ kind: "list", raw: m.trim(), value: listName });
+        return " ";
       }
       return m;
     },

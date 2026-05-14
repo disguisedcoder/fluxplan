@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
+import { runAdaptiveEngine } from "@/lib/adaptive/adaptiveEngine";
 import { makeStudySessionCode } from "@/lib/study/make-session-code";
 
 import { getDemoRole, roleFromPseudonym } from "./index";
@@ -135,5 +136,22 @@ export async function seedDemoTestUsers(prisma: PrismaClient, now = new Date()) 
         metadata: { role: def.key, tasksCreated: def.tasks.length },
       },
     });
+
+    /** Erster passender Pending-Vorschlag (z. B. daily_focus) für alle Studien-Codes — gleiches Verhalten F/T/E/P. */
+    try {
+      const latestSession = await prisma.studySession.findFirst({
+        where: { userId: user.id },
+        orderBy: { startedAt: "desc" },
+        select: { id: true },
+      });
+      await runAdaptiveEngine({
+        userId: user.id,
+        studySessionId: latestSession?.id ?? null,
+        screen: "/heute",
+        metadata: { trigger: "seed_initialized" },
+      });
+    } catch (err) {
+      console.warn(`seedDemoTestUsers: runAdaptiveEngine failed for ${pseudonym}:`, err);
+    }
   }
 }

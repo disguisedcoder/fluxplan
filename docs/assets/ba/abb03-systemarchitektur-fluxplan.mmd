@@ -1,74 +1,28 @@
-flowchart TB
-    subgraph Runtime["Lokale Laufzeitumgebung"]
-        Docker["Docker Compose"]
-        App["Next.js Anwendung"]
-        Db["PostgreSQL-Datenbank"]
-        Tests["Playwright E2E-Testumgebung"]
-    end
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "34px", "fontFamily": "Arial", "primaryTextColor": "#111827", "lineColor": "#374151"}, "flowchart": {"htmlLabels": true, "nodeSpacing": 45, "rankSpacing": 55}}}%%
+flowchart LR
+    Runtime["Docker Compose<br/>lokale Laufzeit mit Next.js-App und PostgreSQL<br/>Playwright als E2E-Testumgebung"]
+    Browser["Browser / React-Oberfläche<br/>App Shell, Sidebar<br/>Heute, Kalender, Erstellen, Anpassungen"]
+    NextApi["Next.js App Router und Route Handlers<br/>Seiten unter src/app/(app)<br/>API: Tasks, Suggestions, Events, Preferences, Study Session, Export"]
+    Domain["Domänenlogik<br/>deterministischer Parser<br/>Planungslogik, Einstellungen, Demo- und Studiendaten"]
+    Adaptive["Adaptive Engine<br/>runAdaptiveEngine<br/>Regeln, Engine-Konfiguration<br/>Snooze, Cooldowns und offene Vorschläge"]
+    Data["Prisma Client<br/>PostgreSQL-Datenbank"]
 
-    subgraph Browser["Browser / React-Oberfläche"]
-        UI["App Shell, Sidebar, Seiten und Komponenten"]
-        Screens["Heute, Aufgaben, Kalender, Erstellen, Anpassungen, Einstellungen"]
-    end
+    Runtime -. startet und testet .-> Browser
+    Runtime -. stellt bereit .-> Data
+    Browser --> NextApi
+    NextApi --> Domain
+    NextApi --> Adaptive
+    Domain --> Data
+    Adaptive --> Data
 
-    subgraph Next["Next.js App Router"]
-        Pages["Server-/Client-Seiten unter src/app/(app)"]
-        Router["App Router, Layouts und Redirects"]
-    end
+    classDef runtime fill:#eef2ff,stroke:#4f46e5,stroke-width:2px,color:#111827;
+    classDef ui fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#111827;
+    classDef server fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#111827;
+    classDef adaptive fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#111827;
+    classDef data fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#111827;
 
-    subgraph API["Route Handlers / API-Schicht"]
-        TasksApi["/api/tasks und /api/tasks/[id]"]
-        SuggestionsApi["/api/suggestions und /api/suggestions/[id]/respond"]
-        AdaptiveApi["/api/adaptive/evaluate"]
-        LoggingApi["/api/interactions und /api/events"]
-        PrefApi["/api/preferences, /api/rules, /api/insights"]
-        StudyApi["/api/study/session, /api/data/demo, /api/export"]
-    end
-
-    subgraph Domain["Domänenlogik"]
-        Parser["Deterministischer Aufgabenparser"]
-        Planning["Planungs- und Kalenderlogik"]
-        Settings["Einstellungen, Startansicht und Study-Session"]
-        Demo["Demo- und Studiendaten-Seeding"]
-    end
-
-    subgraph Adaptive["Adaptive Engine"]
-        Engine["runAdaptiveEngine"]
-        Rules["Adaptive Regeln"]
-        Config["Engine-Konfiguration, Snooze und Cooldown"]
-    end
-
-    Prisma["Prisma Client"]
-
-    Docker --> App
-    Docker --> Db
-    Docker --> Tests
-    Tests --> Browser
-    Browser --> UI --> Screens
-    Screens --> Next
-    Next --> Pages
-    Pages --> API
-    API --> TasksApi
-    API --> SuggestionsApi
-    API --> AdaptiveApi
-    API --> LoggingApi
-    API --> PrefApi
-    API --> StudyApi
-    TasksApi --> Domain
-    StudyApi --> Domain
-    PrefApi --> Domain
-    LoggingApi --> AdaptiveApi
-    TasksApi --> Engine
-    AdaptiveApi --> Engine
-    SuggestionsApi --> Engine
-    Domain --> Parser
-    Domain --> Planning
-    Domain --> Settings
-    Domain --> Demo
-    Engine --> Config
-    Engine --> Rules
-    Rules --> Prisma
-    Config --> Prisma
-    Domain --> Prisma
-    API --> Prisma
-    Prisma --> Db
+    class Runtime runtime;
+    class Browser ui;
+    class NextApi,Domain server;
+    class Adaptive adaptive;
+    class Data data;
