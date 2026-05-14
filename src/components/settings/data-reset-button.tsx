@@ -65,6 +65,13 @@ export function DataResetButton({ onDone }: { onDone?: () => void }) {
             Ohne aktive Session-Cookies löscht die Funktion aus technischen Gründen alle App-Daten dieses User-Codes
             inkl. Einstellungen.
           </p>
+          <p className="text-muted-foreground text-xs">
+            Die <span className="font-medium text-foreground">adaptiven Regeln</span> unter Anpassungen bleiben
+            verfügbar. <span className="font-medium text-foreground">Neue Vorschläge</span> erscheinen erst wieder, wenn
+            du die App so nutzt, dass eine Regel auslöst — fehlende Vorschläge nach dem Reset sind also erwartbar, bis du
+            z. B. navigierst, Aufgaben anlegst oder Heute öffnest. Gast- und Demo-Workshops laden nach dem Reset wieder
+            vorbereitete Beispiel-Vorschläge.
+          </p>
           <p>
             Tippe <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">RESET</span>,
             um zu bestätigen.

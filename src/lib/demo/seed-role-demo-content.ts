@@ -32,7 +32,8 @@ export async function ensureDefaultAdaptiveRules() {
       {
         key: "calendar_conflict",
         name: "Kalender-Konflikthinweis",
-        description: "Weist auf mögliche Konflikte mit geplanten Zeitfenstern hin (keine automatische Verschiebung).",
+        description:
+          "Warnt nach dem Anlegen einer Aufgabe mit Termin, wenn die Summe der geschätzten Minuten offener Aufgaben an diesem Kalendertag mindestens 8 Stunden beträgt. FluxPlan verschiebt nichts automatisch.",
         enabled: true,
       },
       {

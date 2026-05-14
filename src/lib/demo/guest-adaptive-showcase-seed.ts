@@ -290,7 +290,7 @@ export async function seedGuestAdaptiveShowcase(
       type: "calendar_conflict",
       title: "Möglicher Planungskonflikt",
       explanation:
-        "Demo (Gast): Drei große Blöcke am selben Tag + weiterer Slot — Hinweis ohne automatische Verschiebung.",
+        "Demo (Gast): viel geschätzte Zeit an einem Tag (Summe ab 8 Stunden) — Hinweis ohne automatische Verschiebung.",
       payload: {
         taskId: core.tBlock1.id,
         totalEstimatedMinutes: core.totalEst,

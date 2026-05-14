@@ -226,7 +226,9 @@ function PendingSuggestionBannerInner({
               ) : null}
               {suggestion.ruleKey === "calendar_conflict" || suggestion.type === "calendar_conflict" ? (
                 <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  FluxPlan verschiebt keine Termine. „Annehmen“ bestätigt nur, dass du den Hinweis gesehen hast.
+                  Betrifft die Summe geschätzter Minuten an einem Tag (Schwelle 8 Stunden), nicht die Überschneidung
+                  einzelner Uhrzeiten im Formular. FluxPlan verschiebt keine Termine. „Annehmen“ bestätigt nur, dass du
+                  den Hinweis gesehen hast.
                 </div>
               ) : null}
               {suggestion.ruleKey === "adaptive_optional_fold" ||

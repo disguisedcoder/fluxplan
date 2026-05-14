@@ -736,8 +736,9 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
   if (type === "calendar_conflict") {
     return (
       <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        FluxPlan verschiebt keine Termine oder Aufgaben. Der Hinweis dient nur der Einordnung der
-        geschätzten Dauer an diesem Tag.
+        FluxPlan verschiebt keine Termine oder Aufgaben. Der Vorschlag erscheint, wenn die Summe der geschätzten Minuten
+        offener Aufgaben an einem Kalendertag mindestens 8 Stunden beträgt — getrennt von der Überschneidungsprüfung
+        beim Erstellen einer Aufgabe.
       </div>
     );
   }
@@ -751,7 +752,8 @@ function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
 function EmptyPending() {
   return (
     <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-      Aktuell keine offenen Vorschläge. FluxPlan reagiert nur auf wiederkehrende Muster.
+      Aktuell keine offenen Vorschläge — das ist normal, bis eine Regel durch deine Nutzung ausgelöst wird. Die Regeln
+      bleiben aktiv; FluxPlan reagiert auf wiederkehrende Muster.
     </div>
   );
 }

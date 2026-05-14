@@ -67,7 +67,8 @@ export function getSuggestionVisualMeta(ruleKey: string): SuggestionVisualMeta {
         Icon: CalendarClock,
         accent: "amber",
         categoryShort: "Kalender",
-        strapline: "Hinweis zur Tagesauslastung – FluxPlan verschiebt nichts automatisch.",
+        strapline:
+          "Hinweis bei hoher geschätzter Tageslast (Summe ab 8 Stunden). FluxPlan verschiebt nichts automatisch.",
       };
     case "view_preference":
       return {

@@ -6,7 +6,7 @@ export const calendarConflictRule: AdaptiveRule = {
   key: "calendar_conflict",
   name: "Kalender-Konflikthinweis",
   description:
-    "Weist auf mögliche Konflikte mit geplanten Zeitfenstern hin (keine automatische Verschiebung).",
+    "Warnt nach dem Anlegen einer Aufgabe mit Termin, wenn die Summe der geschätzten Minuten offener Aufgaben an diesem Kalendertag mindestens 8 Stunden beträgt. FluxPlan verschiebt nichts automatisch.",
   async evaluate(ctx) {
     if (ctx.screen !== "task_created" || !ctx.taskId) return null;
 
@@ -53,7 +53,7 @@ export const calendarConflictRule: AdaptiveRule = {
       type: "calendar_conflict",
       title: "Möglicher Planungskonflikt",
       explanation:
-        "Dieser Hinweis erscheint, weil die geschätzte Zeit für Aufgaben an diesem Tag recht hoch ist. FluxPlan verschiebt nichts automatisch.",
+        "Die Summe der geschätzten Minuten für alle offenen Aufgaben an diesem Tag liegt bei mindestens 8 Stunden. FluxPlan verschiebt nichts automatisch.",
       payload: { taskId: task.id, totalEstimatedMinutes: totalMinutes },
     };
   },
