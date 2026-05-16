@@ -5,7 +5,7 @@ import { runAdaptiveEngine } from "@/lib/adaptive/adaptiveEngine";
 import { getDemoRole } from "./index";
 import type { DemoRoleKey } from "@/lib/demo/types";
 
-export type DemoSeedReason = "demo_request" | "session_data_reset";
+export type DemoSeedReason = "demo_request" | "session_data_reset" | "session_start" | "prisma_seed";
 
 /** Idempotent: fehlende Standard-Regeln anlegen (wie bisher in `/api/data/demo`). */
 export async function ensureDefaultAdaptiveRules() {

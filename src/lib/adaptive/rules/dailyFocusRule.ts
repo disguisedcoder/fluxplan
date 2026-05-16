@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
+import { generalSuggestionExplanation } from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 
 export const dailyFocusRule: AdaptiveRule = {
@@ -50,8 +51,7 @@ export const dailyFocusRule: AdaptiveRule = {
       ruleKey: "daily_focus",
       type: "daily_focus",
       title: "Heute könnten diese Aufgaben im Fokus stehen",
-      explanation:
-        "Dieser Vorschlag basiert auf offenen Aufgaben mit hoher Priorität sowie überfälligen oder heutigen Aufgaben.",
+      explanation: generalSuggestionExplanation.daily_focus,
       payload: { taskIds: top.map((t) => t.id) },
     };
   },

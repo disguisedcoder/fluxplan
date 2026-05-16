@@ -43,6 +43,12 @@ export function resolveStartViewFromPreferences(prefs: Record<string, unknown>):
   return normalizeStartViewHref(raw ?? DEFAULT_START_HREF);
 }
 
+export function suggestedStartViewHrefFromPayload(payload: unknown): string {
+  const obj = (payload && typeof payload === "object" ? payload : {}) as Record<string, unknown>;
+  const raw = typeof obj.suggestedStartView === "string" ? obj.suggestedStartView : DEFAULT_START_HREF;
+  return normalizeStartViewHref(raw);
+}
+
 /** Kurztext für UI („Startansicht: …“). */
 export function labelForStartHref(href: string): string {
   const h = normalizeStartViewHref(href);

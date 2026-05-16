@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
+import { generalSuggestionExplanation } from "@/lib/adaptive/suggestion-explanation";
+import { CALENDAR_DAY_OVERLOAD_THRESHOLD_MINUTES } from "@/lib/planning/day-estimated-load";
 import type { AdaptiveRule } from "../types";
 
 export const calendarConflictRule: AdaptiveRule = {
@@ -35,7 +37,7 @@ export const calendarConflictRule: AdaptiveRule = {
       sameDay.reduce((sum, t) => sum + (t.estimatedMinutes ?? 0), 0);
 
     // Simple, transparent: if we exceed 8h of estimates on the same day, warn.
-    if (totalMinutes < 8 * 60) return null;
+    if (totalMinutes < CALENDAR_DAY_OVERLOAD_THRESHOLD_MINUTES) return null;
 
     const existing = await prisma.adaptiveSuggestion.findFirst({
       where: {
@@ -52,8 +54,7 @@ export const calendarConflictRule: AdaptiveRule = {
       ruleKey: "calendar_conflict",
       type: "calendar_conflict",
       title: "Möglicher Planungskonflikt",
-      explanation:
-        "Die Summe der geschätzten Minuten für alle offenen Aufgaben an diesem Tag liegt bei mindestens 8 Stunden. FluxPlan verschiebt nichts automatisch.",
+      explanation: generalSuggestionExplanation.calendar_conflict,
       payload: { taskId: task.id, totalEstimatedMinutes: totalMinutes },
     };
   },

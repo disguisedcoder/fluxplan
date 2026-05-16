@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
+import { generalSuggestionExplanation } from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import {
@@ -44,7 +45,7 @@ export const reminderPreferenceRule: AdaptiveRule = {
       where: {
         userId: ctx.userId,
         reminderAt: { not: null },
-        ...(task.listName ? { listName: task.listName } : {}),
+        id: { not: task.id },
       },
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -65,8 +66,7 @@ export const reminderPreferenceRule: AdaptiveRule = {
       ruleKey: "reminder_preference",
       type: "reminder_suggestion",
       title: "Erinnerung vorschlagen?",
-      explanation:
-        "Dieser Vorschlag basiert auf deinen zuletzt erstellten Aufgaben, bei denen du häufig eine Erinnerung gesetzt hast.",
+      explanation: generalSuggestionExplanation.reminder_preference,
       payload: { taskId: task.id, proposedReminderAt: proposed.toISOString() },
     };
   },

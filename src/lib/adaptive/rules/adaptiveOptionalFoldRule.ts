@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
+import {
+  formatGuestDemoExplanation,
+  generalSuggestionExplanation,
+} from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
@@ -75,8 +79,10 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
         ruleKey: "adaptive_optional_fold",
         type: "task_form_optional_fold",
         title: "Zusatzfelder zunächst ausblenden?",
-        explanation:
-          "Als Gast: Deine zuletzt angelegte Aufgabe war sehr kompakt. Soll FluxPlan Zusatzfelder beim Anlegen zunächst einklappen?",
+        explanation: formatGuestDemoExplanation(
+          generalSuggestionExplanation.adaptive_optional_fold,
+          "Deine zuletzt angelegte Aufgabe war sehr kompakt.",
+        ),
         payload: { optionalUsageRate: 0, sampleSize: 1, guest: true },
       };
     }
@@ -107,8 +113,7 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
       ruleKey: "adaptive_optional_fold",
       type: "task_form_optional_fold",
       title: "Zusatzfelder zunächst ausblenden?",
-      explanation:
-        "Du nutzt Kategorie, Tags, Dauer, Erinnerung oder Beschreibung in letzter Zeit kaum. FluxPlan kann den Bereich „Zusatzfelder“ beim Anlegen zunächst einklappen – du kannst ihn jederzeit wieder aufklappen oder alles unter Einstellungen zurücksetzen.",
+      explanation: generalSuggestionExplanation.adaptive_optional_fold,
       payload: { optionalUsageRate: rate, sampleSize: recent.length },
     };
   },

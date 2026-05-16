@@ -30,6 +30,50 @@ test("@adaptive view_preference after repeated view_changed to same route", asyn
   await api.dispose();
 });
 
+test("@adaptive @ui start_view banner shows accept strapline, explanation only in popover", async ({
+  page,
+  baseURL,
+}) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
+
+  for (let i = 0; i < 12; i += 1) {
+    const r = await api.post("/api/interactions", {
+      data: { type: "view_changed", screen: "/aufgaben", metadata: { to: "/aufgaben" } },
+    });
+    if (!r.ok()) throw new Error(`view_changed interaction failed: ${r.status()} ${await r.text()}`);
+  }
+
+  const viewPref = await expectEventuallyToBeTruthy(async () => {
+    const pending = await listSuggestions(api, "pending");
+    return pending.suggestions.find((s) => s.ruleKey === "view_preference") ?? null;
+  }, { timeoutMs: 20_000, intervalMs: 500, message: "view_preference pending for banner UI" });
+  expect(viewPref.explanation).toMatch(/Dieser Vorschlag erscheint, weil du in/);
+
+  const pendingBeforeUi = await listSuggestions(api, "pending");
+  for (const s of pendingBeforeUi.suggestions) {
+    if (s.ruleKey === "daily_focus") {
+      await respondSuggestion(api, s.id, "snooze");
+    }
+  }
+
+  await api.dispose();
+
+  await page.goto("/heute");
+  await expect(page.getByRole("heading", { level: 1, name: "Heute" })).toBeVisible();
+  await expect(page.getByTestId("start-view-accept-strapline")).toBeVisible({ timeout: 25_000 });
+  await expect(page.getByTestId("start-view-strapline-label")).toHaveText(
+    /^(Heute|Kalender|Planung|Erstellen|Aufgaben)$/,
+  );
+  await expect(page.getByText(viewPref.explanation)).toBeHidden();
+  await expect(
+    page.getByText(/Mit Annehmen wird deine Startansicht gespeichert und du springst sofort dorthin/),
+  ).toBeHidden();
+
+  await page.getByRole("button", { name: "Warum sehe ich das?" }).click();
+  await expect(page.getByText(viewPref.explanation)).toBeVisible();
+});
+
 test("@adaptive rules daily_focus + view_preference are triggerable", async ({ page, baseURL }) => {
   if (!baseURL) throw new Error("baseURL is required");
   const api = await request.newContext({ baseURL, storageState: await page.context().storageState() });
@@ -82,17 +126,26 @@ test("@adaptive rule reminder_preference suggests reminder on similar tasks", as
   due.setDate(due.getDate() + 1);
   due.setHours(12, 0, 0, 0);
 
-  await createTask(api, {
-    title: `PW_REM_PREF_${Date.now()}`,
+  const created = await createTask(api, {
+    title: `PW_REM_TARGET_${Date.now()}`,
     dueDate: due.toISOString(),
     listName: "Eval",
     priority: "medium",
   });
+  const targetTaskId = created.task.id;
 
   const reminder = await expectEventuallyToBeTruthy(async () => {
     const pending = await listSuggestions(api, "pending");
-    return pending.suggestions.find((s) => s.ruleKey === "reminder_preference") ?? null;
-  }, { timeoutMs: 30_000, intervalMs: 1_000, message: "reminder_preference pending" });
+    return (
+      pending.suggestions.find(
+        (s) =>
+          s.ruleKey === "reminder_preference" &&
+          s.payload &&
+          typeof s.payload === "object" &&
+          (s.payload as { taskId?: string }).taskId === targetTaskId,
+      ) ?? null
+    );
+  }, { timeoutMs: 30_000, intervalMs: 1_000, message: "reminder_preference pending for new task" });
   expect(reminder.ruleKey).toBe("reminder_preference");
 
   await api.dispose();

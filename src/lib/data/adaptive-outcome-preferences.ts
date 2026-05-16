@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
+import { CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY } from "@/lib/settings/calendar-overload-highlight";
 import { DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY } from "@/lib/settings/daily-focus-list-highlight";
 import {
   REMINDER_SNOOZE_DAYS_PREF_KEY,
@@ -17,6 +18,7 @@ const ADAPTIVE_OUTCOME_PREF_KEYS_WITHOUT_LEVEL = [
   REMINDER_SNOOZE_DAYS_PREF_KEY,
   REMINDER_SNOOZE_UNTIL_PREF_KEY,
   DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY,
+  CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY,
 ] as const;
 
 const INTERVENTION_LEVEL_KEY = "adaptive.interventionLevel" as const;

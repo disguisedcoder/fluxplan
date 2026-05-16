@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { TaskFormChipKey } from "@/lib/settings/task-form-chips";
+import {
+  formatGuestDemoExplanation,
+  generalSuggestionExplanation,
+} from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 
@@ -81,8 +85,10 @@ export const adaptiveTaskCreationRule: AdaptiveRule = {
         ruleKey: "adaptive_task_creation",
         type: "task_form_chips",
         title: "Felder schneller hinzufügen?",
-        explanation:
-          "Als Gast: FluxPlan schlägt die Zusatzfelder vor, die du zuletzt genutzt hast. Du kannst das übernehmen oder ablehnen.",
+        explanation: formatGuestDemoExplanation(
+          generalSuggestionExplanation.adaptive_task_creation,
+          "FluxPlan orientiert sich an deiner zuletzt ausführlichen Aufgabe mit Zusatzfeldern.",
+        ),
         payload: { chipKeys, signal: { guest: true, sampleSize: recentGuest.length } },
       };
     }
@@ -119,8 +125,7 @@ export const adaptiveTaskCreationRule: AdaptiveRule = {
       ruleKey: "adaptive_task_creation",
       type: "task_form_chips",
       title: "Felder schneller hinzufügen?",
-      explanation:
-        "Dieser Vorschlag erscheint, weil du in letzter Zeit bestimmte Zusatzfelder oft nutzt. FluxPlan kann sie als Chips vorschlagen – du behältst die Kontrolle.",
+      explanation: generalSuggestionExplanation.adaptive_task_creation,
       payload: {
         chipKeys,
         signal: {

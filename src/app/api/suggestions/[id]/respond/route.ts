@@ -16,6 +16,7 @@ import {
   REMINDER_SNOOZE_DAYS_PREF_KEY,
   REMINDER_SNOOZE_UNTIL_PREF_KEY,
 } from "@/lib/settings/reminder-snooze";
+import { CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY } from "@/lib/settings/calendar-overload-highlight";
 import { DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY } from "@/lib/settings/daily-focus-list-highlight";
 
 const RespondSchema = z.object({
@@ -263,6 +264,16 @@ async function applySuggestion(
     });
     return;
   }
+
+  if (s.type === "calendar_conflict") {
+    const value = { enabled: true } as Prisma.InputJsonValue;
+    await prisma.userPreference.upsert({
+      where: { userId_key: { userId, key: CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY } },
+      update: { value },
+      create: { userId, key: CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY, value },
+    });
+    return;
+  }
 }
 
 async function undoSuggestion(userId: string, s: { type: string; payload: unknown }) {
@@ -309,6 +320,13 @@ async function undoSuggestion(userId: string, s: { type: string; payload: unknow
   if (s.type === "daily_focus") {
     await prisma.userPreference.deleteMany({
       where: { userId, key: DAILY_FOCUS_LIST_HIGHLIGHT_PREF_KEY },
+    });
+    return;
+  }
+
+  if (s.type === "calendar_conflict") {
+    await prisma.userPreference.deleteMany({
+      where: { userId, key: CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY },
     });
     return;
   }

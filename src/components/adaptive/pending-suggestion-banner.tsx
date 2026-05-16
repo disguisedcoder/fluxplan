@@ -18,7 +18,22 @@ import {
 } from "@/components/adaptive/suggestion-visuals";
 import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
-import { normalizeStartViewHref } from "@/lib/settings/start-view";
+import { normalizeStartViewHref, suggestedStartViewHrefFromPayload } from "@/lib/settings/start-view";
+import { CalendarOverloadAcceptStrapline } from "@/components/adaptive/calendar-overload-accept-strapline";
+import { DailyFocusAcceptStrapline } from "@/components/adaptive/daily-focus-accept-strapline";
+import { ReminderAcceptStrapline } from "@/components/adaptive/reminder-accept-strapline";
+import { StartViewAcceptStrapline } from "@/components/adaptive/start-view-accept-strapline";
+import {
+  TaskFormChipsAcceptStrapline,
+  TaskFormOptionalFoldAcceptStrapline,
+  TaskFormOptionalUnfoldAcceptStrapline,
+} from "@/components/adaptive/task-form-accept-strapline";
+import {
+  reminderSnoozeToastDescription,
+  reminderSnoozeToastDescriptionFallback,
+  reminderSnoozeToastTitle,
+  suggestionSnoozeButtonLabel,
+} from "@/lib/adaptive/reminder-suggestion-copy";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 import { reportSuggestionRespondFailure } from "@/lib/ui/suggestion-respond-errors";
 
@@ -110,6 +125,23 @@ function PendingSuggestionBannerInner({
 
   const meta = getSuggestionVisualMeta(suggestion.ruleKey);
   const BannerIcon = meta.Icon;
+  const isStartViewSuggestion =
+    suggestion.ruleKey === "view_preference" || suggestion.type === "start_view";
+  const isDailyFocusSuggestion =
+    suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus";
+  const isCalendarConflictSuggestion =
+    suggestion.ruleKey === "calendar_conflict" || suggestion.type === "calendar_conflict";
+  const isReminderSuggestion =
+    suggestion.ruleKey === "reminder_preference" || suggestion.type === "reminder_suggestion";
+  const isTaskFormChipsSuggestion =
+    suggestion.ruleKey === "adaptive_task_creation" || suggestion.type === "task_form_chips";
+  const isTaskFormOptionalFoldSuggestion =
+    suggestion.ruleKey === "adaptive_optional_fold" || suggestion.type === "task_form_optional_fold";
+  const isTaskFormOptionalUnfoldSuggestion =
+    suggestion.ruleKey === "adaptive_optional_unfold" || suggestion.type === "task_form_optional_unfold";
+  const startViewHref = isStartViewSuggestion
+    ? suggestedStartViewHrefFromPayload(suggestion.payload)
+    : null;
 
   const seenLogged = useRef(false);
 
@@ -136,15 +168,10 @@ function PendingSuggestionBannerInner({
     if (await reportSuggestionRespondFailure(res)) return;
     const body = (await res.json()) as { reminderSnooze?: { until: string; days: number } };
     const reminderDesc =
-      action === "snooze" && suggestion.ruleKey === "reminder_preference" && body.reminderSnooze
-        ? `Frühestens wieder ab ${new Date(body.reminderSnooze.until).toLocaleDateString("de-DE", {
-            weekday: "short",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })} (${body.reminderSnooze.days} Kalendertage). Anpassungen → Verlauf → vertagten Vorschlag öffnen, um Frist und Tage zu ändern.`
-        : action === "snooze" && suggestion.ruleKey === "reminder_preference"
-          ? "Frist und Tage: Anpassungen → Verlauf oder Personalisierung → „Erinnerungs-Vorschläge vertagen“."
+      action === "snooze" && isReminderSuggestion && body.reminderSnooze
+        ? reminderSnoozeToastDescription(new Date(body.reminderSnooze.until), body.reminderSnooze.days, "banner")
+        : action === "snooze" && isReminderSuggestion
+          ? reminderSnoozeToastDescriptionFallback()
           : undefined;
     toast.success(
       action === "accept"
@@ -152,7 +179,9 @@ function PendingSuggestionBannerInner({
           ? "Startansicht gespeichert."
           : "Übernommen."
         : action === "snooze"
-          ? "Vertagt."
+          ? isReminderSuggestion
+            ? reminderSnoozeToastTitle()
+            : "Vertagt."
           : "Abgelehnt.",
       reminderDesc ? { description: reminderDesc } : undefined,
     );
@@ -165,6 +194,10 @@ function PendingSuggestionBannerInner({
           : {};
       const raw = typeof p.suggestedStartView === "string" ? p.suggestedStartView : "/heute";
       router.push(normalizeStartViewHref(raw));
+      router.refresh();
+    }
+    if (action === "accept" && isCalendarConflictSuggestion) {
+      router.push("/kalender");
       router.refresh();
     }
   }
@@ -205,60 +238,24 @@ function PendingSuggestionBannerInner({
                   suggestionStraplineClass(meta.accent),
                 )}
               >
-                {meta.strapline}
+                {startViewHref ? (
+                  <StartViewAcceptStrapline href={startViewHref} />
+                ) : isDailyFocusSuggestion ? (
+                  <DailyFocusAcceptStrapline />
+                ) : isCalendarConflictSuggestion ? (
+                  <CalendarOverloadAcceptStrapline />
+                ) : isReminderSuggestion ? (
+                  <ReminderAcceptStrapline />
+                ) : isTaskFormChipsSuggestion ? (
+                  <TaskFormChipsAcceptStrapline />
+                ) : isTaskFormOptionalFoldSuggestion ? (
+                  <TaskFormOptionalFoldAcceptStrapline />
+                ) : isTaskFormOptionalUnfoldSuggestion ? (
+                  <TaskFormOptionalUnfoldAcceptStrapline />
+                ) : (
+                  meta.strapline
+                )}
               </p>
-              <div className="mt-2 truncate text-xs text-muted-foreground">{suggestion.explanation}</div>
-              {suggestion.ruleKey === "daily_focus" || suggestion.type === "daily_focus" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Ohne <span className="font-medium text-foreground">Annehmen</span> zeigt die To-Do-Liste auf „Heute“
-                  nur heute und später fällige Aufgaben; Überfällige sind dort ausgeblendet (unter Aufgaben sichtbar).{" "}
-                  <span className="font-medium text-foreground">Annehmen</span> ändert keine Aufgaben, lässt aber
-                  Überfällige in der Liste erscheinen und hebt überfällige sowie heute fällige Zeilen rot hervor.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "adaptive_task_creation" || suggestion.type === "task_form_chips" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Unter <span className="font-medium text-foreground">Neue Aufgabe</span> blendet FluxPlan die
-                  vorgeschlagenen Zusatzfelder als Chips ein. „Annehmen“ speichert die Vorauswahl — du entscheidest
-                  weiterhin
-                  pro Aufgabe.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "calendar_conflict" || suggestion.type === "calendar_conflict" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Betrifft die Summe geschätzter Minuten an einem Tag (Schwelle 8 Stunden), nicht die Überschneidung
-                  einzelner Uhrzeiten im Formular. FluxPlan verschiebt keine Termine. „Annehmen“ bestätigt nur, dass du
-                  den Hinweis gesehen hast.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "adaptive_optional_fold" ||
-              suggestion.type === "task_form_optional_fold" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Wie bei anderen Vorschlägen: <span className="font-medium text-foreground">Annehmen</span>,{" "}
-                  <span className="font-medium text-foreground">Nicht jetzt</span> oder{" "}
-                  <span className="font-medium text-foreground">Ablehnen</span>. Nach Annahme sind die Zusatzfelder
-                  zunächst zu — <span className="font-medium text-foreground">Weitere Felder</span> blendet sie wieder
-                  ein; im Verlauf unter <span className="font-medium text-foreground">Anpassungen</span> kannst du die
-                  Annahme mit <span className="font-medium text-foreground">Rückgängig</span> widerrufen.
-                </div>
-              ) : null}
-              {suggestion.ruleKey === "adaptive_optional_unfold" ||
-              suggestion.type === "task_form_optional_unfold" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  <span className="font-medium text-foreground">Annehmen</span>,{" "}
-                  <span className="font-medium text-foreground">Nicht jetzt</span> oder{" "}
-                  <span className="font-medium text-foreground">Ablehnen</span> — nach Annahme sind die Zusatzfelder
-                  wieder standardmäßig sichtbar; <span className="font-medium text-foreground">Rückgängig</span> im
-                  Verlauf stellt das Einklappen wieder her.
-                </div>
-              ) : null}
-              {suggestion.type === "start_view" ? (
-                <div className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Mit <span className="font-medium text-foreground">Annehmen</span> wird deine{" "}
-                  <span className="font-medium text-foreground">Startansicht</span> gespeichert und du springst
-                  sofort dorthin.
-                </div>
-              ) : null}
             </div>
           </div>
         </div>
@@ -270,7 +267,7 @@ function PendingSuggestionBannerInner({
           </Button>
           <Button variant="outline" onClick={() => respond("snooze")} className="gap-2">
             <Clock className="h-4 w-4" />
-            Nicht jetzt
+            {suggestionSnoozeButtonLabel(suggestion.ruleKey)}
           </Button>
           <Button variant="ghost" onClick={() => respond("reject")} className="gap-2">
             <X className="h-4 w-4" />

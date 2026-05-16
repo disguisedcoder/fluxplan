@@ -15,6 +15,17 @@ import {
   pickPrimaryCategory,
 } from "@/lib/ui/category";
 import type { Task } from "@/components/tasks/types";
+import { DayOverloadBadge } from "@/components/planning/day-overload-badge";
+import {
+  buildDisplayEstimatedMinutesByDayKey,
+  isCalendarDayOverloaded,
+  planningDayKey,
+} from "@/lib/planning/day-estimated-load";
+import {
+  CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY,
+  readCalendarOverloadHighlightPref,
+} from "@/lib/settings/calendar-overload-highlight";
+import { FLUXPLAN_PREFERENCES_CHANGED } from "@/lib/ui/preferences-sync";
 import { addDays, startOfLocalDay } from "./date";
 
 const WEEKDAY_LABELS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
@@ -46,18 +57,28 @@ export function WeekPlanner() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [calendarOverloadHighlight, setCalendarOverloadHighlight] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Kalender braucht i. d. R. nur offene Aufgaben (schneller als alles inkl. Done/Archiv).
-      const res = await studyApiFetch("/api/tasks?status=open", { cache: "no-store" });
-      if (res.status === 401) {
+      const [tasksRes, prefRes] = await Promise.all([
+        studyApiFetch("/api/tasks?status=open", { cache: "no-store" }),
+        studyApiFetch("/api/preferences", { cache: "no-store" }),
+      ]);
+      if (tasksRes.status === 401) {
         setTasks([]);
         return;
       }
-      const data = await res.json();
+      const data = await tasksRes.json();
       setTasks((data.tasks ?? []) as Task[]);
+      if (prefRes.ok) {
+        const prefJson = await prefRes.json();
+        const prefs = prefJson.preferences ?? {};
+        setCalendarOverloadHighlight(
+          readCalendarOverloadHighlightPref(prefs[CALENDAR_OVERLOAD_HIGHLIGHT_PREF_KEY]),
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -66,6 +87,14 @@ export function WeekPlanner() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+  }, [load]);
+
+  useEffect(() => {
+    const onPrefs = () => {
+      load().catch(() => {});
+    };
+    window.addEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
+    return () => window.removeEventListener(FLUXPLAN_PREFERENCES_CHANGED, onPrefs);
   }, [load]);
 
   const gridDays = useMemo(() => monthGridDayCells(monthAnchor), [monthAnchor]);
@@ -80,6 +109,10 @@ export function WeekPlanner() {
   }, [viewTab, gridDays, weekDays]);
 
   const tasksByDay = useMemo(() => buildTasksByDay(tasks, daysForTasks), [tasks, daysForTasks]);
+  const estimatedMinutesByDayKey = useMemo(
+    () => buildDisplayEstimatedMinutesByDayKey(tasks),
+    [tasks],
+  );
 
   /** Monats-Navigation: Woche mitziehen, damit Tab-Wechsel nicht auf veralteter Woche „zurückspringt“. */
   const setMonthAnchorSynced = useCallback((d: Date) => {
@@ -178,6 +211,8 @@ export function WeekPlanner() {
                     viewMonthIndex={monthAnchor.getMonth()}
                     tasksByDay={tasksByDay}
                     conflictIds={conflicts}
+                    estimatedMinutesByDayKey={estimatedMinutesByDayKey}
+                    showOverloadBadges={calendarOverloadHighlight}
                     loading={loading}
                     onEditTask={(t) => {
                       setEditTask(t);
@@ -189,6 +224,8 @@ export function WeekPlanner() {
                     days={weekDays}
                     tasksByDay={tasksByDay}
                     conflictIds={conflicts}
+                    estimatedMinutesByDayKey={estimatedMinutesByDayKey}
+                    showOverloadBadges={calendarOverloadHighlight}
                     loading={loading}
                     onEditTask={(t) => {
                       setEditTask(t);
@@ -200,7 +237,7 @@ export function WeekPlanner() {
             </CardContent>
           </Card>
 
-          <PlanningExplainerCard />
+          <PlanningExplainerCard showOverloadBadges={calendarOverloadHighlight} />
         </div>
 
         <aside className="w-full lg:w-[320px] space-y-4">
@@ -387,6 +424,8 @@ function MonthGrid({
   viewMonthIndex,
   tasksByDay,
   conflictIds,
+  estimatedMinutesByDayKey,
+  showOverloadBadges,
   loading,
   onEditTask,
 }: {
@@ -394,6 +433,8 @@ function MonthGrid({
   viewMonthIndex: number;
   tasksByDay: Map<string, ScheduledTask[]>;
   conflictIds: Set<string>;
+  estimatedMinutesByDayKey: Map<string, number>;
+  showOverloadBadges: boolean;
   loading: boolean;
   onEditTask: (task: Task) => void;
 }) {
@@ -419,6 +460,8 @@ function MonthGrid({
             inViewMonth={d.getMonth() === viewMonthIndex}
             items={tasksByDay.get(isoKey(d)) ?? []}
             conflictIds={conflictIds}
+            dayEstimatedMinutes={estimatedMinutesByDayKey.get(planningDayKey(d)) ?? 0}
+            showOverloadBadges={showOverloadBadges}
             onEditTask={onEditTask}
           />
         ))}
@@ -432,35 +475,46 @@ function MonthDayCell({
   inViewMonth,
   items,
   conflictIds,
+  dayEstimatedMinutes,
+  showOverloadBadges,
   onEditTask,
 }: {
   day: Date;
   inViewMonth: boolean;
   items: ScheduledTask[];
   conflictIds: Set<string>;
+  dayEstimatedMinutes: number;
+  showOverloadBadges: boolean;
   onEditTask: (task: Task) => void;
 }) {
   const isToday = isSameDay(day, new Date());
   const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+  const showOverload =
+    showOverloadBadges && inViewMonth && isCalendarDayOverloaded(dayEstimatedMinutes);
   return (
     <div
       className={cn(
         "flex min-h-[112px] flex-col rounded-lg border border-border/50 bg-card p-1.5 text-left sm:min-h-[128px] sm:p-2",
         !inViewMonth && "opacity-45",
         isToday && "ring-1 ring-primary/35",
-        isWeekend && inViewMonth && "bg-muted/25",
+        showOverload && "bg-amber-500/[0.07]",
+        isWeekend && inViewMonth && !showOverload && "bg-muted/25",
       )}
     >
       <div
         className={cn(
-          "mb-1 flex shrink-0 items-center justify-between text-[11px] font-semibold tabular-nums sm:text-xs",
+          "mb-1 flex shrink-0 items-center justify-between gap-1 text-[11px] font-semibold tabular-nums sm:text-xs",
           isToday ? "text-primary" : "text-foreground",
         )}
       >
         <span>{day.getDate()}</span>
-        {items.length > 0 ? (
-          <span className="font-normal text-muted-foreground">{items.length}</span>
-        ) : null}
+        <div className="flex min-w-0 items-center gap-1">
+          {showOverload ? (
+            <DayOverloadBadge totalMinutes={dayEstimatedMinutes} />
+          ) : items.length > 0 ? (
+            <span className="shrink-0 font-normal text-muted-foreground">{items.length}</span>
+          ) : null}
+        </div>
       </div>
       <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
         {items.map((it) => {
@@ -497,12 +551,16 @@ function WeekGrid({
   days,
   tasksByDay,
   conflictIds,
+  estimatedMinutesByDayKey,
+  showOverloadBadges,
   loading,
   onEditTask,
 }: {
   days: Date[];
   tasksByDay: Map<string, ScheduledTask[]>;
   conflictIds: Set<string>;
+  estimatedMinutesByDayKey: Map<string, number>;
+  showOverloadBadges: boolean;
   loading: boolean;
   onEditTask: (task: Task) => void;
 }) {
@@ -515,7 +573,12 @@ function WeekGrid({
     <div className="min-w-[860px] grid grid-cols-[56px_repeat(7,minmax(0,1fr))]">
       <div className="sticky top-0 z-10 border-b border-border/60 bg-card" />
       {days.map((d) => (
-        <DayHeaderCell key={d.toISOString()} d={d} />
+        <DayHeaderCell
+          key={d.toISOString()}
+          d={d}
+          dayEstimatedMinutes={estimatedMinutesByDayKey.get(planningDayKey(d)) ?? 0}
+          showOverloadBadges={showOverloadBadges}
+        />
       ))}
 
       <div className="relative" style={{ height: (HOUR_END - HOUR_START) * HOUR_HEIGHT }}>
@@ -547,20 +610,36 @@ function WeekGrid({
   );
 }
 
-function DayHeaderCell({ d }: { d: Date }) {
+function DayHeaderCell({
+  d,
+  dayEstimatedMinutes,
+  showOverloadBadges,
+}: {
+  d: Date;
+  dayEstimatedMinutes: number;
+  showOverloadBadges: boolean;
+}) {
   const isToday = isSameDay(d, new Date());
+  const showOverload = showOverloadBadges && isCalendarDayOverloaded(dayEstimatedMinutes);
   return (
     <div
       className={cn(
         "sticky top-0 z-10 border-b border-border/60 bg-card px-2 py-2 text-center text-xs",
         isToday && "bg-primary/5",
+        showOverload && "bg-amber-500/[0.07]",
       )}
     >
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
         {d.toLocaleDateString(PLANNING_LOCALE, { weekday: "short" })}
       </div>
-      <div className={cn("mt-0.5 text-sm font-semibold tabular-nums", isToday && "text-primary")}>
-        {d.getDate()}
+      <div
+        className={cn(
+          "mt-0.5 flex items-center justify-center gap-1 text-sm font-semibold tabular-nums",
+          isToday && "text-primary",
+        )}
+      >
+        <span>{d.getDate()}</span>
+        {showOverload ? <DayOverloadBadge totalMinutes={dayEstimatedMinutes} /> : null}
       </div>
     </div>
   );
@@ -866,7 +945,7 @@ function FreeSlotsCard({ tasksByDay }: { tasksByDay: Map<string, ScheduledTask[]
   );
 }
 
-function PlanningExplainerCard() {
+function PlanningExplainerCard({ showOverloadBadges }: { showOverloadBadges: boolean }) {
   return (
     <Card className="fp-card-soft">
       <CardContent className="space-y-2 p-5">
@@ -874,6 +953,12 @@ function PlanningExplainerCard() {
         <ul className="space-y-1.5 text-sm text-muted-foreground">
           <li>· Aufgaben ohne Datum erscheinen nicht im Raster, sondern in der Seitenleiste unter „Ungeplante Aufgaben“.</li>
           <li>· Monat: Aufgaben je Tag als Liste; Woche: Stundenraster. Überlappende Termine werden markiert, aber nicht verschoben.</li>
+          {showOverloadBadges ? (
+            <li>
+              · Tage mit mindestens 8 Stunden geschätzter Arbeit offener Aufgaben zeigen ein Badge (z. B. „≈9h“) — nach
+              Annahme des Planungskonflikt-Hinweises unter Anpassungen.
+            </li>
+          ) : null}
           <li>· Vorschläge der Anpassungen erscheinen separat und reversibel.</li>
         </ul>
       </CardContent>

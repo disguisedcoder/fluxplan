@@ -14,6 +14,7 @@ import { InterventionLevelSlider } from "./intervention-level-slider";
 import { DataResetButton } from "./data-reset-button";
 import { EventLogExportButton } from "@/components/study/event-log-export-button";
 import { DemoSeedButton } from "./demo-seed-button";
+import { AdminExportAllUsersCard } from "./admin-export-all-users-card";
 import { AdminResetDemoUsersCard } from "./admin-reset-demo-users-card";
 import { AdminResetGuestUsersCard } from "./admin-reset-guest-users-card";
 import {
@@ -164,6 +165,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
         </CardContent>
       </Card>
 
+      <AdminExportAllUsersCard />
       <AdminResetDemoUsersCard />
       <AdminResetGuestUsersCard />
 
@@ -171,11 +173,13 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
         <Card className="fp-card">
           <CardContent className="space-y-3 p-5">
             <div>
-              <div className="text-sm font-semibold tracking-tight">Demo-Setup (Gast G01 / G02 oder Codes F01–P05)</div>
+              <div className="text-sm font-semibold tracking-tight">
+                Demo-Setup (Gast G01 / G02 oder Codes F01–F05, T01–T05, E01–E05, P01–P05)
+              </div>
               <p className="text-xs text-muted-foreground">
                 {isBaseline
                   ? "Lädt die rollenspezifische Demo (F = Familienplanner, T = Taskplanner, E = Eval-Runner, P = Pilot-Mix): Aufgaben-Set inkl. Beispielen. Vorschläge bleiben in der Baseline deaktiviert."
-                  : "Lädt bzw. ersetzt die Session durch die rollenspezifische Demo inkl. Workshop-Präferenzen und adaptiven Beispielen (wie nach „Daten zurücksetzen“ bei Demo-Codes)."}
+                  : "Optional: ersetzt die Session erneut (F/T/E/P-Codes erhalten beim Session-Start bereits dieselbe Rollen-Demo inkl. Engine-Läufe — wie nach „Daten zurücksetzen“)."}
               </p>
             </div>
             <DemoSeedButton onDone={load} />

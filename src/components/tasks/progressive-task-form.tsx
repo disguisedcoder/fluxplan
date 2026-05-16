@@ -22,6 +22,8 @@ import { parseTask, type ParsedTask } from "@/lib/parser/task-parser";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
 import { readAdaptiveTaskFormChips } from "@/lib/settings/task-form-chips";
 import { TaskScheduleOverlapHint } from "@/components/tasks/task-schedule-overlap-hint";
+import { FieldSuggestionChips } from "@/components/tasks/field-suggestion-chips";
+import { useTaskFieldSuggestions } from "@/components/tasks/use-task-field-suggestions";
 
 type Priority = "low" | "medium" | "high";
 
@@ -48,6 +50,9 @@ export function ProgressiveTaskForm() {
   const [listName, setListName] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+
+  const loadFieldSuggestions = activeFields.has("list") || activeFields.has("tags");
+  const { topListNames, topTags } = useTaskFieldSuggestions(loadFieldSuggestions);
   const [estimatedMinutes, setEstimatedMinutes] = useState<string>("");
   const [reminderTime, setReminderTime] = useState("");
   const [description, setDescription] = useState("");
@@ -334,6 +339,11 @@ export function ProgressiveTaskForm() {
             {activeFields.has("list") ? (
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Kategorie</label>
+                <FieldSuggestionChips
+                  items={topListNames}
+                  onPick={setListName}
+                  isDisabled={(name) => listName.trim() === name}
+                />
                 <Input
                   placeholder="z. B. Studium"
                   value={listName}
@@ -345,6 +355,15 @@ export function ProgressiveTaskForm() {
             {activeFields.has("tags") ? (
               <div className="grid gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Tags</label>
+                <FieldSuggestionChips
+                  items={topTags}
+                  formatItem={(t) => `#${t}`}
+                  onPick={(t) => {
+                    const v = t.toLowerCase();
+                    if (!tags.includes(v)) setTags([...tags, v]);
+                  }}
+                  isDisabled={(t) => tags.includes(t.toLowerCase())}
+                />
                 <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5">
                   {tags.map((t) => (
                     <span

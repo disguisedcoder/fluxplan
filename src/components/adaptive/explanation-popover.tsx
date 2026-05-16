@@ -37,7 +37,7 @@ export function ExplanationPopover({
         <HelpCircle className="h-4 w-4" />
         Warum sehe ich das?
       </PopoverTrigger>
-      <PopoverContent className="max-w-sm text-sm text-muted-foreground">
+      <PopoverContent className="max-w-sm whitespace-pre-line text-sm text-muted-foreground">
         {explanation}
       </PopoverContent>
     </Popover>

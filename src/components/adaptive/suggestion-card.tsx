@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExplanationPopover } from "./explanation-popover";
 import { studyApiFetch } from "@/lib/http/study-api-fetch";
+import {
+  reminderSnoozeToastTitle,
+  suggestionSnoozeButtonLabel,
+} from "@/lib/adaptive/reminder-suggestion-copy";
 import { notifyFluxplanPreferencesChanged } from "@/lib/ui/preferences-sync";
 
 export function SuggestionCard({
@@ -45,7 +49,9 @@ export function SuggestionCard({
           : action === "reject"
             ? "Vorschlag abgelehnt."
             : action === "snooze"
-              ? "Vertagt."
+              ? suggestion.ruleKey === "reminder_preference"
+                ? reminderSnoozeToastTitle()
+                : "Vertagt."
               : "Rückgängig.",
       );
       onChanged();
@@ -96,7 +102,7 @@ export function SuggestionCard({
               </Button>
               <Button variant="outline" onClick={() => respond("snooze")} disabled={busy} className="gap-2">
                 <Clock className="h-4 w-4" />
-                Nicht jetzt
+                {suggestionSnoozeButtonLabel(suggestion.ruleKey)}
               </Button>
               <Button variant="ghost" onClick={() => respond("reject")} disabled={busy} className="gap-2">
                 <X className="h-4 w-4" />

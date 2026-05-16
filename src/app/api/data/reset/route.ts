@@ -13,8 +13,8 @@ import { seedGuestBaselineCalendar } from "@/lib/demo/guest-baseline-calendar-se
 import { seedGuestAdaptiveShowcase } from "@/lib/demo/guest-adaptive-showcase-seed";
 import { applyGuestWorkshopDefaultPreferences } from "@/lib/demo/guest-workshop-default-prefs";
 import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
-import { isDemoTestPseudonym, roleFromPseudonym } from "@/lib/demo";
-import { ensureDefaultAdaptiveRules, seedRoleDemoContent } from "@/lib/demo/seed-role-demo-content";
+import { isDemoTestPseudonym } from "@/lib/demo";
+import { seedDemoTestSessionOnStart } from "@/lib/demo/seed-demo-test-session";
 
 export async function POST() {
   try {
@@ -62,12 +62,11 @@ export async function POST() {
         }
       });
     } else if (demoTestSessionReseed && sessionId && sessionVariant && userRow?.pseudonym) {
-      await ensureDefaultAdaptiveRules();
-      await seedRoleDemoContent({
+      await seedDemoTestSessionOnStart({
         userId,
         studySessionId: sessionId,
-        roleKey: roleFromPseudonym(userRow.pseudonym),
-        isBaseline: sessionVariant === "baseline",
+        pseudonym: userRow.pseudonym,
+        variant: sessionVariant,
         seedReason: "session_data_reset",
       });
     }

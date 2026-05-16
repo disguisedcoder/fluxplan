@@ -167,7 +167,7 @@ Akzeptanz: Verlauf, Pause, Reaktivierung, Regel deaktivieren funktionieren End-t
 - Sektion „Pseudonym & Session“: aktuelles Pseudonym (read-only), aktive `sessionCode`, Start „Neue Session“ → Modal; optional **„Als Gast starten“** → Server vergibt `G01`/`G02`.
 - Sektion „Adaptivität“: Master-Toggle „Adaptive Vorschläge aktiviert“ (Preference `adaptiveEnabled`); pro Regel Toggle.
 - Sektion „Daten“: Buttons „Export JSON“, „Export CSV“, „Daten zurücksetzen“ (mit Confirm-Dialog; **session-scoped** wenn Session-Cookie gesetzt — siehe `docs/DOKUMENTATION.md` §1.10).
-- **Demo-Setup**-Karte: Pseudonyme **G01/G02** und Demo-Codes **F01–P05**; Rollen-Demo für andere Codes über **`POST /api/data/demo`**.
+- **Demo-Setup**-Karte: Pseudonyme **G01/G02** und Demo-Codes **F01–F05, T01–T05, E01–E05, P01–P05**; F/T/E/P erhalten Rollen-Demo bereits beim Session-Start (`seedRoleDemoContent`).
 - Admin: **Demo-Testuser** (`RESET_DEMO_USERS`) und **Gast-User** (`RESET_GUEST_USERS`).
 - Sektion „Datenschutz“: max. 3 Sätze: „Logging lokal in PostgreSQL. Kein externes Tracking. Pseudonym frei wählbar.“
 

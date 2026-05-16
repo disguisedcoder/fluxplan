@@ -56,7 +56,8 @@ export function DataResetButton({ onDone }: { onDone?: () => void }) {
             Workshop-Skript).
           </p>
           <p className="text-muted-foreground text-xs">
-            Demo-Test-Codes <span className="font-mono">F01</span>–<span className="font-mono">E05</span> mit Session:
+            Demo-Test-Codes <span className="font-mono">F01–F05</span>, <span className="font-mono">T01–T05</span>,{" "}
+            <span className="font-mono">E01–E05</span>, <span className="font-mono">P01–P05</span> mit Session:
             danach wieder die <span className="font-medium">Werkstatt-Demo</span> passend zum Code (F = Familie, T =
             Task, E = Eval) — keine leere Session, sondern dieselben Demo-Aufgaben und -Einstellungen wie beim ersten
             Laden über &quot;Demo-Daten laden&quot;.

@@ -20,6 +20,10 @@ import {
   clampInterventionLevel,
 } from "@/lib/settings/intervention-levels";
 import {
+  REMINDER_SNOOZE_BUTTON_LABEL,
+  REMINDER_SNOOZE_PERSONALIZATION_CARD_TITLE,
+} from "@/lib/adaptive/reminder-suggestion-copy";
+import {
   readReminderSnoozeDaysPref,
   readReminderSuggestionSnoozeUntil,
   REMINDER_SNOOZE_DAYS_PREF_KEY,
@@ -299,10 +303,10 @@ function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged
         body: JSON.stringify({ key: REMINDER_SNOOZE_UNTIL_PREF_KEY, value: null }),
       });
       if (!res.ok) {
-        toast.error("Konnte Vertagen nicht zurücksetzen.");
+        toast.error("Konnte Pause nicht beenden.");
         return;
       }
-      toast.success("Vertagen beendet.");
+      toast.success("Pause beendet.");
       notifyFluxplanPreferencesChanged();
       onChanged();
     } finally {
@@ -312,7 +316,9 @@ function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged
 
   if (!vertagenNochAktiv) {
     return (
-      <p className="text-xs text-muted-foreground">Kein Vertagen aktiv — Vorschläge können wieder erscheinen.</p>
+      <p className="text-xs text-muted-foreground">
+        Keine Pause aktiv — Erinnerungs-Vorschläge können wieder erscheinen.
+      </p>
     );
   }
 
@@ -323,7 +329,7 @@ function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged
         <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
       </p>
       <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void clearVertagen()}>
-        Vertagen beenden
+        Pause beenden
       </Button>
       <p className="text-[11px] text-muted-foreground">
         Dann können Erinnerungs-Vorschläge wieder wie gewohnt erscheinen (sobald die Regel passt).
@@ -346,21 +352,23 @@ function ReminderSnoozePrefsCard({
     <Card className="fp-card">
       <CardContent className="space-y-3 p-5">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight">Erinnerungs-Vorschläge vertagen</h3>
+          <h3 className="text-sm font-semibold tracking-tight">{REMINDER_SNOOZE_PERSONALIZATION_CARD_TITLE}</h3>
           <p className="text-xs text-muted-foreground">
-            Wenn du bei einem <span className="font-medium text-foreground">offenen</span> Erinnerungs-Vorschlag „Nicht
-            jetzt“ wählst, wird diese Frist hier gespeichert. Änderst du die Tage, während Vertagen aktiv ist, wird das
-            früheste Datum <span className="font-medium text-foreground">ab heute</span> mit der neuen Anzahl neu
-            berechnet. Nach „Annehmen“ eines Vorschlags wird Vertagen zurückgesetzt; nach „Rückgängig“ ebenfalls. Die
-            Werte unten aktualisieren sich, sobald du wieder auf Anpassungen/Personalisierung wechselst oder eine Aktion
-            ausführst.
+            Wenn du bei einem <span className="font-medium text-foreground">offenen</span> Erinnerungs-Vorschlag „
+            {REMINDER_SNOOZE_BUTTON_LABEL}“ wählst, wird die Wartezeit hier gespeichert. Änderst du die Tage, während
+            eine Pause aktiv ist, wird das früheste Datum{" "}
+            <span className="font-medium text-foreground">ab heute</span> mit der neuen Anzahl neu berechnet. Nach
+            „Annehmen“ oder „Rückgängig“ endet die Pause. Die Werte unten aktualisieren sich, sobald du wieder auf
+            Anpassungen/Personalisierung wechselst oder eine Aktion ausführst.
           </p>
         </div>
         <ReminderSnoozeDayEditor key={days} daysKey={days} onChanged={onChanged} />
         {until ? (
           <ReminderSnoozeUntilPanel key={until.getTime()} until={until} onChanged={onChanged} />
         ) : (
-          <p className="text-xs text-muted-foreground">Kein Vertagen aktiv — Vorschläge können wieder erscheinen.</p>
+          <p className="text-xs text-muted-foreground">
+            Keine Pause aktiv — Erinnerungs-Vorschläge können wieder erscheinen.
+          </p>
         )}
       </CardContent>
     </Card>

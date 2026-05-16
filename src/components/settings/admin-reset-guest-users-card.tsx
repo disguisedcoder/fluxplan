@@ -91,7 +91,7 @@ export function AdminResetGuestUsersCard() {
             <div className="space-y-3 text-sm">
               <p className="text-muted-foreground">
                 Es werden nur <span className="font-medium">G01</span> und <span className="font-medium">G02</span> aus
-                der Datenbank entfernt (Cascade). Demo-Testuser F01–P05 bleiben bestehen.
+                der Datenbank entfernt (Cascade). Demo-Testuser F01–F05, T01–T05, E01–E05, P01–P05 bleiben bestehen.
               </p>
               <p>
                 Tippe{" "}

@@ -1,3 +1,9 @@
+import {
+  calendarConflictBannerStrapline,
+  taskFormChipsBannerStrapline,
+  taskFormOptionalFoldBannerStrapline,
+  taskFormOptionalUnfoldBannerStrapline,
+} from "@/lib/adaptive/suggestion-explanation";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
@@ -36,53 +42,50 @@ export function getSuggestionVisualMeta(ruleKey: string): SuggestionVisualMeta {
         accent: "sky",
         categoryShort: "Überblick",
         strapline:
-          "Keine Aufgabenänderung: ohne Annahme blendet die To‑Do‑Liste auf „Heute“ Überfällige aus (nur heute und später); nach Annehmen erscheinen sie dort und werden rot hervorgehoben.",
+          "Beim Annehmen werden die überfälligen und heutigen Aufgaben in der To-Do-Liste der Ansicht „Heute“ rot hervorgehoben.",
       };
     case "adaptive_task_creation":
       return {
         Icon: Wand2,
         accent: "violet",
         categoryShort: "Formular",
-        strapline:
-          "Geht um Vorschlags-Chips beim Erstellen – nicht um deine bestehenden Aufgaben.",
+        strapline: taskFormChipsBannerStrapline,
       };
     case "adaptive_optional_fold":
       return {
         Icon: PanelBottomClose,
         accent: "sky",
         categoryShort: "Kompakt",
-        strapline:
-          "Blendet den Zusatzfelder-Bereich beim Anlegen zunächst ein – alles bleibt einen Klick entfernt.",
+        strapline: taskFormOptionalFoldBannerStrapline,
       };
     case "adaptive_optional_unfold":
       return {
         Icon: ChevronsUpDown,
         accent: "sky",
         categoryShort: "Formular",
-        strapline:
-          "Schlägt vor, eingeklappte Zusatzfelder wieder sichtbar zu machen — du behältst die Kontrolle.",
+        strapline: taskFormOptionalUnfoldBannerStrapline,
       };
     case "calendar_conflict":
       return {
         Icon: CalendarClock,
         accent: "amber",
         categoryShort: "Kalender",
-        strapline:
-          "Hinweis bei hoher geschätzter Tageslast (Summe ab 8 Stunden). FluxPlan verschiebt nichts automatisch.",
+        strapline: calendarConflictBannerStrapline,
       };
     case "view_preference":
       return {
         Icon: Home,
         accent: "violet",
         categoryShort: "Start",
-        strapline: "Beim Annehmen wird deine Startansicht in den Einstellungen gesetzt.",
+        strapline: "Beim Annehmen setzt du deine Startansicht fest und springst sofort hin.",
       };
     case "reminder_preference":
       return {
         Icon: Bell,
         accent: "rose",
         categoryShort: "Erinnerung",
-        strapline: "Beim Annehmen kann eine Erinnerung für die betroffene Aufgabe gesetzt werden.",
+        strapline:
+          "Mit Annehmen legst du für diese Aufgabe eine Erinnerung fest — du nutzt Erinnerungen ohnehin oft. Zeit und Datum kannst du jederzeit ändern oder die Erinnerung wieder entfernen.",
       };
     default:
       return DEFAULT_META;

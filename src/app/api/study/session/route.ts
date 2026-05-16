@@ -10,7 +10,9 @@ import { HttpError, isHttpError } from "@/lib/http/errors";
 import { seedGuestBaselineCalendar } from "@/lib/demo/guest-baseline-calendar-seed";
 import { seedGuestAdaptiveShowcase } from "@/lib/demo/guest-adaptive-showcase-seed";
 import { applyGuestWorkshopDefaultPreferences } from "@/lib/demo/guest-workshop-default-prefs";
+import { isDemoTestPseudonym } from "@/lib/demo";
 import { allocateGuestPseudonym, isGuestStudyPseudonym } from "@/lib/demo/guest-study";
+import { seedDemoTestSessionOnStart } from "@/lib/demo/seed-demo-test-session";
 import { makeStudySessionCode } from "@/lib/study/make-session-code";
 
 export async function POST(req: Request) {
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
     const isGuest = "guest" in parsed.data && parsed.data.guest === true;
     const namedPseudonym = "pseudonym" in parsed.data ? parsed.data.pseudonym : null;
 
-    const { user, session } = await prisma.$transaction(async (tx) => {
+    const { user, session, resolvedPseudonym } = await prisma.$transaction(async (tx) => {
       const pseudonym = isGuest
         ? await allocateGuestPseudonym(tx)
         : namedPseudonym!;
@@ -83,8 +85,21 @@ export async function POST(req: Request) {
         await seedGuestBaselineCalendar(tx, { userId: u.id, studySessionId: s.id });
       }
 
-      return { user: u, session: s };
+      return { user: u, session: s, resolvedPseudonym: resolvedPseudonym };
     });
+
+    if (isDemoTestPseudonym(resolvedPseudonym)) {
+      try {
+        await seedDemoTestSessionOnStart({
+          userId: user.id,
+          studySessionId: session.id,
+          pseudonym: resolvedPseudonym,
+          variant,
+        });
+      } catch (err) {
+        console.warn(`study/session POST: demo seed failed for ${resolvedPseudonym}:`, err);
+      }
+    }
 
     await setStudyCookies({ userId: user.id, sessionId: session.id });
 

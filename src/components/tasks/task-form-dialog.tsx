@@ -7,6 +7,7 @@ import { CalendarClock, ChevronDown, ChevronUp, Clock, Plus, Tag, Type, X } from
 import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +17,8 @@ import { TaskDeleteControl } from "./task-delete-control";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
 import { readAdaptiveTaskFormChips } from "@/lib/settings/task-form-chips";
 import { TaskScheduleOverlapHint } from "@/components/tasks/task-schedule-overlap-hint";
+import { FieldSuggestionChips } from "@/components/tasks/field-suggestion-chips";
+import { useTaskFieldSuggestions } from "@/components/tasks/use-task-field-suggestions";
 
 type Priority = "low" | "medium" | "high";
 
@@ -91,6 +94,10 @@ function TaskFormDialogBody({
   setOpen: (open: boolean) => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [taskStatus, setTaskStatus] = useState<"open" | "done">(() =>
+    initial?.status === "done" ? "done" : "open",
+  );
 
   const [title, setTitle] = useState(() => initial?.title ?? "");
   const [description, setDescription] = useState(() => initial?.description ?? "");
@@ -106,6 +113,8 @@ function TaskFormDialogBody({
   const [listName, setListName] = useState(() => initial?.listName ?? "");
   const [tags, setTags] = useState(() => (initial?.tags ? [...initial.tags] : []));
   const [tagInput, setTagInput] = useState("");
+  const loadFieldSuggestions = activeFields.has("list") || activeFields.has("tags");
+  const { topListNames, topTags } = useTaskFieldSuggestions(loadFieldSuggestions);
   const [estimatedMinutes, setEstimatedMinutes] = useState(() =>
     initial?.estimatedMinutes != null ? String(initial.estimatedMinutes) : "",
   );
@@ -171,6 +180,31 @@ function TaskFormDialogBody({
     setTagInput("");
   }
 
+  async function toggleDone(next: boolean) {
+    if (mode !== "edit" || !initial || initial.status === "archived") return;
+    setStatusBusy(true);
+    try {
+      const res = await studyApiFetch(`/api/tasks/${initial.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: next ? "done" : "open" }),
+      });
+      if (res.status === 401) {
+        toast.error("Bitte starte zuerst eine Study Session.");
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Status konnte nicht gespeichert werden.");
+        return;
+      }
+      setTaskStatus(next ? "done" : "open");
+      toast.success(next ? "Als erledigt markiert." : "Wieder geöffnet.");
+      onSaved?.();
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
   async function submit() {
     if (!canSubmit) return;
     if (mode === "edit" && !initial) return;
@@ -225,10 +259,30 @@ function TaskFormDialogBody({
         <DialogTitle>{mode === "create" ? "Neue Aufgabe" : "Aufgabe bearbeiten"}</DialogTitle>
       </DialogHeader>
 
+      {mode === "edit" && initial && initial.status !== "archived" ? (
+        <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+          <Checkbox
+            id="task-form-done"
+            checked={taskStatus === "done"}
+            disabled={statusBusy || submitting}
+            onCheckedChange={(v) => toggleDone(Boolean(v))}
+            aria-label={taskStatus === "done" ? "Aufgabe wieder öffnen" : "Aufgabe als erledigt markieren"}
+          />
+          <label htmlFor="task-form-done" className="cursor-pointer text-sm font-medium leading-none">
+            {taskStatus === "done" ? "Erledigt" : "Als erledigt markieren"}
+          </label>
+        </div>
+      ) : null}
+
       <div className="grid gap-4">
         <div className="grid gap-2">
           <div className="text-sm font-medium">Titel</div>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Was steht an?" />
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Was steht an?"
+            className={cn(mode === "edit" && taskStatus === "done" && "line-through text-muted-foreground")}
+          />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -319,6 +373,11 @@ function TaskFormDialogBody({
         {activeFields.has("list") ? (
           <div className="grid gap-2">
             <div className="text-sm font-medium">Kategorie</div>
+            <FieldSuggestionChips
+              items={topListNames}
+              onPick={setListName}
+              isDisabled={(name) => listName.trim() === name}
+            />
             <Input
               placeholder="z. B. Studium"
               value={listName}
@@ -330,6 +389,15 @@ function TaskFormDialogBody({
         {activeFields.has("tags") ? (
           <div className="grid gap-2">
             <div className="text-sm font-medium">Tags</div>
+            <FieldSuggestionChips
+              items={topTags}
+              formatItem={(t) => `#${t}`}
+              onPick={(t) => {
+                const v = t.toLowerCase();
+                if (!tags.includes(v)) setTags([...tags, v]);
+              }}
+              isDisabled={(t) => tags.includes(t.toLowerCase())}
+            />
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5">
               {tags.map((t) => (
                 <span

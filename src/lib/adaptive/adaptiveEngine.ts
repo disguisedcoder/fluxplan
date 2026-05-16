@@ -14,10 +14,12 @@ import { hasAcceptedOrRejectedSuggestionToday } from "./suggestionDayThrottle";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import { isGuestStudyPseudonym } from "@/lib/demo/guest-study";
 
-/** Nach Annehmen/Ablehnen am selben Kalendertag kein neuer Pending-Vorschlag (Snooze ausgenommen). */
+/**
+ * Nach Annehmen/Ablehnen am selben Kalendertag kein neuer Pending-Vorschlag (Snooze ausgenommen).
+ * `reminder_preference` ausgenommen: pro Aufgabe eigener Vorschlag (Regel prüft taskId).
+ */
 const THROTTLE_BY_DAY_RULE_KEYS = new Set([
   "view_preference",
-  "reminder_preference",
   "daily_focus",
   "calendar_conflict",
   "adaptive_task_creation",
@@ -64,17 +66,20 @@ export async function runAdaptiveEngine(ctx: AdaptiveContext) {
     const draft = await rule.evaluate(ctxWithConfig);
     if (!draft) continue;
 
-    const dup = await prisma.adaptiveSuggestion.findFirst({
-      where: {
-        userId: ctx.userId,
-        ruleKey: draft.ruleKey,
-        type: draft.type,
-        status: "pending",
-        ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
-      },
-      select: { id: true },
-    });
-    if (dup) continue;
+    // reminder_preference: Duplikat nur pro Aufgabe (in der Regel), nicht global pro Session.
+    if (draft.ruleKey !== "reminder_preference") {
+      const dup = await prisma.adaptiveSuggestion.findFirst({
+        where: {
+          userId: ctx.userId,
+          ruleKey: draft.ruleKey,
+          type: draft.type,
+          status: "pending",
+          ...whereAdaptiveSuggestionStudySession(ctx.studySessionId),
+        },
+        select: { id: true },
+      });
+      if (dup) continue;
+    }
 
     if (
       THROTTLE_BY_DAY_RULE_KEYS.has(draft.ruleKey) &&

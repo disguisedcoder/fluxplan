@@ -169,12 +169,12 @@ FluxPlan hat einen integrierten Demo-Mechanismus, damit Testpersonen **ohne lang
 
 ### Demo-Button (UI) — Gäste und Seed-Testuser
 
-1. Study Session starten (Gast-Eingabe, Pseudonym `G01` / `G02` oder Seed-Code `F01`–`P05`).
-2. `/einstellungen` → Karte **„Demo-Setup“** → Rolle auswählen → **„Demo-Daten laden“**.
+1. Study Session starten (Gast-Eingabe, Pseudonym `G01` / `G02` oder Seed-Code `F01`–`F05`, `T01`–`T05`, `E01`–`E05`, `P01`–`P05`).
+2. Optional: `/einstellungen` → Karte **„Demo-Setup“** → Rolle auswählen → **„Demo-Daten laden“** (ersetzt die Session erneut).
 
-Das lädt ein **größeres Aufgaben-Set** passend zur Rolle (inkl. Konflikt- und Trigger-Daten) und führt direkt danach Heuristik-Läufe aus. **Pseudonyme `F01`–`P05`:** das Rollen-Set kommt zusätzlich über **Seed** und wird beim **Daten zurücksetzen** für die aktuelle Session wiederhergestellt.
+**Demo-Codes F/T/E/P:** Beim Session-Start legt der Server automatisch das **rollenspezifische Aufgaben-Set** in der Session an und führt die definierten **Engine-Evaluations** aus (gleicher Pfad wie **Daten zurücksetzen**). Die Demo-Karte ist optional (z. B. andere Rolle laden).
 
-**Adaptiver Gast:** Beim Session-Start legt der Server **ohne** Demo-Klick den **Workshop-Stand** an (Aufgaben + **sieben** pending Beispiel-Vorschläge). Die Demo-Karte ist dann **optional** (z. B. Baseline-Gast oder größeres Rollen-Set).
+**Adaptiver Gast:** Beim Session-Start legt der Server **ohne** Demo-Klick den **Workshop-Stand** an (Aufgaben + **sieben** pending Beispiel-Vorschläge). Die Demo-Karte ist dann **optional** (z. B. Baseline-Gast oder größeres Rollen-Set über Taskplanner-Demo).
 
 ### Demo-Endpoint (API)
 
@@ -207,7 +207,7 @@ Für schnelle Tests erzeugt das Prisma-Seed aktuell 20 Pseudonyme:
 - `E01–E05` (Eval-Runner)
 - `P01–P05` (Pilot-Mix aus Familienplanner, Taskplanner und Eval-Runner)
 
-Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), damit sie sich nicht gegenseitig überschreiben.
+Hinweis: `prisma:seed` und Session-Start nutzen denselben Pfad `seedRoleDemoContent` (session-scoped, ohne Titel-Prefix).
 
 ### Während des Testens zurücksetzen (empfohlener Ablauf)
 
@@ -215,9 +215,9 @@ Hinweis: Im Seed werden Aufgaben mit Prefix gespeichert (z. B. `F01: ...`), dami
 
 - `/einstellungen → Daten zurücksetzen` — siehe **§1.10** (session-scoped vs. User-Fallback; bei **G01/G02** Workshop inkl. Werk-Defaults neu, siehe dort).
 - **G01/G02:** erneut **„Demo-Daten laden“** (falls Karte sichtbar) — intern oft mit Reset, dann Rollen-Set.
-- **F01–P05:** Demo erneut über **`POST /api/data/demo`** (oder Admin/Runner), nicht über eine entfernte UI-Karte.
+- **F01–F05, T01–T05, E01–E05, P01–P05:** erneut **„Daten zurücksetzen“** (Session) oder optional **`POST /api/data/demo`**.
 
-**Alle 20 Seed-Testuser auf einmal** (wenn mehrere Personen an `F01`–`P05` getestet haben und die DB wieder sauber sein soll):
+**Alle 20 Seed-Testuser auf einmal** (wenn mehrere Personen an den Demo-Codes getestet haben und die DB wieder sauber sein soll):
 
 1. Im Ordner `fluxplan/` mit gültiger `DATABASE_URL` (wie bei Prisma):
    ```bash
@@ -472,7 +472,7 @@ In `src/lib/hooks/use-shortcuts.ts` in `useGlobalNavigationShortcuts` einen Eint
 | Prisma-Fehler `did not initialize yet` | `npx prisma generate` (oder Container neu bauen) |
 | „Theme" wechselt nicht | Hard-Reload (`Strg+Shift+R`), `localStorage` ggf. leeren |
 | Vorschläge erscheinen nie | Eingriffsstufe ≥ 1 prüfen, Master-Toggle an, Tab Personalisierung → „Heuristiken jetzt prüfen" |
-| Demo-Button meldet „unauthorized“ / fehlt ganz | Zuerst **Study Session** starten; Karte **Demo-Setup** bei **`G01`/`G02`** und Seed-Codes **`F01`–`P05`**; sonst Demo per **`POST /api/data/demo`** |
+| Demo-Button meldet „unauthorized“ / fehlt ganz | Zuerst **Study Session** starten; Karte **Demo-Setup** bei **`G01`/`G02`** und Demo-Codes **F/T/E/P01–05**; sonst Demo per **`POST /api/data/demo`** |
 | Build-Warnung über Lockfile | Im `next.config.ts` `turbopack.root` setzen oder lockfile in `C:\Users\janse\` löschen |
 | `npm run build` bricht mit doppelten `export`/`POST` in einer Route | Route-Datei auf **eine** Implementierung prüfen (z. B. Merge-Artefakt); siehe Historie „Demo-Route“ unten |
 

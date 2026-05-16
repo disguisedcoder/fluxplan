@@ -63,7 +63,7 @@ function titleFor(href: ViewTarget["href"]): string {
   }
 }
 
-function explanationFor(
+export function explanationFor(
   href: ViewTarget["href"],
   count: number,
   sampleSize: number,

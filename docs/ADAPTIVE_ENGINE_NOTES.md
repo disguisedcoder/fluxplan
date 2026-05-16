@@ -271,18 +271,20 @@ Quelle:
 
 Ablauf:
 
-- **UI:** `/einstellungen` → Demo-Setup → Rolle wählen → „Demo-Daten laden“ — Karte für **`G01`/`G02`** und Demo-Codes **`F01`–`P05`**.
+- **UI:** `/einstellungen` → Demo-Setup → Rolle wählen → „Demo-Daten laden“ — Karte für **`G01`/`G02`** und Demo-Codes **F01–F05, T01–T05, E01–E05, P01–P05** (optional; F/T/E/P laden beim Session-Start bereits automatisch).
 - **API/Skript:** `POST /api/data/demo` mit `role` (und optional `resetFirst`) für **alle** Pseudonyme (z. B. F01, P01, Seeds, E2E).
 
-Was passiert im Backend:
+Was passiert im Backend (`seedRoleDemoContent` / `seedDemoTestSessionOnStart`):
 
-- Seedet Tasks/Prefs/Interactions (optional Reset)
+- Seedet Tasks/Prefs/Interactions (optional Reset; Session-Start und `prisma:seed` für F/T/E/P nutzen denselben Pfad)
 - Führt definierte `def.evaluations` aus (`runAdaptiveEngine` pro Evaluation)
 - Führt danach **immer** noch `runAdaptiveEngine({ screen: "/heute" })` aus (“populate focus/view suggestions”)
 
 Empfehlung:
 
 - Rolle `evalrunner` ist am ehesten dafür gebaut, Suggestion-Lifecycle + Konflikte schnell sichtbar zu machen.
+
+**Demo-Codes F/T/E/P:** Beim **Session-Start** (und nach **Daten zurücksetzen**) ruft der Server `seedDemoTestSessionOnStart` → `seedRoleDemoContent` auf (Rollen-Aufgaben, View-Events, `def.evaluations`, final `/heute`).
 
 **Gast-Workshop (`G01`/`G02`, adaptive Session):** Beim Session-Start setzt `seedGuestAdaptiveShowcase` Aufgaben + **sieben** pending Vorschläge (je Regeltyp) — **ohne** Demo-Button. Nach **Daten zurücksetzen** werden Showcase und **Werk-Preferences** (u. a. Eingriffsstufe **2**) neu gesetzt; alle Beispiel-Vorschläge wieder **pending**.
 
