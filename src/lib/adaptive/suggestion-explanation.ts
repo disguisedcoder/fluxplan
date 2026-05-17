@@ -162,7 +162,7 @@ export const dailyFocusAcceptImpact = {
   lead: "Beim Annehmen werden die überfälligen und heutigen Aufgaben in der To-Do-Liste der Ansicht „Heute“ rot hervorgehoben.",
   paragraphs: [
     "Es werden keine Aufgaben verschoben, gelöscht oder neu sortiert.",
-    "Ohne Annahme blendet die To-Do-Liste überfällige Aufgaben in „Heute“ aus (du siehst nur heute Fälliges und Späteres); nach Annahme erscheinen überfällige Aufgaben dort ebenfalls und sind zusammen mit den heutigen rot markiert.",
+    "Ohne Annahme zeigt die To-Do-Liste auf „Heute“ nur heute Fälliges und Termine in den nächsten 7 Tagen — Überfällige findest du unter Aufgaben. Nach Annahme kommen Überfällige dazu; Überfälliges und Heute werden rot markiert.",
     "Rückgängig im Verlauf stellt die Darstellung ohne Überfällige wieder her.",
   ],
 } as const;

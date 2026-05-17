@@ -27,6 +27,11 @@ import { FLUXPLAN_PREFERENCES_CHANGED } from "@/lib/ui/preferences-sync";
 
 type TaskWithDue = Task & { dueAt?: Date };
 
+/** Sichtbare Zeilen in der To-Do-Liste; ab dem nächsten Eintrag scrollen. */
+const FOCUS_LIST_VISIBLE_COUNT = 5;
+/** ~ eine Zeile inkl. Abstand (py-3, zwei Textzeilen, space-y-2) */
+const FOCUS_LIST_MAX_HEIGHT = "max-h-[20rem]";
+
 export function TodayDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +115,6 @@ export function TodayDashboard() {
       <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr_1fr]">
         <FocusListCard
           tasks={focus}
-          overdueCount={overdueCount}
           justCompleted={justCompleted}
           loading={loading}
           emphasizeDueRows={dailyFocusListHighlight}
@@ -140,7 +144,6 @@ export function TodayDashboard() {
 
 function FocusListCard({
   tasks,
-  overdueCount,
   justCompleted,
   loading,
   emphasizeDueRows,
@@ -148,7 +151,6 @@ function FocusListCard({
   onJustCompletedChange,
 }: {
   tasks: TaskWithDue[];
-  overdueCount: number;
   justCompleted: Task[];
   loading: boolean;
   emphasizeDueRows: boolean;
@@ -167,81 +169,56 @@ function FocusListCard({
             Alle Aufgaben (inkl. Erledigt)
           </Link>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {emphasizeDueRows ? (
-            <>
-              Mit angenommenem Fokus-Hinweis: überfällige und heute fällige Aufgaben stehen vorn und sind in der Liste
-              rot hervorgehoben; danach folgen weitere Termine.
-            </>
-          ) : (
-            <>
-              Ohne Fokus-Hinweis: die Liste zeigt <span className="font-medium text-foreground">heute</span> und{" "}
-              <span className="font-medium text-foreground">später fällige</span> Termine — überfällige Aufgaben
-              bleiben bewusst außen vor (weiter unter{" "}
-              <Link href="/aufgaben" className="font-medium text-primary underline-offset-4 hover:underline">
-                Aufgaben
-              </Link>
-              ).
-            </>
-          )}
-        </div>
+        <p className="text-xs text-muted-foreground">
+          {emphasizeDueRows
+            ? "Überfällig, heute und die nächsten 7 Tage — Überfälliges und Heute rot markiert."
+            : "Heute und die nächsten 7 Tage — ohne Überfällige (unter Aufgaben)."}
+        </p>
+
+        <QuickAddInput onCreated={onChanged} />
 
         {loading ? (
           <div className="text-sm text-muted-foreground">Lade …</div>
         ) : tasks.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
-            {overdueCount > 0 && !emphasizeDueRows ? (
-              <>
-                In dieser To‑Do‑Liste stehen aktuell keine heute oder später fälligen Aufgaben.{" "}
-                {overdueCount === 1
-                  ? "Eine überfällige Aufgabe ist ausgeblendet"
-                  : `${overdueCount} überfällige Aufgaben sind ausgeblendet`}{" "}
-                — nach <span className="font-medium text-foreground">Annehmen</span> des Fokus-Hinweises (unter
-                Anpassungen) erscheinen Überfällige hier und werden rot markiert. Unter{" "}
-                <Link href="/aufgaben" className="font-medium text-primary underline-offset-4 hover:underline">
-                  Aufgaben
-                </Link>{" "}
-                siehst du den vollen Bestand.
-              </>
-            ) : (
-              <>Heute ist nichts fällig. Du kannst trotzdem fokussiert arbeiten.</>
-            )}
-          </div>
-        ) : (
-          <ul
-            className={cn(
-              "space-y-2",
-              tasks.length > 5 && "max-h-[22rem] overflow-y-auto pr-1",
-            )}
-          >
-            {tasks.map((t) => (
-              <FocusListItem
-                key={t.id}
-                task={t}
-                emphasizeDueRows={emphasizeDueRows}
-                onChanged={onChanged}
-                onJustCompleted={(doneTask) => {
-                  onJustCompletedChange((prev) => {
-                    const next = [doneTask, ...prev.filter((x) => x.id !== doneTask.id)];
-                    return next.slice(0, 5);
-                  });
-                }}
-              />
-            ))}
-          </ul>
-        )}
-
-        {!loading && tasks.length > 0 && overdueCount > 0 && !emphasizeDueRows ? (
-          <p className="text-[11px] text-muted-foreground">
-            {overdueCount === 1
-              ? "Eine überfällige Aufgabe ist in dieser Liste ausgeblendet."
-              : `${overdueCount} überfällige Aufgaben sind in dieser Liste ausgeblendet.`}{" "}
+            Heute und diese Woche ist nichts fällig. Du kannst trotzdem fokussiert arbeiten oder unter{" "}
             <Link href="/aufgaben" className="font-medium text-primary underline-offset-4 hover:underline">
               Aufgaben
             </Link>{" "}
-            zeigt alles; mit Fokus-Hinweis (Anpassungen) kannst du Überfällige hier rot hervorheben.
-          </p>
-        ) : null}
+            alles sehen.
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <ul
+              className={cn(
+                "space-y-2",
+                tasks.length > FOCUS_LIST_VISIBLE_COUNT &&
+                  cn(FOCUS_LIST_MAX_HEIGHT, "overflow-y-auto overscroll-contain pr-1"),
+              )}
+              aria-label="To-Do-Liste"
+            >
+              {tasks.map((t) => (
+                <FocusListItem
+                  key={t.id}
+                  task={t}
+                  emphasizeDueRows={emphasizeDueRows}
+                  onChanged={onChanged}
+                  onJustCompleted={(doneTask) => {
+                    onJustCompletedChange((prev) => {
+                      const next = [doneTask, ...prev.filter((x) => x.id !== doneTask.id)];
+                      return next.slice(0, 5);
+                    });
+                  }}
+                />
+              ))}
+            </ul>
+            {tasks.length > FOCUS_LIST_VISIBLE_COUNT ? (
+              <p className="text-[11px] text-muted-foreground">
+                {tasks.length} Einträge — nach unten scrollen für weitere.
+              </p>
+            ) : null}
+          </div>
+        )}
 
         {justCompleted.length > 0 ? (
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
@@ -282,10 +259,6 @@ function FocusListCard({
             </ul>
           </div>
         ) : null}
-
-        <div className="pt-1">
-          <QuickAddInput onCreated={onChanged} />
-        </div>
       </CardContent>
     </Card>
   );
@@ -592,12 +565,19 @@ function SystemStatusCard({ isBaseline }: { isBaseline: boolean }) {
   );
 }
 
+const FOCUS_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function sortByDueAsc(a: TaskWithDue, b: TaskWithDue) {
+  return (a.dueAt?.getTime() ?? 0) - (b.dueAt?.getTime() ?? 0);
+}
+
 function deriveTodayBuckets(
   tasks: Task[],
   opts: { focusIncludesOverdue: boolean },
 ) {
   const now = new Date();
   const startToday = startOfLocalDay(now);
+  const weekEndExclusive = startToday.getTime() + FOCUS_WEEK_MS;
 
   const dayCountsByStamp: Record<string, number> = {};
   const dayTasksByStamp: Record<string, { id: string; title: string }[]> = {};
@@ -615,36 +595,23 @@ function deriveTodayBuckets(
     (dayTasksByStamp[key] ??= []).push({ id: t.id, title: t.title });
   }
 
-  const overdue = enriched.filter(
-    (t) => t.dueAt && t.dueAt.getTime() < startToday.getTime(),
-  );
-  const today = enriched.filter((t) => t.dueAt && isSameLocalDay(t.dueAt, now));
+  const overdue = enriched
+    .filter((t) => t.dueAt && t.dueAt.getTime() < startToday.getTime())
+    .sort(sortByDueAsc);
+  const today = enriched.filter((t) => t.dueAt && isSameLocalDay(t.dueAt, now)).sort(sortByDueAsc);
+  const laterInWeek = enriched
+    .filter(
+      (t) =>
+        t.dueAt &&
+        !isSameLocalDay(t.dueAt, now) &&
+        t.dueAt.getTime() >= startToday.getTime() &&
+        t.dueAt.getTime() < weekEndExclusive,
+    )
+    .sort(sortByDueAsc);
 
-  let focus: TaskWithDue[];
-  if (opts.focusIncludesOverdue) {
-    focus = [...overdue, ...today];
-  } else {
-    focus = [...today];
-    const future = enriched
-      .filter(
-        (t) =>
-          t.dueAt &&
-          t.dueAt.getTime() >= startToday.getTime() &&
-          !isSameLocalDay(t.dueAt, now),
-      )
-      .sort((a, b) => a.dueAt!.getTime() - b.dueAt!.getTime());
-    for (const t of future) {
-      if (focus.length >= 5) break;
-      focus.push(t);
-    }
-  }
-
-  const focusIds = new Set(focus.map((t) => t.id));
-  const noDate = enriched.filter((t) => !t.dueAt && !focusIds.has(t.id));
-  for (const t of noDate) {
-    if (focus.length >= 5) break;
-    focus.push(t);
-  }
+  const focus: TaskWithDue[] = opts.focusIncludesOverdue
+    ? [...overdue, ...today, ...laterInWeek]
+    : [...today, ...laterInWeek];
 
   const agenda = today
     .filter((t) => t.dueAt && (t.dueAt.getHours() !== 0 || t.dueAt.getMinutes() !== 0))
