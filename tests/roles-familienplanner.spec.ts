@@ -20,7 +20,7 @@ test("@study @adaptive familienplanner adaptive UI surfaces (heute, anpassungen,
     // Kein pending → kein globales Banner mit Aktionen
   } else {
     await expect(
-      page.getByRole("button", { name: "Nicht jetzt" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
+      page.getByRole("button", { name: "Später erinnern" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
     ).toBeVisible({ timeout: 25_000 });
   }
 

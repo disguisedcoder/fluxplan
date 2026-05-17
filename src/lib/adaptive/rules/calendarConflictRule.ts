@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
-import { generalSuggestionExplanation } from "@/lib/adaptive/suggestion-explanation";
+import { buildWhyExplanation } from "@/lib/adaptive/suggestion-explanation";
 import { CALENDAR_DAY_OVERLOAD_THRESHOLD_MINUTES } from "@/lib/planning/day-estimated-load";
 import type { AdaptiveRule } from "../types";
 
@@ -54,7 +54,7 @@ export const calendarConflictRule: AdaptiveRule = {
       ruleKey: "calendar_conflict",
       type: "calendar_conflict",
       title: "Möglicher Planungskonflikt",
-      explanation: generalSuggestionExplanation.calendar_conflict,
+      explanation: buildWhyExplanation("calendar_conflict", { isGuest: ctx.isGuestStudyUser }),
       payload: { taskId: task.id, totalEstimatedMinutes: totalMinutes },
     };
   },

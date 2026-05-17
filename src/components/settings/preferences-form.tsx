@@ -23,6 +23,7 @@ import {
   readPreferenceBool,
   clampInterventionLevel,
 } from "@/lib/settings/intervention-levels";
+import { SUGGESTION_SNOOZE_BUTTON_LABEL } from "@/lib/adaptive/reminder-suggestion-copy";
 type Preferences = Record<string, unknown>;
 
 export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: boolean }) {
@@ -125,7 +126,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
                 Regeln wie für andere Features: Unter <span className="font-medium text-foreground">Anpassungen</span>{" "}
                 kann FluxPlan ein kompakteres Formular vorschlagen — mit{" "}
                 <span className="font-medium text-foreground">Annehmen</span>,{" "}
-                <span className="font-medium text-foreground">Nicht jetzt</span> und{" "}
+                <span className="font-medium text-foreground">{SUGGESTION_SNOOZE_BUTTON_LABEL}</span> und{" "}
                 <span className="font-medium text-foreground">Ablehnen</span>.{" "}
                 <span className="font-medium text-foreground">Weitere Felder</span> klappen den Bereich jederzeit
                 wieder auf.
@@ -138,7 +139,7 @@ export function PreferencesForm({ isBaseline: serverBaseline }: { isBaseline: bo
                 <span className="font-medium text-foreground">Formular: Zusatzfelder einklappen</span> bzw.{" "}
                 <span className="font-medium text-foreground">… wieder ausklappen</span> vor — mit{" "}
                 <span className="font-medium text-foreground">Annehmen</span>,{" "}
-                <span className="font-medium text-foreground">Nicht jetzt</span> und{" "}
+                <span className="font-medium text-foreground">{SUGGESTION_SNOOZE_BUTTON_LABEL}</span> und{" "}
                 <span className="font-medium text-foreground">Ablehnen</span> (plus{" "}
                 <span className="font-medium text-foreground">Rückgängig</span> nach Annahme im Verlauf). Nach
                 Annahme des Einklapp-Vorschlags ist der Bereich zunächst zu;{" "}

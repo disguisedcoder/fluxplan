@@ -5,23 +5,135 @@ import {
 
 export { reminderGuestDemoNote };
 
+export type WhyExplanationRuleKey =
+  | "view_preference"
+  | "daily_focus"
+  | "reminder_preference"
+  | "calendar_conflict"
+  | "adaptive_task_creation"
+  | "adaptive_optional_fold"
+  | "adaptive_optional_unfold";
+
+export type ViewPreferenceHref = "/heute" | "/kalender" | "/aufgaben" | "/erstellen";
+
 /**
- * Standard-Erklärungen für „Warum sehe ich das?“ (wie bei regulären Nutzer:innen aus den Regeln).
- * Gast-Workshop: allgemeiner Text zuerst, danach optional Demo (Gast): …
+ * Allgemeiner „Warum sehe ich das?“-Text pro Regel (reguläre Nutzer:innen).
+ * Bei Gast-Demo wird darunter optional „Demo (Gast): …“ ergänzt — siehe {@link guestDemoNotes}.
  */
 export const generalSuggestionExplanation = {
   daily_focus:
-    "Dieser Vorschlag basiert auf offenen Aufgaben mit hoher Priorität sowie überfälligen oder heutigen Aufgaben.",
+    "FluxPlan hat offene Aufgaben mit hoher Priorität sowie überfällige oder heute fällige Aufgaben erkannt. Der Vorschlag soll dir in „Heute“ Orientierung geben — es werden keine Aufgaben verschoben, gelöscht oder neu sortiert.",
   reminder_preference: reminderPreferenceExplanation,
   calendar_conflict:
-    "Die Summe der geschätzten Minuten für alle offenen Aufgaben an diesem Tag liegt bei mindestens 8 Stunden. FluxPlan verschiebt nichts automatisch.",
+    "An dem Fälligkeitstag der gerade angelegten Aufgabe summieren sich die geschätzten Minuten aller offenen Aufgaben auf mindestens 8 Stunden. FluxPlan warnt dich nur vor einem sehr vollen Tag und verschiebt nichts automatisch.",
   adaptive_task_creation:
-    "Dieser Vorschlag erscheint, weil du in letzter Zeit bestimmte Zusatzfelder oft nutzt. FluxPlan kann sie als Chips vorschlagen – du behältst die Kontrolle.",
+    "In deinen letzten Aufgaben nutzt du bestimmte Zusatzfelder (z. B. Liste, Tags, Dauer, Erinnerung, Beschreibung) wiederholt. FluxPlan kann sie beim Anlegen als Chips vorschlagen — du wählst pro Aufgabe weiterhin selbst, was du brauchst.",
   adaptive_optional_fold:
-    "Du nutzt Kategorie, Tags, Dauer, Erinnerung oder Beschreibung in letzter Zeit kaum. FluxPlan kann den Bereich „Zusatzfelder“ beim Anlegen zunächst einklappen – du kannst ihn jederzeit wieder aufklappen oder alles unter Einstellungen zurücksetzen.",
+    "In deinen letzten Aufgaben kommen Kategorie, Tags, Dauer, Erinnerung oder Beschreibung selten vor. FluxPlan kann den Bereich „Zusatzfelder“ beim Anlegen zunächst einklappen. Über „Weitere Felder“ oder in den Einstellungen bleibt alles jederzeit erreichbar.",
   adaptive_optional_unfold:
-    "Du nutzt Kategorie, Tags, Dauer, Erinnerung oder Beschreibung in letzter Zeit wieder häufig. FluxPlan kann den Bereich „Zusatzfelder“ beim Anlegen wieder standardmäßig einblenden – du kannst ihn jederzeit einklappen oder unter Einstellungen anpassen.",
+    "Du hast Zusatzfelder eingeklappt, nutzt Kategorie, Tags, Dauer, Erinnerung oder Beschreibung in letzter Zeit aber wieder häufig. FluxPlan kann den Bereich beim Anlegen wieder standardmäßig einblenden — du kannst ihn weiterhin einklappen.",
 } as const;
+
+/**
+ * Zusatz nur für Gast-Demo (G01/G02) oder Workshop-Showcase — wenn Schwellen, Timing
+ * oder Auslöser vom regulären Verhalten abweichen.
+ */
+export const guestDemoNotes: Record<WhyExplanationRuleKey, string> = {
+  view_preference:
+    "In der Gast-Demo zählen nur die letzten 8 Wechsel zwischen Heute, Kalender, Aufgaben und Erstellen; schon ab 3× zu einer Seite (und öfter als zu den anderen) erscheint der Vorschlag — im regulären Betrieb sind Fenster und Schwellen höher.",
+  daily_focus:
+    "In der Gast-Demo reicht das vorhandene Aufgaben-Muster (z. B. hohe Priorität und Tageslast) — der Hinweis erscheint beim Öffnen von „Heute“, ohne dass Aufgaben geändert werden.",
+  reminder_preference: reminderGuestDemoNote,
+  calendar_conflict:
+    "In der Gast-Demo erscheint der Hinweis nach dem Anlegen einer Aufgabe an einem Tag mit mehreren großen Workshop-Blöcken — die 8-Stunden-Schwelle ist dort schon durch die Demo-Daten erreicht.",
+  adaptive_task_creation:
+    "In der Gast-Demo reicht eine ausführliche Aufgabe mit Zusatzfeldern als Muster (statt vieler Aufgaben). Der Vorschlag kann schon nach dem ersten passenden Anlegen erscheinen.",
+  adaptive_optional_fold:
+    "In der Gast-Demo zählt die zuletzt angelegte Aufgabe: War sie sehr kompakt (ohne Zusatzfelder), erscheint der Vorschlag schon beim ersten Mal — regulär werden mehrere Aufgaben ausgewertet.",
+  adaptive_optional_unfold:
+    "In der Gast-Demo reicht eine Aufgabe mit Zusatzfeldern, nachdem du eingeklappt hattest — der Vorschlag kann schon beim ersten passenden Anlegen erscheinen, statt erst nach einem längeren Muster.",
+};
+
+function labelForViewHref(href: ViewPreferenceHref): string {
+  switch (href) {
+    case "/heute":
+      return "die Ansicht „Heute“";
+    case "/kalender":
+      return "den Kalender (Planungsansicht)";
+    case "/aufgaben":
+      return "die Aufgabenliste";
+    case "/erstellen":
+      return "die Seite „Erstellen“";
+    default:
+      return "diese Seite";
+  }
+}
+
+/** Dynamischer Allgemein-Text für Startansicht (mit konkreten Zahlen aus der Regel). */
+export function viewPreferenceExplanation(
+  href: ViewPreferenceHref,
+  count: number,
+  sampleSize: number,
+  threshold: number,
+  isGuest: boolean,
+): string {
+  const target = labelForViewHref(href);
+  const scope = isGuest
+    ? `den letzten ${sampleSize} Wechseln zwischen Heute, Kalender, Aufgaben und Erstellen`
+    : `deinen letzten ${sampleSize} Wechseln zu diesen Kernseiten`;
+  return (
+    `Dieser Vorschlag erscheint, weil du in ${scope} ${count}× ${target} geöffnet hast — mindestens ${threshold}× und öfter als die anderen Kernbereiche. ` +
+    "FluxPlan schlägt vor, diese Seite als Startansicht zu speichern; du entscheidest mit Annehmen oder Ablehnen."
+  );
+}
+
+export function formatGuestDemoExplanation(general: string, demoNote: string): string {
+  const g = general.trim();
+  const d = demoNote.trim();
+  if (!d) return g;
+  if (!g) return `Demo (Gast): ${d}`;
+  return `${g}\n\nDemo (Gast): ${d}`;
+}
+
+export function buildWhyExplanation(
+  ruleKey: WhyExplanationRuleKey,
+  opts?: {
+    isGuest?: boolean;
+    guestNoteOverride?: string;
+    view?: {
+      href: ViewPreferenceHref;
+      count: number;
+      sampleSize: number;
+      threshold: number;
+    };
+  },
+): string {
+  const general =
+    ruleKey === "view_preference" && opts?.view
+      ? viewPreferenceExplanation(
+          opts.view.href,
+          opts.view.count,
+          opts.view.sampleSize,
+          opts.view.threshold,
+          Boolean(opts.isGuest),
+        )
+      : generalSuggestionExplanation[ruleKey as keyof typeof generalSuggestionExplanation];
+
+  if (!opts?.isGuest) return general;
+
+  const guestNote = opts.guestNoteOverride?.trim() || guestDemoNotes[ruleKey];
+  return formatGuestDemoExplanation(general, guestNote);
+}
+
+/** @deprecated Nutze {@link viewPreferenceExplanation} — Alias für bestehende Imports. */
+export function explanationFor(
+  href: ViewPreferenceHref,
+  count: number,
+  sampleSize: number,
+  opts: { threshold: number; isGuest: boolean },
+): string {
+  return viewPreferenceExplanation(href, count, sampleSize, opts.threshold, opts.isGuest);
+}
 
 /** Farbige Info-Box: Auswirkung von „Annehmen“ + betroffene Seiten (Banner / Anpassungen). */
 export const taskFormChipsBannerStrapline =
@@ -86,11 +198,3 @@ export const startViewAcceptImpactParagraphs = [
   "Beim nächsten Öffnen der App landest du automatisch auf dieser Startansicht.",
   "Rückgängig im Verlauf stellt die vorherige Startansicht wieder her.",
 ] as const;
-
-export function formatGuestDemoExplanation(general: string, demoNote: string): string {
-  const g = general.trim();
-  const d = demoNote.trim();
-  if (!d) return g;
-  if (!g) return `Demo (Gast): ${d}`;
-  return `${g}\n\nDemo (Gast): ${d}`;
-}

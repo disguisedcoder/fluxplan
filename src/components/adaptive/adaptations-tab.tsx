@@ -32,6 +32,8 @@ import {
   reminderSnoozeToastDescriptionFallback,
   reminderSnoozeToastTitle,
   suggestionSnoozeButtonLabel,
+  suggestionSnoozeStatusLabel,
+  SUGGESTION_SNOOZE_BUTTON_LABEL,
 } from "@/lib/adaptive/reminder-suggestion-copy";
 import {
   getSuggestionVisualMeta,
@@ -339,7 +341,7 @@ function SnoozedReminderDetailFields({
     }
   }
 
-  async function clearVertagen() {
+  async function clearReminderSnoozePause() {
     setBusy(true);
     try {
       const res = await studyApiFetch("/api/preferences", {
@@ -385,7 +387,7 @@ function SnoozedReminderDetailFields({
         <Button type="button" variant="secondary" size="sm" onClick={() => void saveDays()} disabled={busy}>
           Speichern
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => void clearVertagen()} disabled={busy}>
+        <Button type="button" variant="outline" size="sm" onClick={() => void clearReminderSnoozePause()} disabled={busy}>
           Pause beenden
         </Button>
       </div>
@@ -510,9 +512,7 @@ function DetailPanel({
           : action === "reject"
             ? "Vorschlag abgelehnt."
             : action === "snooze"
-              ? isReminder
-                ? reminderSnoozeToastTitle()
-                : "Vertagt."
+              ? reminderSnoozeToastTitle()
               : "Änderung rückgängig — Vorschlag wieder offen.",
         snoozeDesc ? { description: snoozeDesc } : undefined,
       );
@@ -567,6 +567,7 @@ function DetailPanel({
 
   return (
     <Card
+      data-testid="fp-suggestion-detail"
       className={cn("fp-card overflow-hidden border-l-4", suggestionAccentBorderClass(meta.accent))}
     >
       <CardContent className="space-y-5 p-6">
@@ -686,20 +687,19 @@ function DetailPanel({
                     Einstellungen, falls welche gesetzt wurden) und zeigt den Vorschlag wieder unter{" "}
                     <span className="font-medium text-foreground">Aktive Vorschläge</span>.
                   </>
-                ) : isReminderSuggestion ? (
-                  <>
-                    Hebt <span className="font-medium text-foreground">{REMINDER_SNOOZE_BUTTON_LABEL}</span> oder{" "}
-                    <span className="font-medium text-foreground">Ablehnen</span> auf — der Vorschlag erscheint wieder
-                    unter <span className="font-medium text-foreground">Aktive Vorschläge</span>. Eine Pause für
-                    Erinnerungs-Vorschläge kannst du zusätzlich unter{" "}
-                    <span className="font-medium text-foreground">Personalisierung</span> beenden.
-                  </>
                 ) : (
                   <>
-                    Hebt <span className="font-medium text-foreground">Vertagen</span> oder{" "}
+                    Hebt <span className="font-medium text-foreground">{SUGGESTION_SNOOZE_BUTTON_LABEL}</span> oder{" "}
                     <span className="font-medium text-foreground">Ablehnen</span> auf — der Vorschlag erscheint wieder
-                    unter <span className="font-medium text-foreground">Aktive Vorschläge</span>, damit du neu
-                    entscheiden kannst.
+                    unter <span className="font-medium text-foreground">Aktive Vorschläge</span>
+                    {isReminderSuggestion ? (
+                      <>
+                        . Eine Pause für Erinnerungs-Vorschläge kannst du zusätzlich unter{" "}
+                        <span className="font-medium text-foreground">Personalisierung</span> beenden.
+                      </>
+                    ) : (
+                      <>, damit du neu entscheiden kannst.</>
+                    )}
                   </>
                 )}
               </p>
@@ -730,7 +730,7 @@ function labelForStatus(s: string, ruleKey?: string) {
     case "rejected":
       return "Abgelehnt";
     case "snoozed":
-      return ruleKey === "reminder_preference" ? REMINDER_SNOOZE_BUTTON_LABEL : "Vertagt";
+      return suggestionSnoozeStatusLabel(ruleKey);
     case "undone":
       return "Rückgängig";
     default:

@@ -22,6 +22,7 @@ import {
 import {
   REMINDER_SNOOZE_BUTTON_LABEL,
   REMINDER_SNOOZE_PERSONALIZATION_CARD_TITLE,
+  SUGGESTION_SNOOZE_STATUS_LABEL,
 } from "@/lib/adaptive/reminder-suggestion-copy";
 import {
   readReminderSnoozeDaysPref,
@@ -203,7 +204,7 @@ export function PersonalizationTab({
               <Stat label="Gesamt" value={stats.total} />
               <Stat label="Angenommen" value={stats.accepted} tone="positive" />
               <Stat label="Abgelehnt" value={stats.rejected} tone="warning" />
-              <Stat label="Vertagt" value={stats.snoozed} tone="info" />
+              <Stat label={SUGGESTION_SNOOZE_STATUS_LABEL} value={stats.snoozed} tone="info" />
             </div>
           </CardContent>
         </Card>
@@ -285,7 +286,7 @@ function ReminderSnoozeDayEditor({
 }
 
 function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged: () => void }) {
-  const [vertagenNochAktiv] = useState(() => until.getTime() > Date.now());
+  const [snoozePauseStillActive] = useState(() => until.getTime() > Date.now());
   const untilLabel = until.toLocaleDateString("de-DE", {
     weekday: "short",
     day: "2-digit",
@@ -294,7 +295,7 @@ function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged
   });
   const [busy, setBusy] = useState(false);
 
-  async function clearVertagen() {
+  async function clearReminderSnoozePause() {
     setBusy(true);
     try {
       const res = await studyApiFetch("/api/preferences", {
@@ -314,7 +315,7 @@ function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged
     }
   }
 
-  if (!vertagenNochAktiv) {
+  if (!snoozePauseStillActive) {
     return (
       <p className="text-xs text-muted-foreground">
         Keine Pause aktiv — Erinnerungs-Vorschläge können wieder erscheinen.
@@ -328,7 +329,7 @@ function ReminderSnoozeUntilPanel({ until, onChanged }: { until: Date; onChanged
         Aktuell aktiv: nächste Erinnerungs-Vorschläge frühestens ab{" "}
         <span className="font-medium text-foreground">{untilLabel}</span> (lokales Datum).
       </p>
-      <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void clearVertagen()}>
+      <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void clearReminderSnoozePause()}>
         Pause beenden
       </Button>
       <p className="text-[11px] text-muted-foreground">

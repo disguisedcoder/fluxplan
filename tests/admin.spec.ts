@@ -100,6 +100,35 @@ test("@admin export-all-users returns participant bundle for admin", async ({ ba
   await api.dispose();
 });
 
+test("@admin export-all-users auswertung json and xlsx for admin", async ({ baseURL }) => {
+  if (!baseURL) throw new Error("baseURL is required");
+  const api = await request.newContext({ baseURL });
+  try {
+    await startStudySession(api, { pseudonym: "admin", variant: "adaptive", interventionLevel: 2 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("db_unavailable") || msg.includes("DATABASE_URL")) test.skip("DB not available");
+    throw e;
+  }
+
+  const auswertung = await api.get("/api/data/export-all-users?format=json&profile=auswertung");
+  expect(auswertung.ok()).toBeTruthy();
+  const body = (await auswertung.json()) as {
+    teilnehmer?: unknown[];
+    vorschlaege?: unknown[];
+    users?: unknown;
+  };
+  expect(Array.isArray(body.teilnehmer)).toBeTruthy();
+  expect(Array.isArray(body.vorschlaege)).toBeTruthy();
+  expect(body.users).toBeUndefined();
+
+  const xlsx = await api.get("/api/data/export-all-users?format=xlsx");
+  expect(xlsx.ok()).toBeTruthy();
+  expect(xlsx.headers()["content-type"]).toContain("spreadsheetml");
+
+  await api.dispose();
+});
+
 test("@admin reset-guest-users allowed for admin pseudonym", async ({ baseURL }) => {
   if (!baseURL) throw new Error("baseURL is required");
   const api = await request.newContext({ baseURL });

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
+import { buildWhyExplanation } from "@/lib/adaptive/suggestion-explanation";
 import { normalizeStartViewHref } from "@/lib/settings/start-view";
 
 /** Nur Wechsel zu diesen Kernrouten zählen (andere Seiten füllen das Fenster nicht). */
@@ -63,25 +64,7 @@ function titleFor(href: ViewTarget["href"]): string {
   }
 }
 
-export function explanationFor(
-  href: ViewTarget["href"],
-  count: number,
-  sampleSize: number,
-  opts: { threshold: number; isGuest: boolean },
-): string {
-  const where =
-    href === "/heute"
-      ? "„Heute“"
-      : href === "/kalender"
-        ? "Kalender oder Planungsansicht"
-        : href === "/aufgaben"
-          ? "Aufgabenliste"
-          : "die Seite „Erstellen“";
-  const scope = opts.isGuest
-    ? `den letzten ${sampleSize} Wechseln zu Heute, Kalender, Aufgaben oder Erstellen`
-    : `den letzten ${sampleSize} solchen Wechseln`;
-  return `Dieser Vorschlag erscheint, weil du in ${scope} ${count}× zu ${where} gewechselt bist (Schwelle: mindestens ${opts.threshold}×, häufiger als zu den anderen Kernbereichen).`;
-}
+export { explanationFor } from "@/lib/adaptive/suggestion-explanation";
 
 export const viewPreferenceRule: AdaptiveRule = {
   key: "view_preference",
@@ -170,7 +153,15 @@ export const viewPreferenceRule: AdaptiveRule = {
       ruleKey: "view_preference",
       type: "start_view",
       title: titleFor(href),
-      explanation: explanationFor(href, winner.count, recent.length, { threshold, isGuest }),
+      explanation: buildWhyExplanation("view_preference", {
+        isGuest,
+        view: {
+          href,
+          count: winner.count,
+          sampleSize: recent.length,
+          threshold,
+        },
+      }),
       payload: {
         suggestedStartView: href,
         signal: {

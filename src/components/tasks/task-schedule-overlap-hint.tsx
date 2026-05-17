@@ -10,6 +10,7 @@ import {
   OVERLAP_HINT_FALLBACK_MINUTES,
 } from "@/lib/planning/task-time-overlap";
 import { studyApiFetch } from "@/lib/http/study-api-fetch";
+import { SUGGESTION_SNOOZE_BUTTON_LABEL } from "@/lib/adaptive/reminder-suggestion-copy";
 
 type Props = {
   date: string;
@@ -83,7 +84,8 @@ export function TaskScheduleOverlapHint({ date, time, estimatedMinutes, excludeT
         <p className="text-amber-900/90 dark:text-amber-100/90">
           Du kannst trotzdem speichern — FluxPlan verschiebt nichts automatisch.{" "}
           <span className="text-amber-900/85 dark:text-amber-100/85">
-            <span className="font-medium">Annehmen</span>, <span className="font-medium">Nicht jetzt</span> und{" "}
+            <span className="font-medium">Annehmen</span>,{" "}
+            <span className="font-medium">{SUGGESTION_SNOOZE_BUTTON_LABEL}</span> und{" "}
             <span className="font-medium">Ablehnen</span> gibt es bei adaptiven Vorschlägen unter{" "}
             <span className="font-medium">Anpassungen</span>; dieser Kasten ist nur ein Hinweis im Formular.
           </span>

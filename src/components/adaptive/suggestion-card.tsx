@@ -49,9 +49,7 @@ export function SuggestionCard({
           : action === "reject"
             ? "Vorschlag abgelehnt."
             : action === "snooze"
-              ? suggestion.ruleKey === "reminder_preference"
-                ? reminderSnoozeToastTitle()
-                : "Vertagt."
+              ? reminderSnoozeToastTitle()
               : "Rückgängig.",
       );
       onChanged();

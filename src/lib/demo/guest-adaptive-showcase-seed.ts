@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
+import { buildWhyExplanation } from "@/lib/adaptive/suggestion-explanation";
 import { buildGuestMixedTimelineTasks } from "./two-month-timeline";
 
 export type GuestWorkshopCore = {
@@ -226,8 +227,15 @@ export async function seedGuestAdaptiveShowcase(
       ruleKey: "view_preference",
       type: "start_view",
       title: "Kalender als Startansicht?",
-      explanation:
-        "Demo (Gast): In den letzten Kern-Navigationen war der Kalender oft im Fokus — du entscheidest wie immer über Annehmen, Nicht jetzt oder Ablehnen.",
+      explanation: buildWhyExplanation("view_preference", {
+        isGuest: true,
+        view: {
+          href: "/kalender",
+          count: core.kalenderCountInTail,
+          sampleSize: 8,
+          threshold: 3,
+        },
+      }),
       payload: {
         suggestedStartView: "/kalender",
         signal: {
@@ -243,8 +251,7 @@ export async function seedGuestAdaptiveShowcase(
       ruleKey: "adaptive_task_creation",
       type: "task_form_chips",
       title: "Felder schneller hinzufügen?",
-      explanation:
-        "Demo (Gast): Die Aufgabe „Große Aufgabe mit allen Details“ nutzt Liste, Tags, Dauer und Beschreibung — vorgeschlagene Chips passen dazu; erst nach Annahme wirksam.",
+      explanation: buildWhyExplanation("adaptive_task_creation", { isGuest: true }),
       payload: {
         chipKeys: ["list", "tags", "duration", "description"],
         signal: { guest: true, sampleSize: 4, anchorTaskId: core.tRich.id },
@@ -254,32 +261,28 @@ export async function seedGuestAdaptiveShowcase(
       ruleKey: "adaptive_optional_fold",
       type: "task_form_optional_fold",
       title: "Zusatzfelder zunächst ausblenden?",
-      explanation:
-        "Demo (Gast): Zwei kurze Einträge stehen neben einer ausführlicheren Aufgabe — typisches Muster für „Formular kompakter“. Du entscheidest.",
+      explanation: buildWhyExplanation("adaptive_optional_fold", { isGuest: true }),
       payload: { optionalUsageRate: 0.15, sampleSize: 8, guest: true },
     },
     {
       ruleKey: "adaptive_optional_unfold",
       type: "task_form_optional_unfold",
       title: "Zusatzfelder wieder einblenden?",
-      explanation:
-        "Demo (Gast): Sobald wieder häufiger mit Kategorie, Tags & Co. gearbeitet wird, lohnt sich die Rückkehr zur vollen Ansicht — du entscheidest.",
+      explanation: buildWhyExplanation("adaptive_optional_unfold", { isGuest: true }),
       payload: { hadFoldEnabled: true, optionalUsageRate: 0.62, sampleSize: 8 },
     },
     {
       ruleKey: "daily_focus",
       type: "daily_focus",
       title: "Heute könnten diese Aufgaben im Fokus stehen",
-      explanation:
-        "Demo (Gast): Vorschlag ohne Datenänderung — passend zu Priorität, Rückmeldung und Kalendertag-Last.",
+      explanation: buildWhyExplanation("daily_focus", { isGuest: true }),
       payload: { taskIds: [core.tRuck.id, core.tRich.id, core.tBlock1.id] },
     },
     {
       ruleKey: "reminder_preference",
       type: "reminder_suggestion",
       title: "Erinnerung vorschlagen?",
-      explanation:
-        "Demo (Gast): „Rückmeldung“ hat noch keine Erinnerung — nach Annahme setzt FluxPlan den Vorschlag (du kannst ablehnen).",
+      explanation: buildWhyExplanation("reminder_preference", { isGuest: true }),
       payload: {
         taskId: core.tRuck.id,
         proposedReminderAt: core.proposedReminder.toISOString(),
@@ -289,8 +292,7 @@ export async function seedGuestAdaptiveShowcase(
       ruleKey: "calendar_conflict",
       type: "calendar_conflict",
       title: "Möglicher Planungskonflikt",
-      explanation:
-        "Demo (Gast): Drei große Blöcke am selben Tag + weiterer Slot — Hinweis ohne automatische Verschiebung.",
+      explanation: buildWhyExplanation("calendar_conflict", { isGuest: true }),
       payload: {
         taskId: core.tBlock1.id,
         totalEstimatedMinutes: core.totalEst,

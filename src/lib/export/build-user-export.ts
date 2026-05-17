@@ -370,6 +370,14 @@ export type AdminAllUsersExport = {
   users: UserExportPayload[];
 };
 
+/** Für Fragebogen/Auswertung: alle Tabellen, ohne schwere Rohdaten pro Person. */
+export type AdminAllUsersExportAuswertung = Omit<AdminAllUsersExport, "users">;
+
+export function toAdminAuswertungExport(bundle: AdminAllUsersExport): AdminAllUsersExportAuswertung {
+  const { users: _users, ...auswertung } = bundle;
+  return auswertung;
+}
+
 export type AdminCsvSheet =
   | "teilnehmer"
   | "vorschlaege"

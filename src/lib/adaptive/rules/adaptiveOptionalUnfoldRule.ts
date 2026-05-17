@@ -1,9 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
-import {
-  formatGuestDemoExplanation,
-  generalSuggestionExplanation,
-} from "@/lib/adaptive/suggestion-explanation";
+import { buildWhyExplanation } from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
@@ -81,10 +78,7 @@ export const adaptiveOptionalUnfoldRule: AdaptiveRule = {
         ruleKey: "adaptive_optional_unfold",
         type: "task_form_optional_unfold",
         title: "Zusatzfelder wieder einblenden?",
-        explanation: formatGuestDemoExplanation(
-          generalSuggestionExplanation.adaptive_optional_unfold,
-          "Du nutzt Zusatzfelder im Workshop wieder aktiv.",
-        ),
+        explanation: buildWhyExplanation("adaptive_optional_unfold", { isGuest: true }),
         payload: { hadFoldEnabled: true },
       };
     }
@@ -107,7 +101,7 @@ export const adaptiveOptionalUnfoldRule: AdaptiveRule = {
       ruleKey: "adaptive_optional_unfold",
       type: "task_form_optional_unfold",
       title: "Zusatzfelder wieder einblenden?",
-      explanation: generalSuggestionExplanation.adaptive_optional_unfold,
+      explanation: buildWhyExplanation("adaptive_optional_unfold"),
       payload: { hadFoldEnabled: true, optionalUsageRate: rate, sampleSize: recent.length },
     };
   },

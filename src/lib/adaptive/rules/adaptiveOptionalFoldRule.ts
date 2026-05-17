@@ -1,9 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
-import {
-  formatGuestDemoExplanation,
-  generalSuggestionExplanation,
-} from "@/lib/adaptive/suggestion-explanation";
+import { buildWhyExplanation } from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import { readTaskFormOptionalFold } from "@/lib/settings/task-form-optional-fold";
@@ -79,10 +76,7 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
         ruleKey: "adaptive_optional_fold",
         type: "task_form_optional_fold",
         title: "Zusatzfelder zunächst ausblenden?",
-        explanation: formatGuestDemoExplanation(
-          generalSuggestionExplanation.adaptive_optional_fold,
-          "Deine zuletzt angelegte Aufgabe war sehr kompakt.",
-        ),
+        explanation: buildWhyExplanation("adaptive_optional_fold", { isGuest: true }),
         payload: { optionalUsageRate: 0, sampleSize: 1, guest: true },
       };
     }
@@ -113,7 +107,7 @@ export const adaptiveOptionalFoldRule: AdaptiveRule = {
       ruleKey: "adaptive_optional_fold",
       type: "task_form_optional_fold",
       title: "Zusatzfelder zunächst ausblenden?",
-      explanation: generalSuggestionExplanation.adaptive_optional_fold,
+      explanation: buildWhyExplanation("adaptive_optional_fold"),
       payload: { optionalUsageRate: rate, sampleSize: recent.length },
     };
   },

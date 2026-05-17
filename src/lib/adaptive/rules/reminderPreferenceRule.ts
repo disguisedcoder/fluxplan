@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { whereAdaptiveSuggestionStudySession } from "@/lib/adaptive/suggestion-session-scope";
-import { generalSuggestionExplanation } from "@/lib/adaptive/suggestion-explanation";
+import { buildWhyExplanation } from "@/lib/adaptive/suggestion-explanation";
 import type { AdaptiveRule } from "../types";
 import { thresholdMultiplier } from "../engineConfig";
 import {
@@ -66,7 +66,7 @@ export const reminderPreferenceRule: AdaptiveRule = {
       ruleKey: "reminder_preference",
       type: "reminder_suggestion",
       title: "Erinnerung vorschlagen?",
-      explanation: generalSuggestionExplanation.reminder_preference,
+      explanation: buildWhyExplanation("reminder_preference", { isGuest: ctx.isGuestStudyUser }),
       payload: { taskId: task.id, proposedReminderAt: proposed.toISOString() },
     };
   },

@@ -30,7 +30,7 @@ export async function listSuggestions(api: APIRequestContext, status?: string) {
   const res = await api.get(url);
   if (!res.ok()) throw new Error(`listSuggestions failed: ${res.status()} ${await res.text()}`);
   return res.json() as Promise<{
-    suggestions: Array<{ id: string; ruleKey: string; type: string; status: string }>;
+    suggestions: Array<{ id: string; ruleKey: string; type: string; status: string; title: string }>;
   }>;
 }
 

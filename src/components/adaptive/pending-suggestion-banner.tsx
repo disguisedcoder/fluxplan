@@ -179,9 +179,7 @@ function PendingSuggestionBannerInner({
           ? "Startansicht gespeichert."
           : "Übernommen."
         : action === "snooze"
-          ? isReminderSuggestion
-            ? reminderSnoozeToastTitle()
-            : "Vertagt."
+          ? reminderSnoozeToastTitle()
           : "Abgelehnt.",
       reminderDesc ? { description: reminderDesc } : undefined,
     );

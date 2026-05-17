@@ -12,13 +12,6 @@ type Me = {
   canManageStudyData?: boolean;
 };
 
-const CSV_SHEETS = [
-  { sheet: "teilnehmer", label: "CSV Teilnehmer" },
-  { sheet: "vorschlaege", label: "CSV Vorschläge" },
-  { sheet: "vorschlag_reaktionen", label: "CSV Annahmen/Ablehnungen" },
-  { sheet: "interaktionen", label: "CSV Interaktionen" },
-] as const;
-
 export function AdminExportAllUsersCard() {
   const [me, setMe] = useState<Me | null>(null);
 
@@ -40,55 +33,103 @@ export function AdminExportAllUsersCard() {
       <CardContent className="space-y-4 p-5">
         <div>
           <div className="text-sm font-semibold tracking-tight">Studie: Alle Teilnehmer exportieren</div>
-          <p className="text-xs text-muted-foreground">
-            Für die Auswertung: <span className="font-medium text-foreground">JSON</span> enthält getrennte Tabellen (
-            <span className="font-mono">teilnehmer</span>, <span className="font-mono">vorschlaege</span>,{" "}
-            <span className="font-mono">interaktionen</span>). Jede CSV-Datei ist eine Tabelle — Spalte{" "}
-            <span className="font-mono">userPseudonym</span> zeigt immer, wer die Zeile betrifft. Bei Vorschlägen:{" "}
-            <span className="font-mono">statusLabel</span> (Angenommen/Abgelehnt/Offen/…).
+          <p className="mt-1 text-xs text-muted-foreground">
+            Für Fragebogen und Auswertung: eine Datei mit getrennten Tabellen (Teilnehmer, Vorschläge, Reaktionen,
+            Interaktionen). Spalte <span className="font-mono">userPseudonym</span> verknüpft alles; bei Vorschlägen{" "}
+            <span className="font-mono">statusLabel</span> (Angenommen, Abgelehnt, Offen, …).
           </p>
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-medium text-foreground">Gesamtpaket</p>
-          <a
-            href="/api/data/export-all-users?format=json"
-            className="inline-flex"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Button type="button" className="gap-2">
-              <Download className="h-4 w-4" />
-              JSON (alle Tabellen)
-            </Button>
-          </a>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-foreground">Einzelne Tabellen (Excel/SPSS)</p>
+          <p className="text-xs font-medium text-foreground">Empfohlen</p>
           <div className="flex flex-wrap gap-2">
-            {CSV_SHEETS.map(({ sheet, label }) => (
-              <a
-                key={sheet}
-                href={`/api/data/export-all-users?format=csv&sheet=${sheet}`}
-                className="inline-flex"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Button type="button" variant="outline" size="sm" className="gap-1.5">
-                  <Download className="h-3.5 w-3.5" />
-                  {label}
-                </Button>
-              </a>
-            ))}
+            <a
+              href="/api/data/export-all-users?format=xlsx"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" className="gap-2">
+                <Download className="h-4 w-4" />
+                Excel — alle Tabellen (eine Datei)
+              </Button>
+            </a>
+            <a
+              href="/api/data/export-all-users?format=json&profile=auswertung&pretty=true"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" variant="secondary" className="gap-2">
+                <Download className="h-4 w-4" />
+                JSON — Auswertung (lesbar)
+              </Button>
+            </a>
           </div>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Excel</span>: Tabs wie die früheren CSVs (Teilnehmer,
+            Vorschläge, Annahmen/Ablehnungen, Interaktionen, Sessions) + README.{" "}
+            <span className="font-medium text-foreground">JSON Auswertung</span>: dieselben Tabellen als Arrays (
+            <span className="font-mono">teilnehmer</span>, <span className="font-mono">vorschlaege</span>, …), ohne
+            Rohdatenblock — gut zum Durchsuchen und für den Fragebogen.
+          </p>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          Empfehlung: zuerst <span className="font-medium">CSV Vorschläge</span> filtern nach{" "}
-          <span className="font-mono">userPseudonym</span> und <span className="font-mono">statusLabel</span>. Für
-          Zeitablauf: <span className="font-medium">CSV Interaktionen</span> (sortiert nach Person + Zeit).
-        </p>
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer font-medium text-foreground">Erweitert: Einzeltabellen & Voll-JSON</summary>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <a
+              href="/api/data/export-all-users?format=csv&sheet=teilnehmer"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                CSV Teilnehmer
+              </Button>
+            </a>
+            <a
+              href="/api/data/export-all-users?format=csv&sheet=vorschlaege"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                CSV Vorschläge
+              </Button>
+            </a>
+            <a
+              href="/api/data/export-all-users?format=csv&sheet=vorschlag_reaktionen"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                CSV Reaktionen
+              </Button>
+            </a>
+            <a
+              href="/api/data/export-all-users?format=csv&sheet=interaktionen"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                CSV Interaktionen
+              </Button>
+            </a>
+            <a
+              href="/api/data/export-all-users?format=json"
+              className="inline-flex"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                JSON vollständig
+              </Button>
+            </a>
+          </div>
+        </details>
       </CardContent>
     </Card>
   );

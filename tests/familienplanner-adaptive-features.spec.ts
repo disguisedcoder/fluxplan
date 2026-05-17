@@ -104,7 +104,7 @@ test.describe("@adaptive @study familienplanner — Adaptive-UI (Oberfläche + E
     // Banner erscheint nur bei pending Vorschlag; Statuskarte kann „Keine Vorschläge offen“ zeigen.
     if (await page.getByText("Keine Vorschläge offen").isVisible()) return;
     await expect(
-      page.getByRole("button", { name: "Nicht jetzt" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
+      page.getByRole("button", { name: "Später erinnern" }).or(page.getByRole("button", { name: "Annehmen" })).first(),
     ).toBeVisible({ timeout: 25_000 });
   });
 });

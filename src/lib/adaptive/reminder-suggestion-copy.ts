@@ -1,14 +1,19 @@
-/** UI-Texte für Erinnerungs-Vorschläge (snooze-API bleibt unverändert). */
-export const REMINDER_SNOOZE_BUTTON_LABEL = "Später erinnern";
+/** UI-Texte für Vorschlags-Snooze (API-Action bleibt `snooze`). */
+export const SUGGESTION_SNOOZE_BUTTON_LABEL = "Später erinnern";
+/** @deprecated Alias — bitte `SUGGESTION_SNOOZE_BUTTON_LABEL` verwenden */
+export const REMINDER_SNOOZE_BUTTON_LABEL = SUGGESTION_SNOOZE_BUTTON_LABEL;
+/** Verlauf / Statistik (Vergangenheitsform wie „Angenommen“, „Abgelehnt“) */
+export const SUGGESTION_SNOOZE_STATUS_LABEL = "Später erinnert";
 export const REMINDER_SNOOZE_PERSONALIZATION_CARD_TITLE = "Erinnerungs-Vorschläge pausieren";
 export const REMINDER_SNOOZE_PERSONALIZATION_LINK_LABEL = REMINDER_SNOOZE_PERSONALIZATION_CARD_TITLE;
 
-/** „Warum sehe ich das?“ */
+/** „Warum sehe ich das?“ — allgemeiner Teil */
 export const reminderPreferenceExplanation =
-  "Bei vielen deiner letzten Aufgaben hast du selbst eine Erinnerung gesetzt. Diese Aufgabe hat noch keine — deshalb schlägt FluxPlan dir einen passenden Zeitpunkt vor.";
+  "Bei vielen deiner letzten Aufgaben hast du selbst eine Erinnerung gesetzt. Diese Aufgabe hat noch keine — deshalb schlägt FluxPlan einen passenden Zeitpunkt vor (du kannst Zeit und Datum jederzeit ändern oder die Erinnerung wieder entfernen).";
 
+/** Zusatz für Gast-Demo (G01/G02) */
 export const reminderGuestDemoNote =
-  "Workshop-Beispiel: Die Demo-Aufgabe „Rückmeldung“ hat noch keine Erinnerung. Du kannst annehmen, ablehnen oder „Später erinnern“.";
+  "In der Gast-Demo reicht bereits eine Aufgabe mit Erinnerung als Muster (statt mehrerer). Die Workshop-Aufgabe „Rückmeldung bis heute Abend“ hat noch keine Erinnerung — du kannst annehmen, ablehnen oder „Später erinnern“.";
 
 /** Banner / Anpassungen — Kurzzeile über den Buttons */
 export const reminderAcceptStrapline =
@@ -22,8 +27,12 @@ export const reminderAcceptDetail = {
   onSnooze: `„Später erinnern“ blendet diesen Vorschlag aus und pausiert ähnliche Hinweise für ein paar Tage — einstellbar unter Personalisierung oder im Verlauf bei diesem Eintrag.`,
 } as const;
 
-export function suggestionSnoozeButtonLabel(ruleKey: string | undefined): string {
-  return ruleKey === "reminder_preference" ? REMINDER_SNOOZE_BUTTON_LABEL : "Nicht jetzt";
+export function suggestionSnoozeButtonLabel(_ruleKey?: string): string {
+  return SUGGESTION_SNOOZE_BUTTON_LABEL;
+}
+
+export function suggestionSnoozeStatusLabel(_ruleKey?: string): string {
+  return SUGGESTION_SNOOZE_STATUS_LABEL;
 }
 
 export function suggestedReminderAtFromPayload(payload: unknown): Date | null {
