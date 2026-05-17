@@ -20,6 +20,8 @@ test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", a
 
   // Ensure there is at least one pending suggestion for a visible card.
   await evaluateAdaptive(api, "/heute");
+  const before = await exportJson(api);
+  const beforeWhy = Number(before.summary?.whyClickedCount ?? 0);
 
   // Liste/Vorschläge wurden vor Evaluate geladen — sauber auf den Tab gehen, damit die Karte im DOM ist.
   await page.goto("/anpassungen", { waitUntil: "domcontentloaded" });
@@ -34,14 +36,11 @@ test("@ui anpassungen tabs render and 'Warum sehe ich das?' logs why_clicked", a
   await expect(pendingCard).toBeVisible({ timeout: 30_000 });
   await expect(pendingCard.getByText("Lade …")).toBeHidden({ timeout: 60_000 });
   await expect(pendingCard.locator("button").first()).toBeVisible({ timeout: 30_000 });
-  const whyButton = page.getByRole("button", { name: "Warum sehe ich das?" }).first();
-  await expect(whyButton).toBeVisible({ timeout: 30_000 });
+  await pendingCard.locator("button").first().click();
 
-  const before = await exportJson(api);
-  const beforeWhy = Number(before.summary?.whyClickedCount ?? 0);
-
-  // Click explanation popover trigger
-  await whyButton.click();
+  const whyHeading = page.getByText("Warum sehe ich das?").first();
+  await expect(whyHeading).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Was passiert beim Annehmen?").first()).toBeVisible();
 
   await expectEventuallyToBeTruthy(async () => {
     const after = await exportJson(api);

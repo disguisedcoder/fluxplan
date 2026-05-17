@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Clock, HelpCircle, Undo2, X } from "lucide-react";
+import { Check, Clock, Undo2, X } from "lucide-react";
 
 import { studyApiFetch } from "@/lib/http/study-api-fetch";
 import { cn } from "@/lib/utils";
@@ -12,11 +12,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdaptiveSuggestion } from "./types";
-import { labelForStartHref, normalizeStartViewHref, suggestedStartViewHrefFromPayload } from "@/lib/settings/start-view";
-import { calendarConflictAcceptDetail } from "@/lib/adaptive/suggestion-explanation";
+import { normalizeStartViewHref, suggestedStartViewHrefFromPayload } from "@/lib/settings/start-view";
+import { SuggestionAcceptImpact } from "@/components/adaptive/suggestion-accept-impact";
 import { CalendarOverloadAcceptStrapline } from "@/components/adaptive/calendar-overload-accept-strapline";
 import { DailyFocusAcceptStrapline } from "@/components/adaptive/daily-focus-accept-strapline";
-import { ReminderAcceptDetail } from "@/components/adaptive/reminder-accept-detail";
 import { ReminderAcceptStrapline } from "@/components/adaptive/reminder-accept-strapline";
 import { StartViewAcceptStrapline } from "@/components/adaptive/start-view-accept-strapline";
 import {
@@ -458,13 +457,25 @@ function DetailPanel({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [whyOpen, setWhyOpen] = useState(false);
   const whyLogged = useRef(false);
 
   useEffect(() => {
-    setWhyOpen(false);
     whyLogged.current = false;
   }, [suggestion?.id]);
+
+  useEffect(() => {
+    if (!suggestion || whyLogged.current) return;
+    whyLogged.current = true;
+    studyApiFetch("/api/events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        eventType: "why_clicked",
+        screen: "/anpassungen",
+        metadata: { suggestionId: suggestion.id, ruleKey: suggestion.ruleKey },
+      }),
+    }).catch(() => {});
+  }, [suggestion?.id, suggestion?.ruleKey]);
 
   if (!suggestion) {
     return (
@@ -526,20 +537,6 @@ function DetailPanel({
     } finally {
       setBusy(false);
     }
-  }
-
-  function logWhy() {
-    if (whyLogged.current) return;
-    whyLogged.current = true;
-    studyApiFetch("/api/events", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        eventType: "why_clicked",
-        screen: "/anpassungen",
-        metadata: { suggestionId: suggestion!.id, ruleKey: suggestion!.ruleKey },
-      }),
-    }).catch(() => {});
   }
 
   const isPending = suggestion.status === "pending";
@@ -641,28 +638,15 @@ function DetailPanel({
         </p>
 
         <section className="space-y-2 rounded-xl border border-border/60 bg-card/60 p-4">
-          <button
-            type="button"
-            onClick={() => {
-              logWhy();
-              setWhyOpen((open) => !open);
-            }}
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            aria-expanded={whyOpen}
-          >
-            <HelpCircle className="h-3.5 w-3.5" />
-            Warum sehe ich das?
-          </button>
-          {whyOpen ? (
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{suggestion.explanation}</p>
-          ) : null}
+          <h3 className="text-sm font-medium text-foreground">Warum sehe ich das?</h3>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+            {suggestion.explanation}
+          </p>
         </section>
 
         <section className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Was ändert sich?
-          </div>
-          <PayloadPreview payload={suggestion.payload} type={suggestion.type} />
+          <h3 className="text-sm font-medium text-foreground">Was passiert beim Annehmen?</h3>
+          <SuggestionAcceptImpact suggestion={suggestion} />
         </section>
 
         {suggestion.ruleKey === "reminder_preference" && suggestion.status === "snoozed" ? (
@@ -726,91 +710,6 @@ function DetailPanel({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function PayloadPreview({ payload, type }: { payload: unknown; type: string }) {
-  const obj = (payload && typeof payload === "object" ? payload : {}) as Record<string, unknown>;
-
-  if (type === "start_view") {
-    const href = suggestedStartViewHrefFromPayload(payload);
-    return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Deine Startansicht wird auf{" "}
-        <span className="font-medium text-foreground">{labelForStartHref(href)}</span> gesetzt.
-      </div>
-    );
-  }
-  if (type === "reminder_suggestion") {
-    return <ReminderAcceptDetail />;
-  }
-  if (type === "daily_focus") {
-    return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-        Es werden keine Aufgaben geändert. Ohne Annahme blendet die To-Do-Liste überfällige Aufgaben aus (nur heute und
-        später); nach Annahme erscheinen sie ebenfalls dort und werden zusammen mit den heute fälligen Aufgaben rot
-        hervorgehoben.
-      </div>
-    );
-  }
-  if (type === "task_form_chips") {
-    return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
-        <p>
-          Auf <span className="font-medium text-foreground">Neue Aufgabe</span> und beim Bearbeiten erscheinen die
-          vorgeschlagenen Zusatzfelder als aktive Chips. Bestehende Aufgaben bleiben unverändert.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Du kannst Chips pro Aufgabe an- und abwählen. Unter{" "}
-          <span className="font-medium text-foreground">Anpassungen</span> ist die Annahme per{" "}
-          <span className="font-medium text-foreground">Rückgängig</span> widerrufbar.
-        </p>
-      </div>
-    );
-  }
-  if (type === "task_form_optional_unfold") {
-    return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
-        <p>
-          Auf <span className="font-medium text-foreground">Neue Aufgabe</span> und beim Bearbeiten sind die
-          Zusatzfelder wieder standardmäßig sichtbar (Einstellung „Zusatzfelder eingeklappt“ wird entfernt).
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Du kannst den Bereich weiterhin per Chip-Leiste oder unter{" "}
-          <span className="font-medium text-foreground">Einstellungen</span> steuern.{" "}
-          <span className="font-medium text-foreground">Rückgängig</span> im Verlauf stellt das Einklappen wieder her.
-        </p>
-      </div>
-    );
-  }
-  if (type === "task_form_optional_fold") {
-    return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
-        <p>
-          Auf <span className="font-medium text-foreground">Neue Aufgabe</span> und beim Bearbeiten sind die
-          Zusatzfelder zunächst eingeklappt; <span className="font-medium text-foreground">Weitere Felder</span> zeigt
-          sie bei Bedarf.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Bestehende Aufgaben bleiben unverändert. Die Einstellung findest du auch unter{" "}
-          <span className="font-medium text-foreground">Einstellungen</span>;{" "}
-          <span className="font-medium text-foreground">Rückgängig</span> im Verlauf macht die Annahme rückgängig.
-        </p>
-      </div>
-    );
-  }
-  if (type === "calendar_conflict") {
-    return (
-      <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm space-y-2">
-        <p>{calendarConflictAcceptDetail.main}</p>
-        <p className="text-xs text-muted-foreground">{calendarConflictAcceptDetail.note}</p>
-      </div>
-    );
-  }
-  return (
-    <div className="rounded-md border border-border/60 bg-card px-3 py-2 text-sm">
-      Nichts passiert automatisch: FluxPlan setzt nur dann etwas um, wenn du den Vorschlag annimmst.
-    </div>
   );
 }
 
